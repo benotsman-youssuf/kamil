@@ -1,7 +1,5 @@
 import { useEffect } from 'react';
 
-type ShortcutHandler = (e: KeyboardEvent) => void;
-
 export function useKeyboardShortcut(
   key: string,
   callback: () => void,
