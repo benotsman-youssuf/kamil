@@ -23,6 +23,7 @@
     "@platejs/math": "^49.0.0",
     "@platejs/media": "^49.0.0",
     "@platejs/slash-command": "^49.0.0",
+    "@platejs/suggestion": "^49.0.0",
     "@platejs/table": "^49.1.13",
     "@platejs/test-utils": "^49.1.13",
     "@platejs/toc": "^49.0.0",

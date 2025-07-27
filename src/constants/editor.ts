@@ -1,6 +1,7 @@
 import type { Value } from "platejs";
 import { BoldPlugin, ItalicPlugin, UnderlinePlugin } from "@platejs/basic-nodes/react";
 import { AlignKit } from '@/components/editor/plugins/align-kit';
+import { SlashKit } from "@/components/editor/plugins/slash-kit";
 
 export const initialValue: Value = [
   {
@@ -22,4 +23,5 @@ export const editorPlugins = [
   ItalicPlugin,
   UnderlinePlugin,
   ...AlignKit,
+  ...SlashKit,
 ];
