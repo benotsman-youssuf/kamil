@@ -1,36 +1,9 @@
 "use client";
 
-import * as React from "react";
-
 import type { PlateEditor, PlateElementProps } from "platejs/react";
-
-import { AIChatPlugin } from "@platejs/ai/react";
-import {
-  CalendarIcon,
-  ChevronRightIcon,
-  Code2,
-  Columns3Icon,
-  Heading1Icon,
-  Heading2Icon,
-  Heading3Icon,
-  LightbulbIcon,
-  ListIcon,
-  ListOrdered,
-  PilcrowIcon,
-  Quote,
-  RadicalIcon,
-  SparklesIcon,
-  Square,
-  Table,
-  TableOfContentsIcon,
-} from "lucide-react";
-import { type TComboboxInputElement, KEYS } from "platejs";
+import { Square } from "lucide-react";
+import { type TComboboxInputElement } from "platejs";
 import { PlateElement } from "platejs/react";
-
-import {
-  insertBlock,
-  insertInlineElement,
-} from "@/components/editor/transforms";
 
 import {
   InlineCombobox,
@@ -41,7 +14,6 @@ import {
   InlineComboboxInput,
   InlineComboboxItem,
 } from "./inline-combobox";
-import { Label } from "@radix-ui/react-dropdown-menu";
 
 type Group = {
   group: string;
@@ -60,17 +32,17 @@ const groups: Group[] = [
   {
     group: "الفاتحة",
     items: [
-      {
-        icon: <Square />,
-        keywords: ["ayah", "quran", "verse", "[]"],
-        label: "﻿بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ",
-        value: "﻿بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ",
-      },
-      {
-        icon: <Square />,
-        keywords: ["ayah", "quran", "verse", "[]"],
-        label: "ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَٰلَمِينَ",
-        value: "ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَٰلَمِينَ",
+        {
+          icon: <Square />,
+          keywords: ["ayah", "quran", "verse", "[]"],
+          label: "﻿بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ",
+          value: "﻿بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ",
+        },
+        {
+          icon: <Square />,
+          keywords: ["ayah", "quran", "verse", "[]"],
+          label: "ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَٰلَمِينَ",
+          value: "ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَٰلَمِينَ",
       },
       {
         icon: <Square />,

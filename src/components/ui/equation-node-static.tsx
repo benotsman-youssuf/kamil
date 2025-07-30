@@ -1,5 +1,3 @@
-import * as React from 'react';
-
 import type { SlateElementProps, TEquationElement } from 'platejs';
 
 import { getEquationHtml } from '@platejs/math';

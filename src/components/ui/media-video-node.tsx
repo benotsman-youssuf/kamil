@@ -1,6 +1,5 @@
 'use client';
 
-import * as React from 'react';
 import LiteYouTubeEmbed from 'react-lite-youtube-embed';
 import ReactPlayer from 'react-player';
 
@@ -33,7 +32,6 @@ export const VideoElement = withHOC(
       isUpload,
       isYoutube,
       readOnly,
-      unsafeUrl,
     } = useMediaState({
       urlParsers: [parseTwitterUrl, parseVideoUrl],
     });
@@ -100,7 +98,7 @@ export const VideoElement = withHOC(
                 <div ref={handleRef}>
                   <ReactPlayer
                     height="100%"
-                    url={unsafeUrl}
+                    // url={unsafeUrl}
                     width="100%"
                     controls
                   />

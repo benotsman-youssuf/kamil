@@ -1,6 +1,5 @@
 'use client';
 
-import * as React from 'react';
 
 import { DndPlugin } from '@platejs/dnd';
 import { useBlockSelected } from '@platejs/selection/react';
