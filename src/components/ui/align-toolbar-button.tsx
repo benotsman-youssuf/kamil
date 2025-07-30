@@ -52,7 +52,7 @@ export function AlignToolbarButton(props: DropdownMenuProps) {
           isDropdown
           className="p-2 hover:bg-[#2e2e30] rounded-md transition-colors"
         >
-          <IconValue className="w-4 h-4" />
+          <IconValue className="w-4 h-4 text-white" />
         </ToolbarButton>
       </DropdownMenuTrigger>
 
@@ -73,7 +73,7 @@ export function AlignToolbarButton(props: DropdownMenuProps) {
               value={itemValue}
               className="flex items-center gap-2 px-2 py-1.5 cursor-pointer rounded-sm transition-colors hover:bg-[#2e2e30] data-[state=checked]:bg-[#3a3a3d]"
             >
-              <Icon className="w-4 h-4" />
+              <Icon className="w-4 h-4 text-white" />
             </DropdownMenuRadioItem>
           ))}
         </DropdownMenuRadioGroup>

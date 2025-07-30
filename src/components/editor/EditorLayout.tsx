@@ -12,10 +12,11 @@ export function EditorLayout({ editor, className = "" }: EditorLayoutProps) {
   return (
     <div className={` ${className}`}>
       <Plate editor={editor}>
-        <FixedToolbar className="border-none w-fit mx-auto overflow-hidden rounded-2xl bg-[#262628]">
-          <EditorToolbar className="flex items-center justify-center gap-0.5" />
+        <FixedToolbar className="w-fit mx-auto top-4 -mt-4 rounded-xl bg-[#1e1e1f] border border-[#38383a] shadow-[0_4px_14px_rgba(0,0,0,0.25)] backdrop-blur-lg py-1 px-2">
+          <EditorToolbar className="gap-1" />
         </FixedToolbar>
-        <EditorContent />
+
+        <EditorContent className="pt-0" />
       </Plate>
     </div>
   );

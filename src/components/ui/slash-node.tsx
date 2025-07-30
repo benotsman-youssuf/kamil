@@ -1,10 +1,10 @@
-'use client';
+"use client";
 
-import * as React from 'react';
+import * as React from "react";
 
-import type { PlateEditor, PlateElementProps } from 'platejs/react';
+import type { PlateEditor, PlateElementProps } from "platejs/react";
 
-import { AIChatPlugin } from '@platejs/ai/react';
+import { AIChatPlugin } from "@platejs/ai/react";
 import {
   CalendarIcon,
   ChevronRightIcon,
@@ -23,14 +23,14 @@ import {
   Square,
   Table,
   TableOfContentsIcon,
-} from 'lucide-react';
-import { type TComboboxInputElement, KEYS } from 'platejs';
-import { PlateElement } from 'platejs/react';
+} from "lucide-react";
+import { type TComboboxInputElement, KEYS } from "platejs";
+import { PlateElement } from "platejs/react";
 
 import {
   insertBlock,
   insertInlineElement,
-} from '@/components/editor/transforms';
+} from "@/components/editor/transforms";
 
 import {
   InlineCombobox,
@@ -40,9 +40,8 @@ import {
   InlineComboboxGroupLabel,
   InlineComboboxInput,
   InlineComboboxItem,
-} from './inline-combobox';
-import { Label } from '@radix-ui/react-dropdown-menu';
-
+} from "./inline-combobox";
+import { Label } from "@radix-ui/react-dropdown-menu";
 
 type Group = {
   group: string;
@@ -59,55 +58,64 @@ type Group = {
 
 const groups: Group[] = [
   {
-    group: 'الفاتحة',
+    group: "الفاتحة",
     items: [
       {
         icon: <Square />,
-        keywords: ['ayah', 'quran', 'verse', '[]'],
-        label: '﻿بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ',
-        value: '﻿بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ',
+        keywords: ["ayah", "quran", "verse", "[]"],
+        label: "﻿بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ",
+        value: "﻿بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ",
       },
       {
         icon: <Square />,
-        keywords: ['ayah', 'quran', 'verse', '[]'],
+        keywords: ["ayah", "quran", "verse", "[]"],
         label: "ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَٰلَمِينَ",
-        value: 'ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَٰلَمِينَ',
+        value: "ٱلْحَمْدُ لِلَّهِ رَبِّ ٱلْعَٰلَمِينَ",
       },
       {
         icon: <Square />,
-        keywords: ['ayah', 'quran', 'verse', '[]'],
+        keywords: ["ayah", "quran", "verse", "[]"],
         label: "ٱلرَّحْمَٰنِ ٱلرَّحِيمِ",
-        value: 'ٱلرَّحْمَٰنِ ٱلرَّحِيمِ',
+        value: "ٱلرَّحْمَٰنِ ٱلرَّحِيمِ",
       },
       {
         icon: <Square />,
-        keywords: ['ayah', 'quran', 'verse', '[]'],
+        keywords: ["ayah", "quran", "verse", "[]"],
         label: "ملك يَوْمِ ٱلدِّينِ",
-        value: 'مَٰلِكِ يَوْمِ ٱلدِّينِ',
+        value: "مَٰلِكِ يَوْمِ ٱلدِّينِ",
       },
       {
         icon: <Square />,
-        keywords: ['ayah', 'quran', 'verse', '[]'],
+        keywords: ["ayah", "quran", "verse", "[]"],
         label: "إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ",
-        value: 'إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ',
+        value: "إِيَّاكَ نَعْبُدُ وَإِيَّاكَ نَسْتَعِينُ",
       },
       {
         icon: <Square />,
-        keywords: ['ayah', 'quran', 'verse', '[]'],
+        keywords: ["ayah", "quran", "verse", "[]"],
         label: "ٱهْدِنَا ٱلصِّرَٰطَ ٱلْمُسْتَقِيمَ",
-        value: 'ٱهْدِنَا ٱلصِّرَٰطَ ٱلْمُسْتَقِيمَ',
+        value: "ٱهْدِنَا ٱلصِّرَٰطَ ٱلْمُسْتَقِيمَ",
       },
       {
         icon: <Square />,
-        keywords: ['ayah', 'quran', 'verse', '[]'],
-        label: "صِرَٰطَ ٱلَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ ٱلْمَغْضُوبِ عَلَيْهِمْ وَلَا ٱلضَّآلِّينَ",
-        value: 'صِرَٰطَ ٱلَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ ٱلْمَغْضُوبِ عَلَيْهِمْ وَلَا ٱلضَّآلِّينَ',
+        keywords: ["ayah", "quran", "verse", "[]"],
+        label:
+          "صِرَٰطَ ٱلَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ ٱلْمَغْضُوبِ عَلَيْهِمْ وَلَا ٱلضَّآلِّينَ",
+        value:
+          "صِرَٰطَ ٱلَّذِينَ أَنْعَمْتَ عَلَيْهِمْ غَيْرِ ٱلْمَغْضُوبِ عَلَيْهِمْ وَلَا ٱلضَّآلِّينَ",
       },
-
     ].map((item) => ({
       ...item,
-      onSelect: (editor, value) => {
-        editor.tf.insertText(`[${value}]`);
+      onSelect: (editor, value, color = "#16a34a") => {
+        editor.tf.addMarks({ color });
+        editor.tf.addMarks({ fontSize: "" });
+
+        editor.tf.insertText(` ﴿${value}﴾ `);
+
+        editor.tf.removeMark("color");
+        editor.tf.removeMark("fontSize");
+
+
       },
     })),
   },

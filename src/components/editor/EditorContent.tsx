@@ -11,15 +11,15 @@ interface EditorContentProps {
 }
 
 export function EditorContent({
-  placeholder = "...",
+  placeholder = "",
   className = "",
 }: EditorContentProps) {
   return (
-    <div className={cn("prose max-w-none focus:outline-none", className)}>
+    <div className={cn("prose max-w-none focus:outline-none bg", className)}>
       <EditorContainer>
         <Editor 
           placeholder={placeholder}
-          className="min-h-[400px] p-6 focus:outline-none text-gray-800"
+          className="min-h-[400px] p-6 focus:outline-none text-gray-800 bg"
           style={{
             lineHeight: '1.6',
             fontSize: '1rem',

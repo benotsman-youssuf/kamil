@@ -1,4 +1,8 @@
-import { type SlateElementProps, SlateElement } from 'platejs';
+import * as React from 'react';
+
+import type { SlateElementProps } from 'platejs';
+
+import { SlateElement } from 'platejs';
 
 import { cn } from '@/lib/utils';
 
