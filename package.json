@@ -7,9 +7,11 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "serve -s dist"
   },
   "dependencies": {
+    "serve": "^14.2.0",
     "@ariakit/react": "^0.4.17",
     "@emoji-mart/data": "^1.2.1",
     "@platejs/ai": "^49.1.12",
