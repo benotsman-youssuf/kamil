@@ -1,4 +1,4 @@
-import { Plate } from "platejs/react";
+import { Plate } from "@platejs/core/react";
 import { FixedToolbar } from "@/components/ui/fixed-toolbar";
 import { EditorToolbar } from "./EditorToolbar";
 import { EditorContent } from "./EditorContent";

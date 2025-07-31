@@ -1,18 +1,14 @@
 @import url("https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap");
-
 @import "tailwindcss";
-@import "tw-animate-css";
 
-@custom-variant dark (&:is(.dark *));
-
-* {
+@layer base {
+  * {
     font-family: "Amiri", serif;
-    padding: 32;
-}
-
-body {
+  }
+  
+  body {
     font-family: "Amiri", serif;
-    
+  }
 }
 
 :root {

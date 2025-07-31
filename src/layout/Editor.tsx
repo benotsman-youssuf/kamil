@@ -1,4 +1,4 @@
-import { usePlateEditor } from "platejs/react";
+import { usePlateEditor } from "@platejs/core/react";
 import { editorPlugins, initialValue } from "../constants/editor";
 import { EditorLayout } from "../components/editor/EditorLayout";
 
