@@ -1,11 +1,12 @@
 import Dexie, { type EntityTable } from 'dexie';
 
+
 interface Page {
+  id: number;
   name: string;
   description: string;
-  createdAt: string;
-  id: string;
   content: string;
+  updatedAt?: string;
 }
 
 const db = new Dexie('FriendsDatabase') as Dexie & {
@@ -17,8 +18,9 @@ const db = new Dexie('FriendsDatabase') as Dexie & {
 
 // Schema declaration:
 db.version(1).stores({
-  pages: '++id, name, description, createdAt, content' // primary key "id" (for the runtime!)
+  pages: '++id, name, description, content, updatedAt' // primary key "id" (for the runtime!)
 });
+
 
 export type { Page };
 export { db };

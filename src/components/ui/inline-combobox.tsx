@@ -96,6 +96,9 @@ const InlineCombobox = ({
       if (!hasValueProp) {
         setValueState(newValue);
       }
+      
+      // Log the text after the trigger
+      // console.log('Text after trigger "/":', newValue);
     },
     [setValueProp, hasValueProp]
   );
@@ -128,6 +131,8 @@ const InlineCombobox = ({
     cursorState,
     ref: inputRef,
     onCancelInput: (cause) => {
+      console.log('Input cancelled with cause:', cause, 'Value was:', value);
+      
       if (cause !== 'backspace') {
         editor.tf.insertText(trigger + value, {
           at: insertPoint?.current ?? undefined,
@@ -271,7 +276,7 @@ const InlineComboboxContent: typeof ComboboxPopover = ({
 };
 
 const comboboxItemVariants = cva(
-  'relative mx-1 flex h-[28px] items-center rounded-sm px-2 text-sm text-foreground outline-none select-none [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
+  'relative mx-1 flex flex-col items-start gap-0.5 min-h-[36px] rounded-sm px-2 py-1 text-sm text-foreground outline-none select-none overflow-hidden [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
   {
     defaultVariants: {
       interactive: true,

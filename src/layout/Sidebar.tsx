@@ -6,6 +6,8 @@ import {
   SidebarProvider,
   SidebarTrigger,
 } from "@/components/ui/sidebar";
+import { Toaster } from "sonner";
+
 
 import Editor from "./Editor";
 
@@ -25,6 +27,7 @@ export default function SideBar() {
         </header>
         <Editor />
       </SidebarInset>
+      <Toaster />
     </SidebarProvider>
   );
 }

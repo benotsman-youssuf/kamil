@@ -7,13 +7,9 @@ export const initialValue = [
   {
     type: "p",
     children: [
-      { text: "! " },
-      { text: "bold", bold: true },
-      { text: " , " },
-      { text: "italic", italic: true },
-      { text: " , " },
-      { text: "underline", underline: true },
-      { text: " ." },
+      { text: "hello", bold: true },
+      { text: "world", italic: true },
+      { text: "!" , underline: true},
     ],
   },
 ];

@@ -8,10 +8,16 @@
   
   body {
     font-family: "Amiri", serif;
+  
   }
 }
 
+
+
 :root {
+    /* Real viewport height - updated by JS */
+    --vh: 1vh;
+    --viewport-scale: 1;
     /* Core design system variables */
     --background: 0 0% 100%;
     --foreground: 222.2 84% 4.9%;
