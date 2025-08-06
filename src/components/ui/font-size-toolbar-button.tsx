@@ -28,7 +28,7 @@ const FONT_SIZE_MAP = {
 export function FontSizeToolbarButton() {
   const [inputValue, setInputValue] = React.useState(DEFAULT_FONT_SIZE);
   const [isFocused, setIsFocused] = React.useState(false);
-  const { editor, tf } = useEditorPlugin(FontSizePlugin);
+  const { tf } = useEditorPlugin(FontSizePlugin);
 
   const cursorFontSize = useEditorSelector((editor) => {
     const fontSize = editor.api.marks()?.[KEYS.fontSize];
@@ -68,7 +68,6 @@ export function FontSizeToolbarButton() {
     newSize = Math.max(8, Math.min(100, newSize));
 
     tf.fontSize.addMark(`${newSize}px`);
-    // editor.tf.focus();
     console.log("newSize", newSize);
     console.log("cursorFontSize", cursorFontSize);
     console.log("delta", delta);
