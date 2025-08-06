@@ -8,18 +8,20 @@ interface EditorContentProps {
 }
 
 export function EditorContent({
-  placeholder = "hello world",
+  placeholder = "ابدأ بكتابة محتوى جديد",
   className = "",
 }: EditorContentProps) {
     return (
     <div className={cn("prose max-w-none focus:outline-none flex", className)}>
-      <EditorContainer>
+      <EditorContainer >
         <Editor
           placeholder={placeholder}
           className="h-[calc(100dvh-5.1rem)] p-6 focus:outline-none text-gray-800 "
           style={{
             lineHeight: "1.6",
             fontSize: "1rem",
+            direction: "rtl",
+            textAlign: "right",
           }}
         />
       </EditorContainer>

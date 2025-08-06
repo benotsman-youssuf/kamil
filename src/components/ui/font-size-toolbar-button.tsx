@@ -50,14 +50,14 @@ export function FontSizeToolbarButton() {
     const newSize = toUnitLess(inputValue);
 
     if (Number.parseInt(newSize) < 1 || Number.parseInt(newSize) > 100) {
-      editor.tf.focus();
+      // editor.tf.focus();
       return;
     }
     if (newSize !== toUnitLess(cursorFontSize)) {
       tf.fontSize.addMark(`${newSize}px`);
     }
 
-    editor.tf.focus();
+    // editor.tf.focus();
   };
 
   const handleFontSizeChange = (delta: number) => {
@@ -68,7 +68,11 @@ export function FontSizeToolbarButton() {
     newSize = Math.max(8, Math.min(100, newSize));
 
     tf.fontSize.addMark(`${newSize}px`);
-    editor.tf.focus();
+    // editor.tf.focus();
+    console.log("newSize", newSize);
+    console.log("cursorFontSize", cursorFontSize);
+    console.log("delta", delta);
+    
   };
 
   const displayValue = isFocused ? inputValue : cursorFontSize;
@@ -77,7 +81,9 @@ export function FontSizeToolbarButton() {
     <div className="flex items-center">
       {/* Decrease button */}
       <button
-        onClick={() => handleFontSizeChange(-1)}
+        onClick={() => {
+          handleFontSizeChange(-1);
+        }}
         className={cn(
           "p-1.5 rounded-md hover:bg-[#3a3a3d] active:bg-[#454548]",
           "transition-all duration-150 ease-out group",
@@ -118,7 +124,7 @@ export function FontSizeToolbarButton() {
               }
               if (e.key === "Escape") {
                 setIsFocused(false);
-                editor.tf.focus();
+                //  editor.tf.focus();
               }
               if (e.key === "ArrowUp") {
                 e.preventDefault();

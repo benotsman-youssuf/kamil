@@ -9,7 +9,7 @@ interface Page {
   updatedAt?: string;
 }
 
-const db = new Dexie('FriendsDatabase') as Dexie & {
+const db = new Dexie('PagesDatabase') as Dexie & {
   pages: EntityTable<
     Page,
     'id' // primary key "id" (for the typings only)
