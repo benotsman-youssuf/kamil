@@ -7,7 +7,6 @@ import {
 } from "@/components/ui/sidebar";
 import { AddPageDialog } from "./AddPageDialog";
 import { usePages } from "@/hooks/use-pages";
-import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
