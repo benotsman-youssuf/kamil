@@ -12,6 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { db } from "@/lib/db";
+import { Plus } from 'lucide-react';
 
 export function AddPageDialog() {
 
@@ -38,7 +39,7 @@ export function AddPageDialog() {
   return (
     <Dialog>
       <DialogTrigger asChild>
-        <Button variant="outline">Add Page</Button>
+        <Button variant="default"><Plus className="w-4 h-4" />Add Page</Button>
       </DialogTrigger>
 
       <DialogContent className="sm:max-w-[425px]">

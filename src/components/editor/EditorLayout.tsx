@@ -40,6 +40,8 @@ export function EditorLayout({ className = "" }: EditorLayoutProps) {
         const data = page?.content;
         if(data){
           editor.tf.setValue(JSON.parse(data));
+        }else{
+          editor.tf.setValue([]);
         }
       } catch (error) {
         console.error('Error fetching page:', error);
