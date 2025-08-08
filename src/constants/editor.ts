@@ -3,9 +3,7 @@ import { AlignKit } from '@/components/editor/plugins/align-kit';
 import { SlashKit } from "@/components/editor/plugins/slash-kit";
 import { FontKit } from '@/components/editor/plugins/font-kit';
 
-export const initialValue = [
-  
-];
+
 
 export const editorPlugins = [
   BoldPlugin,

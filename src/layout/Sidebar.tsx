@@ -9,7 +9,7 @@ import {
 import { Toaster } from "sonner";
 
 
-import Editor from "./Editor";
+import { EditorLayout } from "@/components/editor/EditorLayout";
 
 export default function SideBar() {
   return (
@@ -25,7 +25,7 @@ export default function SideBar() {
             />
           </div>
         </header>
-        <Editor />
+        <EditorLayout />
       </SidebarInset>
       <Toaster />
     </SidebarProvider>
