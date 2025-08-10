@@ -1,69 +1,62 @@
-# React + TypeScript + Vite
+# كامل - محرر نصوص عربي متقدم!
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+<p align="center">
+  <img width="100" height="100" alt="logo" src="https://github.com/user-attachments/assets/40bbdeab-cbf4-4265-a5e1-f34f68724031" />
+</p>
 
-Currently, two official plugins are available:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
 
-## Expanding the ESLint configuration
+مشروع كامل هو محرر نصوص عربي متقدم مبني بتقنيات الويب الحديثة، مصمم خصيصًا للكتابة باللغة العربية مع دعم متكامل للقرآن الكريم والأدوات الكتابية المتقدمة.
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+## المميزات الرئيسية
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- ✍️ **محرر نصوص غني** مع دعم كامل للغة العربية
+- 📖 **تكامل مع القرآن الكريم** مع إمكانية البحث والإدراج
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+## التقنيات المستخدمة
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+- React 
+- Tailwind CSS
+- PlateJS (محرر النصوص)
+- Indexed DB
+
+
+## التثبيت
+
+1. استنسخ المشروع:
+   ```bash
+   git clone https://github.com/yourusername/kamil.git
+   cd kamil
+   ```
+
+2. قم بتثبيت الحزم المطلوبة:
+   ```bash
+   npm install
+   # أو
+   yarn install
+   ```
+
+## التشغيل
+
+لتشغيل المشروع في وضع التطوير:
+
+```bash
+npm run dev
+# أو
+yarn dev
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+لإنشاء نسخة إنتاج:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
-
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm run build
+# أو
+yarn build
 ```
+
+## الاستخدام
+
+1. **الكتابة العادية**: ابدأ بالكتابة مباشرة في المحرر
+2. **إدراج آيات قرآنية**:ضع مسافة ثم اكتب `/` متبوعًا ببداية الآية التي تريد إدراجها
+3. **تنسيق النص**: استخدم شريط الأدوات لتنسيق النص
+
