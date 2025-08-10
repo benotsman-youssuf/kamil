@@ -11,8 +11,30 @@ import {
 } from "@/components/ui/alert-dialog";
 import {Trash} from "lucide-react";
 import { db } from "@/lib/db";
+import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 export const DeletePage = ({pageId}: {pageId: number}) => {
+
+
+  const navigate = useNavigate();
+  const handleDelete = async () => {
+    if (!pageId) return;
+    try {
+      if (pageId === 1) {
+        navigate(`/pages/1`);
+        toast.success(`لا يمكن حذف الصفحة الرئيسية`);
+      } else {
+        await db.pages.delete(pageId);
+        toast.success(`تم حذف الصفحة بنجاح ${pageId}`);
+      }
+
+    } catch (error) {
+      toast.error(`حدث خطأ أثناء حذف الصفحة ${pageId}`);
+    }
+    
+  };
+
   return (
     <AlertDialog>
       <AlertDialogTrigger>
@@ -20,15 +42,15 @@ export const DeletePage = ({pageId}: {pageId: number}) => {
       </AlertDialogTrigger>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+          <AlertDialogTitle>هل انت متأكد؟</AlertDialogTitle>
           <AlertDialogDescription>
-            This action cannot be undone. This will permanently delete your
-            account and remove your data from our servers.
+            هذه الخطوة لا يمكن التراجع عنها. سيتم حذف الصفحة بشكل نهائي
+            وستتم حذف بياناتك من الخادم.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>Cancel</AlertDialogCancel>
-          <AlertDialogAction onClick={() => db.pages.delete(pageId)}>Delete</AlertDialogAction>
+          <AlertDialogCancel>إلغاء</AlertDialogCancel>
+          <AlertDialogAction onClick={handleDelete}>حذف</AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>

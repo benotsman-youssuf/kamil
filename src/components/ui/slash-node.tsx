@@ -59,6 +59,7 @@ export function SlashInputElement(
   const { editor, element } = props;
   const [value, setValue] = React.useState("");
   const results = fuse.search(value).slice(0, 10);
+  const fontSize = editor.api.marks()?.[KEYS.fontSize];
   return (
     <PlateElement {...props} as="span">
       <InlineCombobox
@@ -67,11 +68,11 @@ export function SlashInputElement(
         setValue={setValue}
         value={value}
       >
-        <span className="inline-block rounded-md px-1.5 py-0.5 align-baseline text-sm ring-ring focus-within:ring-2">
-          ﴿<InlineComboboxInput className="text-base" />﴾
+        <span style={{ fontSize: fontSize !== undefined ? (typeof fontSize === 'number' ? `${fontSize}px` : String(fontSize)) : 'inherit' } as React.CSSProperties}>
+          ﴿<InlineComboboxInput />﴾
         </span>
 
-        <InlineComboboxContent className="my-1.5 divide-y divide-gray-100/50 p-0 shadow-lg rounded-xl border border-gray-200/60 bg-white">
+        <InlineComboboxContent className="my-1.5 font-[amiri] divide-y divide-gray-100/50 p-0 shadow-lg rounded-xl border border-gray-200/60 bg-white">
           {results.length === 0 ? (
             <InlineComboboxEmpty>
               <span className="block px-3 py-6 text-center text-gray-500 text-base">
@@ -92,7 +93,11 @@ export function SlashInputElement(
                   fontSize: "1rem",
                 }}
               >
-                <span className="text-xs text-gray-500 block mb-2" dir="ltr" style={{ fontSize: "1rem" }}>
+                <span
+                  className="text-xs text-gray-500 block mb-2"
+                  dir="ltr"
+                  style={{ fontSize: "1rem" }}
+                >
                   {item.item.surah} {item.item.aya}
                 </span>
                 <span

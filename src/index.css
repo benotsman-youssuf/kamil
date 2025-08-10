@@ -1,18 +1,15 @@
 @import url("https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Alexandria:wght@100..900&family=Readex+Pro:wght@160..700&family=Rubik:ital,wght@0,300..900;1,300..900&family=Scheherazade+New:wght@400;500;600;700&display=swap");
 @import "tailwindcss";
 
+@custom-variant dark (&:is(.dark *));
+
 @layer base {
-  * {
-    font-family: "Amiri", serif;
-  }
-  
+ 
   body {
-    font-family: "Amiri", serif;
-  
+    font-family: "Alexandria", serif;
   }
 }
-
-
 
 :root {
     /* Real viewport height - updated by JS */
@@ -115,6 +112,27 @@
     --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
     --color-sidebar-border: var(--sidebar-border);
     --color-sidebar-ring: var(--sidebar-ring);
+    --animate-shimmer-slide: shimmer-slide var(--speed) ease-in-out infinite alternate;
+    --animate-spin-around: spin-around calc(var(--speed) * 2) infinite linear;
+  @keyframes shimmer-slide {
+  to {
+    transform: translate(calc(100cqw - 100%), 0);
+    }
+  }
+  @keyframes spin-around {
+  0% {
+    transform: translateZ(0) rotate(0);
+    }
+  15%, 35% {
+    transform: translateZ(0) rotate(90deg);
+    }
+  65%, 85% {
+    transform: translateZ(0) rotate(270deg);
+    }
+  100% {
+    transform: translateZ(0) rotate(360deg);
+    }
+  }
 }
 
 @layer base {

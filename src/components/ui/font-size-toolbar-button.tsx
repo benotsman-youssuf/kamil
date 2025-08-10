@@ -140,7 +140,7 @@ export function FontSizeToolbarButton() {
           />
         </PopoverTrigger>
         <PopoverContent
-          className="w-auto px-2 py-1 bg-[#1e1e1f] border-[#38383a] text-xs text-gray-400"
+          className="w-auto px-2 py-1 bg-[#2b2b2b] border-[#38383a] text-xs text-gray-400"
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
           Type size or use ↑↓ arrows

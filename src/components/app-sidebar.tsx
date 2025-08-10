@@ -17,13 +17,33 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const location = useLocation();
 
   return (
-    <Sidebar className="border-r-0 bg-muted/40" {...props}>
-      <SidebarHeader className="px-4 py-3 border-b">
+    <Sidebar
+      className="border-r-0 bg-gradient-to-b from-muted/50 to-muted/30 backdrop-blur-md"
+      {...props}
+    >
+      {/* Logo Section */}
+      
+
+      {/* Add Page */}
+      <SidebarHeader className="px-4 py-5 border-b border-border/30 bg-gradient-to-r from-background/90 to-muted/40 shadow-sm flex flex-row ">
+          <Link
+            to="/"
+            className="flex items-center gap-2 hover:scale-105 transition-transform duration-150"
+            aria-label="العودة للرئيسية"
+          >
+            <img
+              src="/logo.png"
+              alt="Logo"
+              className="h-10 w-10 rounded-lg shadow ring-1 ring-border/20 bg-white"
+              draggable={false}
+            />
+          </Link>
         <AddPageDialog />
       </SidebarHeader>
 
+      {/* Pages List */}
       <SidebarContent>
-        <ScrollArea className="h-full px-2">
+        <ScrollArea className="h-full px-3">
           <nav className="flex flex-col gap-1 py-3">
             {pages?.map((page) => {
               const isActive = location.pathname === `/pages/${page.id}`;
@@ -31,25 +51,21 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                 <div
                   key={page.id}
                   className={cn(
-                    "group flex items-center justify-between rounded px-3 py-1.5 text-sm transition-colors duration-150",
+                    "group flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ease-out",
                     isActive
-                      ? "font-semibold text-primary border-l-2 border-primary bg-muted"
-                      : "text-muted-foreground hover:text-foreground hover:bg-accent/10"
+                      ? "bg-primary/10 text-primary shadow-sm border border-primary/20"
+                      : "text-muted-foreground hover:bg-accent/20 hover:text-foreground"
                   )}
                 >
                   <Link
                     to={`/pages/${page.id}`}
-                    className="flex items-center gap-2 overflow-hidden flex-1 px-0 py-0.5 rounded focus:outline-none"
+                    className="flex items-center gap-2 overflow-hidden flex-1"
                     title={page.name}
-                    aria-label={`Open ${page.name}`}
+                    aria-label={`فتح ${page.name}`}
                   >
-                    <span className="truncate text-sm font-medium">{page.name}</span>
+                    <span className="truncate">{page.name}</span>
                   </Link>
-                  {isActive && (
-                    <DeletePage
-                      pageId={page.id}
-                    />
-                  )}
+                  {isActive && <DeletePage pageId={page.id} />}
                 </div>
               );
             })}
@@ -57,6 +73,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </ScrollArea>
       </SidebarContent>
 
+      {/* Rail */}
       <SidebarRail />
     </Sidebar>
   );

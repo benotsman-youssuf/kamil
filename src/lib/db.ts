@@ -6,7 +6,8 @@ interface Page {
   name: string;
   description: string;
   content: string;
-  updatedAt?: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 const db = new Dexie('PagesDatabase') as Dexie & {
@@ -18,7 +19,7 @@ const db = new Dexie('PagesDatabase') as Dexie & {
 
 // Schema declaration:
 db.version(1).stores({
-  pages: '++id, name, description, content, updatedAt' // primary key "id" (for the runtime!)
+  pages: '++id, name, description, content, createdAt, updatedAt' // primary key "id" (for the runtime!)
 });
 
 
