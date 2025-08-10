@@ -129,7 +129,7 @@ export function Home() {
               className="mb-3 cursor-pointer rounded-[14px] border border-white/40 bg-white/60 backdrop-blur-md shadow-sm text-base"
             >
               <SparklesIcon className="mr-2 h-9 w-9 fill-[#EEBDE0] stroke-1 text-neutral-800" />
-              محرر نصوص مفتوح المصدر
+               محرر نصوص PWA 
             </Badge>
           </motion.div>
 
@@ -223,7 +223,7 @@ export function Home() {
             <div className="relative hover:scale-[1.02] transition-transform duration-300">
               <div className="absolute -inset-4 bg-gradient-to-r from-indigo-200/40 to-pink-200/40 rounded-2xl blur-2xl opacity-40" />
               <img
-                src="image.png"
+                src="/image.png"
                 alt="لقطة شاشة من واجهة كمل"
                 className="relative w-full h-full rounded-xl shadow-lg border border-gray-200"
                 loading="lazy"
