@@ -4,7 +4,7 @@ export default function App() {
   
   return (
     <>
-      <SideBar/>
+      <SideBar />
     </>
   );
 }

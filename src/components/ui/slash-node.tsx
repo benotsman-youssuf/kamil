@@ -35,7 +35,7 @@ const groups: Group[] = quran.map((item) => ({
     editor.tf.addMarks({ color });
     editor.tf.addMarks({ fontSize });
 
-    editor.tf.insertText(` ﴿${value}﴾ ${item.surah} ${item.aya} `);
+    editor.tf.insertText(` ﴿${value}﴾ [${item.surah} ${item.aya}] `);
 
     editor.tf.removeMark("color");
     editor.tf.focus();
@@ -68,15 +68,15 @@ export function SlashInputElement(
         setValue={setValue}
         value={value}
       >
-        <span style={{ fontSize: fontSize !== undefined ? (typeof fontSize === 'number' ? `${fontSize}px` : String(fontSize)) : 'inherit' } as React.CSSProperties}>
-          ﴿<InlineComboboxInput />﴾
+        <span style={{ fontSize: fontSize !== undefined ? (typeof fontSize === 'number' ? `${fontSize}px` : String(fontSize)) : 'inherit' } as React.CSSProperties} >
+          ﴿<InlineComboboxInput className="bg-green-50" />﴾
         </span>
 
-        <InlineComboboxContent className="my-1.5 font-[amiri] divide-y divide-gray-100/50 p-0 shadow-lg rounded-xl border border-gray-200/60 bg-white">
+        <InlineComboboxContent className=" font-[amiri] divide-y divide-gray-100/50 p-0 shadow-lg rounded-xl border border-gray-200/60 bg-white">
           {results.length === 0 ? (
             <InlineComboboxEmpty>
               <span className="block px-3 py-6 text-center text-gray-500 text-base">
-                No results found
+                لا يوجد نتائج
               </span>
             </InlineComboboxEmpty>
           ) : (
@@ -90,20 +90,20 @@ export function SlashInputElement(
                 className="py-3 px-4 hover:bg-gray-50/80 transition-colors duration-200 cursor-pointer"
                 style={{
                   direction: "rtl",
-                  fontSize: "1rem",
+                  fontSize: "1.2rem",
                 }}
               >
                 <span
-                  className="text-xs text-gray-500 block mb-2"
+                  className="text-xs text-green-600 block mb-2"
                   dir="ltr"
-                  style={{ fontSize: "1rem" }}
+                  style={{ fontSize: "1.2rem" }}
                 >
                   {item.item.surah} {item.item.aya}
                 </span>
                 <span
                   className="font-medium text-gray-900 leading-relaxed"
                   dir="rtl"
-                  style={{ fontSize: "1rem" }}
+                  style={{ fontSize: "1.2rem" }}
                 >
                   {item.item.textTashkeel}
                 </span>

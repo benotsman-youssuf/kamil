@@ -8,7 +8,7 @@ interface EditorContentProps {
 }
 
 export function EditorContent({
-  placeholder = "ابدأ بكتابة محتوى جديد",
+  placeholder = "اكتب  /  ﻹدراج آية",
   className = "",
 }: EditorContentProps) {
     return (
@@ -19,7 +19,7 @@ export function EditorContent({
           className="h-[calc(100dvh-5.1rem)] p-6 focus:outline-none text-gray-800 "
           style={{
             lineHeight: "1.6",
-            fontSize: "1rem",
+            fontSize: "1.3rem",
             direction: "rtl",
             textAlign: "right",
           }}

@@ -115,6 +115,7 @@ export default function SideBar() {
           style: {
             background: "rgba(255,255,255,0.95)",
             backdropFilter: "blur(8px)",
+            
           },
         }}
       />

@@ -8,6 +8,8 @@
  
   body {
     font-family: "Alexandria", serif;
+    overflow: hidden;
+    
   }
 }
 
