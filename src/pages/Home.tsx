@@ -44,9 +44,18 @@ export function Home() {
               type: "ul",
               id: "quick-tips",
               children: [
-                { type: "li", children: [{ text: "➕ اضغط على (إضافة) لإنشاء صفحة جديدة" }] },
-                { type: "li", children: [{ text: "💾 اضغط على (حفظ) لتخزين التغييرات" }] },
-                { type: "li", children: [{ text: "🔍 اكتب / لإدراج آية قرآنية" }] },
+                {
+                  type: "li",
+                  children: [{ text: "➕ اضغط على (إضافة) لإنشاء صفحة جديدة" }],
+                },
+                {
+                  type: "li",
+                  children: [{ text: "💾 اضغط على (حفظ) لتخزين التغييرات" }],
+                },
+                {
+                  type: "li",
+                  children: [{ text: "🔍 اكتب / لإدراج آية قرآنية" }],
+                },
               ],
             },
             {
@@ -98,11 +107,13 @@ export function Home() {
             className="h-16 w-16 rounded-md bg-white shadow"
             draggable={false}
           />
-          <span className="text-3xl font-extrabold tracking-tight" style={{ fontFamily: "Alexandria" }}>
+          <span
+            className="text-3xl font-extrabold tracking-tight"
+            style={{ fontFamily: "Alexandria" }}
+          >
             كمّل
           </span>
         </div>
-      
       </header>
 
       {/* Hero Section */}
@@ -119,7 +130,7 @@ export function Home() {
               className="mb-3 cursor-pointer rounded-[14px] border border-white/40 bg-white/60 backdrop-blur-md shadow-sm text-base"
             >
               <SparklesIcon className="mr-2 h-9 w-9 fill-[#EEBDE0] stroke-1 text-neutral-800" />
-               محرر نصوص PWA 
+              محرر نصوص PWA
             </Badge>
           </motion.div>
 
@@ -196,7 +207,11 @@ export function Home() {
               size="lg"
               className="border-gray-300 hover:border-gray-400 transition-colors flex items-center gap-2"
             >
-              <a href="https://github.com/benotsman-youssuf/kamil" target="_blank" rel="noopener noreferrer">
+              <a
+                href="https://github.com/benotsman-youssuf/kamil"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 ساهم في المشروع
               </a>
               <Github className="h-6 w-6" />
@@ -228,7 +243,12 @@ export function Home() {
       <footer className="border-t border-gray-100 py-8 px-6 sm:px-12">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-gray-500">
           <div className="flex items-center">
-            <img src="/logo.png" alt="كمل" className="h-5 w-auto opacity-60" draggable={false} />
+            <img
+              src="/logo.png"
+              alt="كمل"
+              className="h-5 w-auto opacity-60"
+              draggable={false}
+            />
           </div>
           <div className="flex items-center gap-6">
             <a href="#" className="relative group">

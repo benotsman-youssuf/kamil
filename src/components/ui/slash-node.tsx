@@ -15,7 +15,6 @@ import {
   InlineComboboxItem,
 } from "./inline-combobox";
 import Fuse from "fuse.js";
-import { quran } from "@/constants/quran";
 import { KEYS } from "platejs";
 
 type Group = {
@@ -28,7 +27,31 @@ type Group = {
   onSelect: (editor: PlateEditor, value: string, color?: string) => void;
 };
 
-const groups: Group[] = quran.map((item) => ({
+const loadQuran = async () => {
+  try {
+    const response = await fetch("/quran.json");
+    if (!response.ok) {
+      console.error("Failed to load quran data");
+      return [];
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Failed to load quran data", error);
+    return [];
+  }
+};
+
+const quran = await loadQuran();
+
+interface Aya {
+  surah: string;
+  aya: number;
+  textNoTashkeel: string;
+  textMinTashkeel: string;
+  textTashkeel: string;
+}
+
+const groups: Group[] = quran.map((item: Aya) => ({
   ...item,
   onSelect: (editor: PlateEditor, value: string, color = "#16a34a") => {
     const fontSize = editor.api.marks()?.[KEYS.fontSize];

@@ -15,7 +15,8 @@ export default defineConfig({
       registerType: "autoUpdate",
       workbox: {
         maximumFileSizeToCacheInBytes: 8 * 1024 * 1024, // 8MB
-        globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+        globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
+        
       },
       includeAssets: ["favicon.ico", "logo.png", "image.png", "icons/*.png"],
       manifest: {

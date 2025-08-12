@@ -1,4 +1,4 @@
-export const quran = [
+[
   {
     "id": 1,
     "surah": "الفاتحة",
