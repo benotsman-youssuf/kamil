@@ -93,10 +93,6 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
-      // Block fonts from being bundled
-      "\\.woff$": path.resolve(__dirname, "src/empty.js"),
-      "\\.woff2$": path.resolve(__dirname, "src/empty.js"),
-      "\\.ttf$": path.resolve(__dirname, "src/empty.js"),
     },
   },
 });

@@ -29,7 +29,7 @@ type Group = {
 
 const loadQuran = async () => {
   try {
-    const response = await fetch("/quran.json");
+    const response = await fetch(import.meta.env.VITE_DATA_URL);
     if (!response.ok) {
       console.error("Failed to load quran data");
       return [];
@@ -57,11 +57,9 @@ const groups: Group[] = quran.map((item: Aya) => ({
     const fontSize = editor.api.marks()?.[KEYS.fontSize];
     editor.tf.addMarks({ color });
     editor.tf.addMarks({ fontSize });
-
     editor.tf.insertText(` ﴿${value}﴾ [${item.surah} ${item.aya}] `);
-
     editor.tf.removeMark("color");
-    editor.tf.focus();
+
   },
 }));
 
@@ -91,7 +89,18 @@ export function SlashInputElement(
         setValue={setValue}
         value={value}
       >
-        <span style={{ fontSize: fontSize !== undefined ? (typeof fontSize === 'number' ? `${fontSize}px` : String(fontSize)) : 'inherit' } as React.CSSProperties} >
+        <span
+          style={
+            {
+              fontSize:
+                fontSize !== undefined
+                  ? typeof fontSize === "number"
+                    ? `${fontSize}px`
+                    : String(fontSize)
+                  : "inherit",
+            } as React.CSSProperties
+          }
+        >
           ﴿<InlineComboboxInput className="bg-green-50" />﴾
         </span>
 
@@ -107,6 +116,7 @@ export function SlashInputElement(
               <InlineComboboxItem
                 key={item.item.id}
                 value={item.item.textNoTashkeel}
+                focusEditor={false}
                 onClick={() =>
                   item.item.onSelect(editor, item.item.textTashkeel, "#16a34a")
                 }
