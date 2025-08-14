@@ -107,6 +107,7 @@ export function SlashInputElement(
               <InlineComboboxItem
                 key={item.item.id}
                 value={item.item.textNoTashkeel}
+                focusEditor={false}
                 onClick={() =>
                   item.item.onSelect(editor, item.item.textTashkeel, "#16a34a")
                 }

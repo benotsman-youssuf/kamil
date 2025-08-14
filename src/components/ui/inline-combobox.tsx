@@ -310,6 +310,7 @@ const InlineComboboxItem = ({
   const { filter, removeInput } = React.useContext(InlineComboboxContext);
 
   const store = useComboboxContext()!;
+  const editor = useEditorRef();
 
   // Optimization: Do not subscribe to value if filter is false
   const search = filter && store.useState('value');
@@ -326,8 +327,9 @@ const InlineComboboxItem = ({
     <ComboboxItem
       className={cn(comboboxItemVariants(), className)}
       onClick={(event) => {
-        removeInput(focusEditor);
+        removeInput(false);
         onClick?.(event);
+        if (focusEditor) editor.tf.focus();
       }}
       {...props}
     />
