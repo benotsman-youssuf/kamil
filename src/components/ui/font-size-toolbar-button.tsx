@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 
-const DEFAULT_FONT_SIZE = "16";
+const DEFAULT_FONT_SIZE = "21";
 
 const FONT_SIZE_MAP = {
   h1: "36",
