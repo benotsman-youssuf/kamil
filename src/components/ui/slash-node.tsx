@@ -13,7 +13,6 @@ import {
   InlineComboboxInput,
   InlineComboboxItem,
 } from "./inline-combobox";
-// Fuse.js import removed as we're using @nozbe/microfuzz
 import { KEYS } from "platejs";
 
 type Group = {
@@ -62,9 +61,6 @@ const groups: Group[] = quran.map((item: Aya) => ({
   },
 }));
 
-// const fuse = new Fuse(groups, {
-//   keys: ["textNoTashkeel"],
-// });
 
 
 

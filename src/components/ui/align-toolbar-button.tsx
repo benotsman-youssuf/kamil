@@ -35,9 +35,9 @@ export function AlignToolbarButton(props: DropdownMenuProps) {
   const { editor, tf } = useEditorPlugin(TextAlignPlugin);
   const value =
     useSelectionFragmentProp({
-      defaultValue: 'start',
+      defaultValue: 'right',
       getProp: (node) => node.align,
-    }) ?? 'left';
+    }) ?? 'right';
 
   const [open, setOpen] = React.useState(false);
   const IconValue =
