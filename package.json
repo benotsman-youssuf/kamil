@@ -14,6 +14,7 @@
     "@ariakit/react": "^0.4.17",
     "@emoji-mart/data": "^1.2.1",
     "@heroicons/react": "^2.2.0",
+    "@nozbe/microfuzz": "^1.0.0",
     "@platejs/ai": "^49.1.12",
     "@platejs/basic-nodes": "^49.0.0",
     "@platejs/basic-styles": "^49.0.0",

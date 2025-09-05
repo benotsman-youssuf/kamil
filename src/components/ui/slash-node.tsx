@@ -1,11 +1,10 @@
 "use client";
 
 import * as React from "react";
-
 import type { PlateEditor, PlateElementProps } from "platejs/react";
-
 import { type TComboboxInputElement } from "platejs";
 import { PlateElement } from "platejs/react";
+import { useFuzzySearchList, Highlight } from '@nozbe/microfuzz/react'
 
 import {
   InlineCombobox,
@@ -14,7 +13,7 @@ import {
   InlineComboboxInput,
   InlineComboboxItem,
 } from "./inline-combobox";
-import Fuse from "fuse.js";
+// Fuse.js import removed as we're using @nozbe/microfuzz
 import { KEYS } from "platejs";
 
 type Group = {
@@ -63,24 +62,27 @@ const groups: Group[] = quran.map((item: Aya) => ({
   },
 }));
 
-const fuse = new Fuse(groups, {
-  keys: ["textNoTashkeel", "textMinTashkeel", "textTashkeel", "surah"],
-  threshold: 0.3,
-  distance: 100,
-  minMatchCharLength: 2,
-  shouldSort: true,
-  ignoreLocation: true,
-  isCaseSensitive: false,
-  useExtendedSearch: true,
-});
+// const fuse = new Fuse(groups, {
+//   keys: ["textNoTashkeel"],
+// });
+
+
 
 export function SlashInputElement(
   props: PlateElementProps<TComboboxInputElement>
 ) {
   const { editor, element } = props;
   const [value, setValue] = React.useState("");
-  const results = fuse.search(value).slice(0, 10);
   const fontSize = editor.api.marks()?.[KEYS.fontSize];
+  const filteredResults = useFuzzySearchList({
+    list: groups,
+    queryText: value,
+    getText: (item: Group) => [item.textNoTashkeel],
+    mapResultItem: ({ item, matches: [highlightRanges] }) => ({
+      item,
+      highlightRanges,
+    }),
+  }).slice(0, 10); // Limit to 10 results
   return (
     <PlateElement {...props} as="span">
       <InlineCombobox
@@ -105,20 +107,20 @@ export function SlashInputElement(
         </span>
 
         <InlineComboboxContent className=" font-[amiri] divide-y divide-gray-100/50 p-0 shadow-lg rounded-xl border border-gray-200/60 bg-white">
-          {results.length === 0 ? (
+          {filteredResults.length === 0 ? (
             <InlineComboboxEmpty>
               <span className="block px-3 py-6 text-center text-gray-500 text-base">
                 لا يوجد نتائج
               </span>
             </InlineComboboxEmpty>
           ) : (
-            results.map((item) => (
+            filteredResults.map(({ item, highlightRanges }) => (
               <InlineComboboxItem
-                key={item.item.id}
-                value={item.item.textNoTashkeel}
+                key={item.id}
+                value={item.textNoTashkeel}
                 focusEditor={false}
                 onClick={() =>
-                  item.item.onSelect(editor, item.item.textTashkeel, "#16a34a")
+                  item.onSelect(editor, item.textTashkeel, "#16a34a")
                 }
                 className="py-3 px-4 hover:bg-gray-50/80 transition-colors duration-200 cursor-pointer"
                 style={{
@@ -131,14 +133,14 @@ export function SlashInputElement(
                   dir="ltr"
                   style={{ fontSize: "1.2rem" }}
                 >
-                  {item.item.surah} {item.item.aya}
+                  {item.surah} {item.aya}
                 </span>
                 <span
                   className="font-medium text-gray-900 leading-relaxed"
                   dir="rtl"
                   style={{ fontSize: "1.2rem" }}
                 >
-                  {item.item.textTashkeel}
+                  <Highlight text={item.textTashkeel} ranges={highlightRanges} />
                 </span>
               </InlineComboboxItem>
             ))
@@ -148,4 +150,4 @@ export function SlashInputElement(
       {props.children}
     </PlateElement>
   );
-}
+}   
