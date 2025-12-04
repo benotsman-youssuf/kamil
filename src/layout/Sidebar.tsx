@@ -56,9 +56,10 @@ export default function SideBar() {
   }, [id]);
 
   return (
-    <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset>
+    <div className="editor-container">
+      <SidebarProvider>
+        <AppSidebar />
+        <SidebarInset>
         <header className="flex h-12 items-center gap-3 px-4 bg-transparent">
           {/* Sidebar Toggle */}
           <SidebarTrigger className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-ring" />
@@ -107,18 +108,18 @@ export default function SideBar() {
           </Button>
         </header>
 
-        <EditorLayout editor={editor} className="font-['Amiri']"/>
-      </SidebarInset>
-      <Toaster
-        position="top-center"
-        toastOptions={{
-          style: {
-            background: "rgba(255,255,255,0.95)",
-            backdropFilter: "blur(8px)",
-            
-          },
-        }}
-      />
-    </SidebarProvider>
+        <EditorLayout editor={editor} className="font-['Amiri'] overflow-hidden"/>
+        </SidebarInset>
+        <Toaster
+          position="top-center"
+          toastOptions={{
+            style: {
+              background: "rgba(255,255,255,0.95)",
+              backdropFilter: "blur(8px)",
+            },
+          }}
+        />
+      </SidebarProvider>
+    </div>
   );
 }

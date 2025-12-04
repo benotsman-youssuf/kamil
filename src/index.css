@@ -5,11 +5,14 @@
 @custom-variant dark (&:is(.dark *));
 
 @layer base {
- 
   body {
     font-family: "Alexandria", serif;
+  }
+  
+  /* Apply overflow hidden only to editor container */
+  .editor-container {
     overflow: hidden;
-    
+    height: 100vh;
   }
 }
 

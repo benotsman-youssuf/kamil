@@ -1,12 +1,10 @@
 "use client";
 
 import { Download } from "lucide-react";
-
 import { createSlateEditor, serializeHtml } from "platejs";
 import { useEditorRef } from "platejs/react";
 
 import { BaseEditorKit } from "@/components/editor/editor-base-kit";
-
 import { EditorStatic } from "./editor-static";
 
 export function ExportToolbarButton() {
@@ -20,35 +18,81 @@ export function ExportToolbarButton() {
 
     const editorHtml = await serializeHtml(editorStatic, {
       editorComponent: EditorStatic,
-      props: { style: { padding: "0 calc(50% - 350px)", paddingBottom: "" } },
+      props: {
+        style: {
+          padding: "40px calc(50% - 350px)",
+          paddingBottom: "60px",
+          fontFamily: `"Amiri", serif`,
+          lineHeight: "1.8",
+        },
+      },
     });
 
     const html = `<!DOCTYPE html>
-<html lang="en" class="dark">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="color-scheme" content="light dark" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link href="https://fonts.googleapis.com/css2?family=Amiri:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet" />
+<html lang="ar" dir="rtl" class="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  </head>
-  <body dir="rtl" style="font-family: 'Amiri', serif;">
-    ${editorHtml}
-  </body>
+<!-- Ensure Amiri font loads in print -->
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap" rel="stylesheet" />
+
+<style>
+  body {
+    font-family: 'Amiri', serif;
+    margin: 0;
+    padding: 0;
+    direction: rtl;
+    background: white;
+    color: black;
+    font-size: 18px;
+  }
+
+  @page {
+    size: A4;
+    margin: 10mm;
+  }
+
+  /* Force dark-mode friendly printing */
+  @media print {
+    body {
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
+    }
+  }
+</style>
+
+</head>
+<body>
+${editorHtml}
+</body>
 </html>`;
 
-    // Open a new window with the generated HTML and invoke print dialog
-    const printWindow = window.open();
-    if (!printWindow) throw new Error("Unable to open print window.");
+    // Create print window
+    const printWindow = window.open("", "_blank", "width=900,height=1000");
+
+    if (!printWindow) {
+      alert("Unable to open print window.");
+      return;
+    }
+
     printWindow.document.open();
     printWindow.document.write(html);
     printWindow.document.close();
-    // Wait for the content to load before printing
+
+    // Wait for fonts to load — critical for Amiri
     printWindow.onload = () => {
-      printWindow.focus();
-      printWindow.print();
+      printWindow.document.fonts.ready.then(() => {
+        printWindow.focus();
+        printWindow.print();
+
+        // auto-close after printing
+        setTimeout(() => {
+          printWindow.close();
+        }, 500);
+      });
     };
   };
 

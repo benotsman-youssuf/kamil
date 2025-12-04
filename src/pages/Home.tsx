@@ -4,7 +4,7 @@ import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Github, SparklesIcon } from "lucide-react";
-
+import chrome from "@/assets/chrome-logo.svg";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Highlighter } from "@/components/magicui/highlighter";
@@ -34,36 +34,7 @@ export function Home() {
         await db.pages.add({
           id: 1,
           name: "مرحباً بك",
-          content: JSON.stringify([
-            {
-              type: "h1",
-              id: "welcome-header",
-              children: [{ text: "مرحباً بك في كَمِّل" }],
-            },
-            {
-              type: "ul",
-              id: "quick-tips",
-              children: [
-                {
-                  type: "li",
-                  children: [{ text: "➕ اضغط على (إضافة) لإنشاء صفحة جديدة" }],
-                },
-                {
-                  type: "li",
-                  children: [{ text: "💾 اضغط على (حفظ) لتخزين التغييرات" }],
-                },
-                {
-                  type: "li",
-                  children: [{ text: "🔍 اكتب / لإدراج آية قرآنية" }],
-                },
-              ],
-            },
-            {
-              type: "p",
-              id: "get-started",
-              children: [{ text: "ابدأ الآن 🚀" }],
-            },
-          ]),
+          content: JSON.stringify([]),
           description: "دليل البداية السريعة",
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -126,11 +97,22 @@ export function Home() {
             className="mb-8 font-bold"
           >
             <Badge
+              asChild
               variant="outline"
-              className="mb-3 cursor-pointer rounded-[14px] border border-white/40 bg-white/60 backdrop-blur-md shadow-sm text-base"
+              className="group mb-3 cursor-pointer rounded-full border-2 border-white/40 bg-white/60 px-4 py-2 text-base font-medium text-gray-900 shadow-sm backdrop-blur-md transition-all hover:bg-white/80 hover:shadow-md"
             >
-              <SparklesIcon className="mr-2 h-9 w-9 fill-[#EEBDE0] stroke-1 text-neutral-800" />
-              محرر نصوص PWA
+              <a
+                href="https://cdn.jsdelivr.net/gh/benotsman-youssuf/quranJson@main/extention.crx"
+                download="kamil-extension.crx"
+                className="flex items-center gap-2"
+              >
+                <img
+                  src={chrome}
+                  alt="Chrome Extension"
+                  className="h-5 w-5 transition-transform group-hover:scale-110"
+                />
+                <span>إضافة المتصفح</span>
+              </a>
             </Badge>
           </motion.div>
 

@@ -12,6 +12,9 @@ export default defineConfig(({ mode }) => {
   return {
     // vite config
     publicDir: "public",
+    optimizeDeps: {
+      exclude: ['chunk-TQQ3JMWI']
+    },
     define: {
       __APP_ENV__: JSON.stringify(env.VITE_DATA_URL),
     },
