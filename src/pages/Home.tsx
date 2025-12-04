@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Github, SparklesIcon } from "lucide-react";
+import { Github } from "lucide-react";
 import chrome from "@/assets/chrome-logo.svg";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
