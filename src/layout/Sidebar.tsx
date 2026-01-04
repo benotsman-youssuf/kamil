@@ -1,4 +1,5 @@
 import { AppSidebar } from "@/components/app-sidebar";
+import { cn } from "@/lib/utils";
 import {
   SidebarInset,
   SidebarProvider,
@@ -6,40 +7,70 @@ import {
 } from "@/components/ui/sidebar";
 import { Toaster, toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { EditorLayout } from "@/components/editor/EditorLayout";
 import { usePlateEditor } from "@platejs/core/react";
 import { editorPlugins } from "@/constants/editor";
 import { db } from "@/lib/db";
 import { useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
-import { FileText } from "lucide-react";
+import { useEffect, useState, useCallback, useRef } from "react";
+import { FileText, Download, SquarePen } from "lucide-react";
+import { SaveStatus, type SaveState } from "@/components/SaveStatus";
+import { exportToJSON, exportToHTML, exportToMarkdown, exportToPDF } from "@/lib/utils/export";
+import { debounce } from "@/lib/utils/debounce";
 
 export default function SideBar() {
   const [pageContent, setPageContent] = useState<string>();
+  const [saveState, setSaveState] = useState<SaveState>("idle");
+  const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [titleValue, setTitleValue] = useState("");
   const { id } = useParams();
   const editor = usePlateEditor({
     plugins: editorPlugins,
     value: [],
   });
 
-  const savePage = async () => {
+  // Auto-save function
+  const savePage = useCallback(async () => {
     try {
+      setSaveState("saving");
       await db.pages.update(Number(id), {
         content: JSON.stringify(editor.children),
         updatedAt: new Date().toISOString(),
       });
-      console.log(editor);
       const page = await db.pages.get(Number(id));
       setPageContent(JSON.stringify(page));
-      toast.success("تم الحفظ بنجاح", {
-        duration: 1000,
-      });
-    } catch {
+      setSaveState("saved");
+
+      // Reset to idle after showing success
+      setTimeout(() => setSaveState("idle"), 2000);
+    } catch (error) {
+      console.error("Error saving:", error);
+      setSaveState("error");
       toast.error("فشل الحفظ", {
         duration: 1000,
       });
+      setTimeout(() => setSaveState("idle"), 3000);
     }
-  };
+  }, [id, editor.children]);
+
+  // Debounced auto-save
+  const debouncedSave = useRef(
+    debounce((save: () => void) => save(), 2000)
+  ).current;
+
+  // Watch for content changes and trigger auto-save
+  useEffect(() => {
+    if (editor.children.length > 0) {
+      debouncedSave(savePage);
+    }
+  }, [editor.children, debouncedSave, savePage]);
 
   const fetchPage = async () => {
     try {
@@ -51,6 +82,61 @@ export default function SideBar() {
     }
   };
 
+  // Export handlers
+  const handleExportJSON = () => {
+    if (pageContent) {
+      const page = JSON.parse(pageContent);
+      exportToJSON(editor.children, page.name);
+      toast.success("تم تصدير الملف بصيغة JSON", { duration: 2000 });
+    }
+  };
+
+  const handleExportHTML = () => {
+    if (pageContent) {
+      const page = JSON.parse(pageContent);
+      exportToHTML(editor.children, page.name);
+      toast.success("تم تصدير الملف بصيغة HTML", { duration: 2000 });
+    }
+  };
+
+  const handleExportMarkdown = () => {
+    if (pageContent) {
+      const page = JSON.parse(pageContent);
+      exportToMarkdown(editor.children, page.name);
+      toast.success("تم تصدير الملف بصيغة Markdown", { duration: 2000 });
+    }
+  };
+
+  const handleExportPDF = () => {
+    if (pageContent) {
+      const page = JSON.parse(pageContent);
+      exportToPDF(editor.children, page.name);
+      toast.success("تم فتح نافذة الطباعة لحفظ PDF", { duration: 2000 });
+    }
+  };
+
+  const handleUpdateTitle = async () => {
+    if (!titleValue.trim() || !id) return;
+    try {
+      await db.pages.update(Number(id), {
+        name: titleValue,
+        updatedAt: new Date().toISOString(),
+      });
+      setIsEditingTitle(false);
+      fetchPage();
+      toast.success("تم تحديث العنوان");
+    } catch (error) {
+      console.error("Error updating title:", error);
+      toast.error("فشل تحديث العنوان");
+    }
+  };
+
+  useEffect(() => {
+    if (pageContent) {
+      setTitleValue(JSON.parse(pageContent).name);
+    }
+  }, [pageContent]);
+
   useEffect(() => {
     fetchPage();
   }, [id]);
@@ -60,55 +146,108 @@ export default function SideBar() {
       <SidebarProvider>
         <AppSidebar />
         <SidebarInset>
-        <header className="flex h-12 items-center gap-3 px-4 bg-transparent">
-          {/* Sidebar Toggle */}
-          <SidebarTrigger className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-ring" />
-
-          {/* File Name */}
-          {pageContent && (
-            <div className="flex items-center gap-2 min-w-0">
-              <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-              <span className="text-sm font-medium truncate whitespace-nowrap">
-                {JSON.parse(pageContent)?.name}
-              </span>
+          <header className="flex h-12 items-center gap-3 px-4 bg-transparent">
+            {/* Sidebar Toggle */}
+            <div className="flex items-center gap-1">
+              <SidebarTrigger className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-ring" />
+              <Button
+                variant="ghost"
+                size="icon"
+                className="md:hidden h-8 w-8 p-0"
+                onClick={() => setIsEditingTitle(true)}
+                title="تغيير العنوان"
+              >
+                <SquarePen className="h-4 w-4" />
+              </Button>
             </div>
-          )}
 
-          {/* Centered Last Updated */}
-          <div className="flex-1 flex justify-center">
+            {/* File Name */}
             {pageContent && (
-              <span className="text-xs text-muted-foreground whitespace-nowrap">
-                آخر تحديث:{" "}
-                {new Date(
-                  JSON.parse(pageContent)?.updatedAt || Date.now()
-                ).toLocaleDateString("ar-EG", {
-                  day: "numeric",
-                  month: "short",
-                })}{" "}
-                {new Date(
-                  JSON.parse(pageContent)?.updatedAt || Date.now()
-                ).toLocaleTimeString("ar-EG", {
-                  hour: "2-digit",
-                  minute: "2-digit",
-                  hour12: false,
-                })}
-              </span>
+              <div className={cn(
+                "items-center gap-2 min-w-0",
+                isEditingTitle ? "flex" : "hidden md:flex"
+              )}>
+                <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
+                {isEditingTitle ? (
+                  <Input
+                    value={titleValue}
+                    onChange={(e) => setTitleValue(e.target.value)}
+                    onBlur={handleUpdateTitle}
+                    onKeyDown={(e) => e.key === "Enter" && handleUpdateTitle()}
+                    autoFocus
+                    className="h-7 text-sm py-0 w-32"
+                  />
+                ) : (
+                  <span
+                    className="text-sm font-medium truncate whitespace-nowrap cursor-pointer hover:bg-muted/50 px-1 rounded transition-colors"
+                    onClick={() => setIsEditingTitle(true)}
+                    title="اضغط لتغيير العنوان"
+                  >
+                    {JSON.parse(pageContent)?.name}
+                  </span>
+                )}
+              </div>
             )}
-          </div>
 
-          {/* Save Button */}
-          <Button
-            variant="default"
-            size="sm"
-            onClick={savePage}
-            disabled={editor.children.length === 0}
-            className="bg-[#2b2b2b] text-white hover:bg-[#2a2a2c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 cursor-pointer"
-          >
-            حفظ
-          </Button>
-        </header>
 
-        <EditorLayout editor={editor} className="font-['Amiri'] overflow-hidden"/>
+            {/* Centered Last Updated & Save Status */}
+            <div className="flex-1 flex justify-center items-center gap-3">
+              {pageContent && (
+                <>
+                  <span className="hidden md:inline text-xs text-muted-foreground whitespace-nowrap">
+                    آخر تحديث:{" "}
+                    {new Date(
+                      JSON.parse(pageContent)?.updatedAt || Date.now()
+                    ).toLocaleDateString("ar-EG", {
+                      day: "numeric",
+                      month: "short",
+                    })}{" "}
+                    {new Date(
+                      JSON.parse(pageContent)?.updatedAt || Date.now()
+                    ).toLocaleTimeString("ar-EG", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                      hour12: false,
+                    })}
+                  </span>
+                  <SaveStatus state={saveState} />
+                </>
+              )}
+            </div>
+
+            {/* Export Button */}
+            <div className="hidden md:block">
+              <DropdownMenu dir="rtl">
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="default"
+                    size="sm"
+                    disabled={editor.children.length === 0}
+                    className="bg-[#2b2b2b] text-white hover:bg-[#2a2a2c] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 cursor-pointer flex items-center gap-2"
+                  >
+                    <Download className="w-4 h-4" />
+                    تصدير
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="min-w-[160px]">
+                  <DropdownMenuItem onClick={handleExportPDF} className="cursor-pointer">
+                    تصدير بصيغة PDF
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportJSON} className="cursor-pointer">
+                    تصدير بصيغة JSON
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportHTML} className="cursor-pointer">
+                    تصدير بصيغة HTML
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportMarkdown} className="cursor-pointer">
+                    تصدير بصيغة Markdown
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </header>
+
+          <EditorLayout editor={editor} className="font-['Amiri'] overflow-hidden" />
         </SidebarInset>
         <Toaster
           position="top-center"

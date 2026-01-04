@@ -2,14 +2,15 @@ import { MarkToolbarButton } from "@/components/ui/mark-toolbar-button";
 import { AlignToolbarButton } from "@/components/ui/align-toolbar-button";
 import { Bold, Italic, Underline } from "lucide-react";
 import { FontSizeToolbarButton } from '@/components/ui/font-size-toolbar-button';
-import { ExportToolbarButton } from "../ui/export-toolbar-button";
+import { ExportDropdown } from "./ExportDropdown";
 
 
 interface EditorToolbarProps {
   className?: string;
+  editor: any;
 }
 
-export function EditorToolbar({ className = "" }: EditorToolbarProps) {
+export function EditorToolbar({ className = "", editor }: EditorToolbarProps) {
   return (
     <div className={`flex items-center ${className}`}>
       <div className="flex items-center border-r border-gray-700 pr-2 mr-2">
@@ -40,7 +41,12 @@ export function EditorToolbar({ className = "" }: EditorToolbarProps) {
 
       <AlignToolbarButton />
       <FontSizeToolbarButton />
-      <ExportToolbarButton />
+      <ExportDropdown
+        editor={editor}
+        variant="ghost"
+        showText={false}
+        className="md:hidden ml-1 p-1.5 h-8 w-8 text-gray-300 hover:text-white hover:bg-[#3a3a3d]"
+      />
     </div>
   );
 }

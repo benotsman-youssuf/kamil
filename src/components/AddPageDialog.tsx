@@ -17,19 +17,22 @@ import { Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 
+import { useState } from "react";
+
 export function AddPageDialog() {
   const navigate = useNavigate();
+  const [open, setOpen] = useState(false);
+
   const addPage = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const formData = new FormData(event.currentTarget);
     const name = formData.get("name");
-    const description = formData.get("description");
 
     try {
-      if (typeof name === "string" && typeof description === "string") {
+      if (typeof name === "string") {
         const page = await db.pages.add({
           name,
-          description,
+          description: "",
           content: "",
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -37,6 +40,7 @@ export function AddPageDialog() {
         toast.success("تمت إضافة الصفحة بنجاح", {
           duration: 1000,
         });
+        setOpen(false);
         navigate(`/pages/${page}`);
       }
     } catch (error) {
@@ -47,7 +51,7 @@ export function AddPageDialog() {
   };
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button
           variant="default"
@@ -68,14 +72,10 @@ export function AddPageDialog() {
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid gap-4">
-            <div className="grid gap-1 text-right">
-              <label htmlFor="name">اسم الصفحة</label>
-              <Input id="name" name="name" required className="text-right" />
-            </div>
-            <div className="grid gap-1 text-right">
-              <label htmlFor="description">وصف الصفحة</label>
-              <Input id="description" name="description" className="text-right" />
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2 text-right">
+              <label htmlFor="name" className="text-sm font-medium">اسم الصفحة</label>
+              <Input id="name" name="name" required className="text-right" placeholder="أدخل اسم الصفحة..." />
             </div>
           </div>
 
