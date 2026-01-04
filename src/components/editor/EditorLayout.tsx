@@ -16,8 +16,8 @@ export function EditorLayout({
   return (
     <div className={`${className}`}>
       <Plate editor={editor}>
-        <FixedToolbar className="w-fit mx-auto rounded-xl bg-[#2b2b2b] shadow-[0_4px_14px_rgba(0,0,0,0.25)] backdrop-blur-lg py-1 px-2 ">
-          <EditorToolbar className="gap-1" editor={editor} />
+        <FixedToolbar className="w-fit max-w-[calc(100%-2rem)] mx-auto rounded-xl bg-[#2b2b2b] shadow-[0_4px_14px_rgba(0,0,0,0.25)] backdrop-blur-lg py-1 px-2 ">
+          <EditorToolbar className="gap-1 flex-nowrap" editor={editor} />
         </FixedToolbar>
         <EditorContent />
       </Plate>

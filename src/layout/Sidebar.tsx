@@ -40,16 +40,25 @@ export default function SideBar() {
   const savePage = useCallback(async () => {
     try {
       setSaveState("saving");
+      const updatedAt = new Date().toISOString();
+      const content = JSON.stringify(editor.children);
+
       await db.pages.update(Number(id), {
-        content: JSON.stringify(editor.children),
-        updatedAt: new Date().toISOString(),
+        content,
+        updatedAt,
       });
-      const page = await db.pages.get(Number(id));
-      setPageContent(JSON.stringify(page));
+
+      // Update local state without re-fetching from DB
+      setPageContent(prev => {
+        if (!prev) return prev;
+        const page = JSON.parse(prev);
+        return JSON.stringify({ ...page, content, updatedAt });
+      });
+
       setSaveState("saved");
 
       // Reset to idle after showing success
-      setTimeout(() => setSaveState("idle"), 2000);
+      setTimeout(() => setSaveState("idle"), 1500);
     } catch (error) {
       console.error("Error saving:", error);
       setSaveState("error");
@@ -62,7 +71,7 @@ export default function SideBar() {
 
   // Debounced auto-save
   const debouncedSave = useRef(
-    debounce((save: () => void) => save(), 2000)
+    debounce((save: () => void) => save(), 750)
   ).current;
 
   // Watch for content changes and trigger auto-save
@@ -148,7 +157,7 @@ export default function SideBar() {
         <SidebarInset>
           <header className="flex h-12 items-center gap-3 px-4 bg-transparent">
             {/* Sidebar Toggle */}
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 flex-shrink-0">
               <SidebarTrigger className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-ring" />
               <Button
                 variant="ghost"
@@ -191,7 +200,7 @@ export default function SideBar() {
 
 
             {/* Centered Last Updated & Save Status */}
-            <div className="flex-1 flex justify-center items-center gap-3">
+            <div className="flex-1 flex justify-center items-center gap-3 min-w-0">
               {pageContent && (
                 <>
                   <span className="hidden md:inline text-xs text-muted-foreground whitespace-nowrap">
