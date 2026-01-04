@@ -74,12 +74,7 @@ export default function SideBar() {
     debounce((save: () => void) => save(), 750)
   ).current;
 
-  // Watch for content changes and trigger auto-save
-  useEffect(() => {
-    if (editor.children.length > 0) {
-      debouncedSave(savePage);
-    }
-  }, [editor.children, debouncedSave, savePage]);
+
 
   const fetchPage = async () => {
     try {
@@ -203,22 +198,6 @@ export default function SideBar() {
             <div className="flex-1 flex justify-center items-center gap-3 min-w-0">
               {pageContent && (
                 <>
-                  <span className="hidden md:inline text-xs text-muted-foreground whitespace-nowrap">
-                    آخر تحديث:{" "}
-                    {new Date(
-                      JSON.parse(pageContent)?.updatedAt || Date.now()
-                    ).toLocaleDateString("ar-EG", {
-                      day: "numeric",
-                      month: "short",
-                    })}{" "}
-                    {new Date(
-                      JSON.parse(pageContent)?.updatedAt || Date.now()
-                    ).toLocaleTimeString("ar-EG", {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      hour12: false,
-                    })}
-                  </span>
                   <SaveStatus state={saveState} />
                 </>
               )}
@@ -256,7 +235,15 @@ export default function SideBar() {
             </div>
           </header>
 
-          <EditorLayout editor={editor} className="font-['Amiri'] overflow-hidden" />
+          <EditorLayout
+            editor={editor}
+            className="font-['Amiri'] overflow-hidden"
+            onChange={() => {
+              if (editor.children.length > 0) {
+                debouncedSave(savePage);
+              }
+            }}
+          />
         </SidebarInset>
         <Toaster
           position="top-center"
