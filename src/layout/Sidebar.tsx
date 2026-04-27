@@ -22,6 +22,7 @@ import { useParams } from "react-router-dom";
 import { useEffect, useState, useCallback, useRef } from "react";
 import { FileText, Download, SquarePen } from "lucide-react";
 import { SaveStatus, type SaveState } from "@/components/SaveStatus";
+import { SyncStatusBadge } from "@/components/SyncStatusBadge";
 import { exportToJSON, exportToHTML, exportToMarkdown, exportToPDF } from "@/lib/utils/export";
 import { debounce } from "@/lib/utils/debounce";
 
@@ -199,6 +200,7 @@ export default function SideBar() {
               {pageContent && (
                 <>
                   <SaveStatus state={saveState} />
+                  <SyncStatusBadge />
                 </>
               )}
             </div>

@@ -60,3 +60,20 @@ yarn build
 2. **إدراج آيات قرآنية**:ضع مسافة ثم اكتب `/` متبوعًا ببداية الآية التي تريد إدراجها
 3. **تنسيق النص**: استخدم شريط الأدوات لتنسيق النص
 
+
+## وضع الهاكاثون (تكامل Quran Foundation)
+
+يمكنك الإبقاء على التطبيق محليًا بالكامل، أو تفعيل تكامل API كالتالي:
+
+```bash
+cp .env.template .env
+```
+
+ثم حدّث المتغيرات:
+
+- `VITE_USE_QF_CONTENT_API=true` لتفعيل البحث عبر Content API.
+- `VITE_QF_ENDPOINT`: ضع الـ End-Point الذي وصلك من الهاكاثون.
+- `VITE_QF_CLIENT_ID`: ضع Client ID.
+- `VITE_QF_CLIENT_SECRET`: ضع Client Secret.
+
+عند عدم تفعيل بيانات User API سيظل التطبيق يعمل محليًا فقط (Local-first).
