@@ -16,6 +16,7 @@ import {
 import { KEYS } from "platejs";
 
 type Group = {
+  chapterId: number;
   id: number;
   surah: string;
   aya: number;
@@ -49,17 +50,29 @@ interface Aya {
   textTashkeel: string;
 }
 
-const groups: Group[] = quran.map((item: Aya) => ({
+const surahToChapterId = new Map<string, number>();
+let chapterCounter = 0;
+
+const groups: Group[] = quran.map((item: Aya) => {
+  if (!surahToChapterId.has(item.surah)) {
+    chapterCounter += 1;
+    surahToChapterId.set(item.surah, chapterCounter);
+  }
+  const chapterId = surahToChapterId.get(item.surah)!;
+
+  return ({
   ...item,
+  chapterId,
   onSelect: (editor: PlateEditor, value: string, color = "#16a34a") => {
     const fontSize = editor.api.marks()?.[KEYS.fontSize];
     editor.tf.addMarks({ color });
     editor.tf.addMarks({ fontSize });
-    editor.tf.insertText(` ﴿${value}﴾ [${item.surah} ${item.aya}] `);
+    editor.tf.insertText(` ﴿${value}﴾ [${item.surah} ${item.aya}]<${chapterId}:${item.aya}> `);
     editor.tf.removeMark("color");
 
   },
-}));
+  });
+});
 
 
 

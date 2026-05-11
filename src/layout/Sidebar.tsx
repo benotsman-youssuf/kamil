@@ -20,6 +20,8 @@ import { editorPlugins } from "@/constants/editor";
 import { db } from "@/lib/db";
 import { useParams } from "react-router-dom";
 import { useEffect, useState, useCallback, useRef } from "react";
+import { VerseDetailsModal } from "@/components/VerseDetailsModal";
+import { createBookmark, fetchVerseContent, type VerseRef } from "@/lib/qf-api";
 import { FileText, Download, SquarePen } from "lucide-react";
 import { SaveStatus, type SaveState } from "@/components/SaveStatus";
 import { exportToJSON, exportToHTML, exportToMarkdown, exportToPDF } from "@/lib/utils/export";
@@ -31,6 +33,11 @@ export default function SideBar() {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleValue, setTitleValue] = useState("");
   const { id } = useParams();
+  const [selectedVerse, setSelectedVerse] = useState<VerseRef | null>(null);
+  const [verseModalOpen, setVerseModalOpen] = useState(false);
+  const [verseDetails, setVerseDetails] = useState<any>(null);
+  const [verseLoading, setVerseLoading] = useState(false);
+  const [verseError, setVerseError] = useState<string | null>(null);
   const editor = usePlateEditor({
     plugins: editorPlugins,
     value: [],
@@ -145,6 +152,58 @@ export default function SideBar() {
     fetchPage();
   }, [id]);
 
+  const parseVerseFromText = (text: string): VerseRef | null => {
+    const metaMatch = text.match(/\[([^\]]+)\s+(\d+)\]/);
+    const verseTextMatch = text.match(/﴿([^﴾]+)﴾/);
+    const keyMatch = text.match(/<(\d+:\d+)>/);
+    if (!metaMatch) return null;
+
+    const surah = metaMatch[1]?.trim();
+    const ayah = Number(metaMatch[2]);
+    if (!surah || Number.isNaN(ayah)) return null;
+
+    return {
+      surah,
+      ayah,
+      verseKey: keyMatch?.[1] ?? "",
+      text: verseTextMatch?.[1]?.trim(),
+    };
+  };
+
+  const handleEditorClick = async () => {
+    const sel = window.getSelection();
+    const rawText = sel?.anchorNode?.textContent ?? "";
+    const verse = parseVerseFromText(rawText);
+    if (!verse) return;
+
+    setSelectedVerse(verse);
+    setVerseModalOpen(true);
+    setVerseLoading(true);
+    setVerseError(null);
+
+    try {
+      if (!verse.verseKey) throw new Error("Missing verse key marker");
+      const details = await fetchVerseContent(verse.verseKey);
+      setSelectedVerse(verse);
+      setVerseDetails(details);
+    } catch (e) {
+      setVerseError("تعذر جلب بيانات الآية من Quran Foundation APIs");
+    } finally {
+      setVerseLoading(false);
+    }
+  };
+
+  const handleBookmark = async () => {
+    if (!selectedVerse) return;
+    try {
+      await createBookmark(selectedVerse.verseKey);
+      toast.success("تم حفظ الآية في Bookmarks");
+    } catch (e) {
+      toast.error("فشل حفظ Bookmark");
+    }
+  };
+
+
   return (
     <div className="editor-container">
       <SidebarProvider>
@@ -235,6 +294,7 @@ export default function SideBar() {
             </div>
           </header>
 
+          <div onClick={() => void handleEditorClick()}>
           <EditorLayout
             editor={editor}
             className="font-['Amiri'] overflow-hidden"
@@ -243,6 +303,16 @@ export default function SideBar() {
                 debouncedSave(savePage);
               }
             }}
+          />
+          </div>
+          <VerseDetailsModal
+            open={verseModalOpen}
+            onOpenChange={setVerseModalOpen}
+            verse={selectedVerse}
+            details={verseDetails}
+            loading={verseLoading}
+            error={verseError}
+            onBookmark={handleBookmark}
           />
         </SidebarInset>
         <Toaster
