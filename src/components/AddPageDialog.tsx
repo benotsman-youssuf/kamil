@@ -19,7 +19,7 @@ import { useNavigate } from "react-router-dom";
 
 import { useState } from "react";
 
-export function AddPageDialog() {
+export function AddPageDialog({ compact = false }: { compact?: boolean }) {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
 
@@ -37,29 +37,34 @@ export function AddPageDialog() {
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         });
-        toast.success("تمت إضافة الصفحة بنجاح", {
-          duration: 1000,
-        });
+        toast.success("تمت إضافة الصفحة بنجاح", { duration: 1000 });
         setOpen(false);
         navigate(`/pages/${page}`);
       }
     } catch (error) {
-      toast.error("فشل إضافة الصفحة", {
-        duration: 1000,
-      });
+      toast.error("فشل إضافة الصفحة", { duration: 1000 });
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button
-          variant="default"
-          className="flex items-center gap-2 rounded-xl bg-[#2b2b2b] px-4 py-2 text-lg font-medium text-white shadow-md transition-all duration-200 hover:bg-[#2a2a2b] hover:shadow-lg active:scale-95 h-10 w-40"
-        >
-          <Plus className="h-9 w-9" />
-          إضافة صفحة
-        </Button>
+        {compact ? (
+          <button
+            title="صفحة جديدة"
+            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all duration-150"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        ) : (
+          <Button
+            variant="default"
+            className="w-full justify-start gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            إضافة صفحة
+          </Button>
+        )}
       </DialogTrigger>
 
       {/* Add dir="rtl" here for RTL direction */}

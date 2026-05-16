@@ -23,7 +23,7 @@ export function VerseElement(props: PlateElementProps<VerseElementNode>) {
       {...props}
       as="span"
       className={cn(
-        "verse-node cursor-pointer rounded-sm bg-green-50/40 px-0.5 font-bold text-green-900/90 transition-all hover:bg-green-100/60 border-b border-green-600/20 inline decoration-green-600/30",
+        "verse-node cursor-pointer rounded-sm bg-primary/10 px-1 py-0.5 font-bold text-foreground transition-all hover:bg-primary/20 border-b border-primary/30 inline decoration-primary/40",
         className
       )}
     >

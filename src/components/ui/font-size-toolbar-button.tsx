@@ -84,14 +84,14 @@ export function FontSizeToolbarButton() {
           handleFontSizeChange(-1);
         }}
         className={cn(
-          "p-1.5 rounded-md hover:bg-[#3a3a3d] active:bg-[#454548]",
+          "p-1.5 rounded-md hover:bg-primary-foreground/10 active:bg-primary-foreground/20",
           "transition-all duration-150 ease-out group",
           "disabled:opacity-50 disabled:cursor-not-allowed"
         )}
         disabled={Number(displayValue) <= 8}
         title="Decrease font size"
       >
-        <Minus className="w-4 h-4 text-gray-300 group-hover:text-white" />
+        <Minus className="w-4 h-4 text-primary-foreground/70 group-hover:text-primary-foreground" />
       </button>
 
       {/* Font size input */}
@@ -100,9 +100,9 @@ export function FontSizeToolbarButton() {
           <input
             className={cn(
               "w-9 h-7 mx-1 px-1 text-center text-sm",
-              "text-gray-300 hover:text-white hover:bg-[#3a3a3d] rounded-md",
+              "text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10 rounded-md",
               "transition-all duration-150 ease-out border-none outline-none",
-              "focus:bg-[#3a3a3d] focus:text-white selection:bg-blue-500/30",
+              "focus:bg-primary-foreground/10 focus:text-primary-foreground selection:bg-primary-foreground/30",
               "bg-transparent cursor-pointer"
             )}
             value={displayValue}
@@ -140,7 +140,7 @@ export function FontSizeToolbarButton() {
           />
         </PopoverTrigger>
         <PopoverContent
-          className="w-auto px-2 py-1 bg-[#2b2b2b] border-[#38383a] text-xs text-gray-400"
+          className="w-auto px-2 py-1 bg-popover border-border text-xs text-popover-foreground"
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
           Type size or use ↑↓ arrows
@@ -151,14 +151,14 @@ export function FontSizeToolbarButton() {
       <button
         onClick={() => handleFontSizeChange(1)}
         className={cn(
-          "p-1.5 rounded-md hover:bg-[#3a3a3d] active:bg-[#454548]",
+          "p-1.5 rounded-md hover:bg-primary-foreground/10 active:bg-primary-foreground/20",
           "transition-all duration-150 ease-out group",
           "disabled:opacity-50 disabled:cursor-not-allowed"
         )}
         disabled={Number(displayValue) >= 100}
         title="Increase font size"
       >
-        <Plus className="w-4 h-4 text-gray-300 group-hover:text-white" />
+        <Plus className="w-4 h-4 text-primary-foreground/70 group-hover:text-primary-foreground" />
       </button>
     </div>
   );

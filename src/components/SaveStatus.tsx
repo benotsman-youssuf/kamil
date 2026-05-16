@@ -18,18 +18,6 @@ export function SaveStatus({ state }: SaveStatusProps) {
                     transition={{ duration: 0.2 }}
                     className="flex items-center gap-1.5 text-xs"
                 >
-                    {state === "saving" && (
-                        <>
-                            <Loader2 className="w-3.5 h-3.5 animate-spin text-blue-500" />
-                            <span className="text-muted-foreground">حفظ تلقائي...</span>
-                        </>
-                    )}
-                    {state === "saved" && (
-                        <>
-                            <Check className="w-3.5 h-3.5 text-green-500" />
-                            <span className="text-green-600">تم الحفظ</span>
-                        </>
-                    )}
                     {state === "error" && (
                         <>
                             <AlertCircle className="w-3.5 h-3.5 text-red-500" />

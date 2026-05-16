@@ -42,21 +42,21 @@ export function UserAccount() {
 
   if (!tokens) {
     return (
-      <div className="p-4 border-t border-border/30">
+      <div className="p-4">
         <Button
           variant="outline"
           className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground transition-colors"
           onClick={() => login()}
         >
-          <User className="h-4 w-4" />
-          <span>تسجيل الدخول بحساب Quran.com</span>
+          <User className="h-4 w-4 shrink-0" />
+          <span className="text-xs truncate">تسجيل الدخول بحساب Quran.com</span>
         </Button>
       </div>
     );
   }
 
   return (
-    <div className="p-4 border-t border-border/30">
+    <div className="p-4">
       <DropdownMenu dir="rtl">
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="w-full justify-start gap-3 px-2 hover:bg-accent/50 transition-all duration-200">

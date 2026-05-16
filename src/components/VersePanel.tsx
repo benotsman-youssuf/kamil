@@ -768,13 +768,13 @@ function GradeBadge({ grades }: { grades?: { graded_by: string; grade: string }[
 
   let colorClass: string;
   if (grade.includes("sahih")) {
-    colorClass = "bg-green-50 text-green-700 border-green-200";
+    colorClass = "bg-primary/10 text-primary border-primary/20";
   } else if (grade.includes("hasan")) {
-    colorClass = "bg-yellow-50 text-yellow-700 border-yellow-200";
+    colorClass = "bg-secondary/40 text-secondary-foreground border-secondary/50";
   } else if (grade.includes("da")) {
-    colorClass = "bg-red-50 text-red-700 border-red-200";
+    colorClass = "bg-destructive/10 text-destructive border-destructive/20";
   } else {
-    colorClass = "bg-gray-50 text-gray-600 border-gray-200";
+    colorClass = "bg-muted text-muted-foreground border-border";
   }
 
   return (

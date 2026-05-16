@@ -81,6 +81,15 @@ export function SharedRightPanel() {
     };
   }, []);
 
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener("resize", checkMobile);
+    return () => window.removeEventListener("resize", checkMobile);
+  }, []);
+
   const close = useCallback(() => {
     setOpen(false);
     // Don't clear data immediately so exit animation looks good
@@ -94,15 +103,24 @@ export function SharedRightPanel() {
     <div
       ref={panelRef}
       className={cn(
-        "flex flex-col bg-sidebar text-sidebar-foreground border-l border-sidebar-border flex-shrink-0 overflow-hidden relative",
-        isDragging ? "" : "transition-[width] duration-200 ease-linear"
+        "flex flex-col bg-sidebar text-sidebar-foreground flex-shrink-0 overflow-hidden",
+        isDragging ? "" : "transition-all duration-200 ease-linear",
+        isMobile 
+          ? "fixed inset-y-0 right-0 z-[100] border-l shadow-2xl" 
+          : "relative border-l border-sidebar-border",
+        open ? "" : "pointer-events-none"
       )}
-      style={{ width: open ? panelWidth + "px" : "0px" }}
+      style={{ 
+        width: open ? (isMobile ? "100%" : panelWidth + "px") : "0px",
+        transform: isMobile && !open ? "translateX(100%)" : "translateX(0)",
+      }}
     >
-      <div
-        className="absolute left-0 top-0 bottom-0 w-1 z-10 cursor-col-resize hover:bg-foreground/10 active:bg-foreground/20 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[3px] before:bg-border before:opacity-0 hover:before:opacity-100 before:transition-opacity"
-        onMouseDown={handleResizeStart}
-      />
+      {!isMobile && (
+        <div
+          className="absolute left-0 top-0 bottom-0 w-1 z-10 cursor-col-resize hover:bg-foreground/10 active:bg-foreground/20 before:absolute before:left-0 before:top-0 before:bottom-0 before:w-[3px] before:bg-border before:opacity-0 hover:before:opacity-100 before:transition-opacity"
+          onMouseDown={handleResizeStart}
+        />
+      )}
       {activeType === "verse" && activeData && (
         <VersePanelContent verseData={activeData} close={close} />
       )}

@@ -316,10 +316,10 @@ export function SlashInputElement(
                       onClick={() => item.onSelect(editor, item.textTashkeel)}
                       className="relative flex cursor-pointer select-none flex-col items-start gap-1 rounded-sm px-3 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground data-[active-item=true]:bg-accent data-[active-item=true]:text-accent-foreground"
                     >
-                      <span className="text-xs text-muted-foreground block" dir="ltr">
+                      <span className="text-sm text-muted-foreground block mb-0.5" dir="ltr">
                         {item.surah} — {item.aya}
                       </span>
-                      <span className="text-sm font-medium leading-relaxed" dir="rtl">
+                      <span className="text-lg font-medium leading-relaxed font-['Amiri']" dir="rtl">
                         <Highlight text={item.textTashkeel} ranges={highlightRanges} />
                       </span>
                     </InlineComboboxItem>
@@ -348,15 +348,15 @@ export function SlashInputElement(
                       onClick={() => insertHadith(hadith)}
                       className="relative flex cursor-pointer select-none flex-col items-start gap-1 rounded-sm px-3 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground data-[active-item=true]:bg-accent data-[active-item=true]:text-accent-foreground"
                     >
-                      <div className="flex items-center gap-2 flex-wrap w-full">
-                        <span className="text-xs text-muted-foreground font-medium">
+                      <div className="flex items-center gap-2 flex-wrap w-full mb-1">
+                        <span className="text-sm text-muted-foreground font-medium">
                           {COLLECTION_NAMES[hadith.collection] || hadith.collection}
                           {hadith.hadithNumber ? ` — ${hadith.hadithNumber}` : ""}
                         </span>
                         <GradeBadge grades={hadith.ar?.grades || hadith.en?.grades || []} />
                       </div>
                       <span 
-                        className="text-sm leading-relaxed block text-foreground [&_mark]:bg-amber-200/60 [&_mark]:text-amber-900 [&_mark]:rounded-sm [&_mark]:px-0.5" 
+                        className="text-lg leading-relaxed block text-foreground font-['Amiri'] [&_mark]:bg-amber-200/60 [&_mark]:text-amber-900 [&_mark]:rounded-sm [&_mark]:px-0.5" 
                         dir="auto"
                         dangerouslySetInnerHTML={{ 
                           __html: hadith.snippet?.ar || hadith.snippet?.en || (hadith.ar?.text || "").slice(0, 200) + ((hadith.ar?.text || "").length > 200 ? "…" : "")

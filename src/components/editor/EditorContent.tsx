@@ -11,15 +11,15 @@ export function EditorContent({
   placeholder = "اكتب  /  ﻹدراج آية",
   className = "",
 }: EditorContentProps) {
-    return (
-    <div className={cn("prose max-w-none focus:outline-none flex", className)}>
-      <EditorContainer >
+  return (
+    <div className={cn("flex-1 min-h-0 overflow-hidden", className)}>
+      <EditorContainer className="h-full overflow-y-auto bg-background">
         <Editor
           placeholder={placeholder}
-          className="h-[calc(100dvh-5.1rem)] p-6 focus:outline-none text-gray-800 "
+          className="min-h-full pb-[40vh] focus:outline-none text-foreground"
           style={{
-            lineHeight: "1.6",
-            fontSize: "1.3rem",
+            lineHeight: "1.9",
+            fontSize: "1.25rem",
             direction: "rtl",
             textAlign: "right",
           }}

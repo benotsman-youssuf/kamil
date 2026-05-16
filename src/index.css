@@ -4,148 +4,198 @@
 
 @custom-variant dark (&:is(.dark *));
 
-@layer base {
-  body {
-    font-family: "Alexandria", serif;
+/* ─────────────────────────────────────────────────────────────────────────────
+   LIGHT MODE — Creamy, warm, easy on the eyes
+   Inspired by aged paper / warm parchment / Notion's warm theme
+───────────────────────────────────────────────────────────────────────────── */
+:root {
+  --vh: 1vh;
+  --viewport-scale: 1;
+
+  /* Warm creamy whites */
+  --background:       38 30% 96%;        /* #F7F4EE — warm parchment */
+  --foreground:       25 18% 20%;        /* #3A2F26 — warm dark brown */
+
+  --card:             38 25% 94%;        /* #F3EFE8 — slightly darker parchment */
+  --card-foreground:  25 18% 20%;
+
+  --popover:          36 28% 97%;        /* nearly white cream */
+  --popover-foreground: 25 18% 20%;
+
+  /* Primary — warm charcoal (the signup button color) */
+  --primary:          25 14% 16%;        /* #2B2724 — deep warm charcoal */
+  --primary-foreground: 38 30% 96%;      /* cream on dark */
+
+  /* Secondary & muted — warm grays */
+  --secondary:        35 20% 90%;        /* #EAE4DB */
+  --secondary-foreground: 25 18% 30%;
+
+  --muted:            35 18% 89%;        /* #E8E2D8 */
+  --muted-foreground: 28 12% 52%;        /* #8E7E6E — warm mid-tone */
+
+  --accent:           35 20% 88%;        /* #E5DECE */
+  --accent-foreground: 25 18% 20%;
+
+  --destructive:      4 72% 52%;         /* warm red */
+  --destructive-foreground: 0 0% 100%;
+
+  --border:           35 20% 84%;        /* #DDD5C4 — warm border */
+  --input:            35 20% 84%;
+  --ring:             25 14% 16%;
+
+  /* Border radius — consistent 8px system */
+  --radius: 0.5rem;
+
+  /* Sidebar — slightly cooler parchment to separate from canvas */
+  --sidebar:             hsl(36 22% 93%);     /* #EDE8E0 */
+  --sidebar-foreground:  hsl(25 18% 28%);
+  --sidebar-primary:     hsl(25 14% 16%);
+  --sidebar-primary-foreground: hsl(38 30% 96%);
+  --sidebar-accent:      hsl(35 18% 87%);
+  --sidebar-accent-foreground: hsl(25 18% 20%);
+  --sidebar-border:      hsl(35 18% 82%);
+  --sidebar-ring:        hsl(25 14% 16%);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   DARK MODE — Deadly Black (OLED)
+   Pure black background, stark minimal contrast
+───────────────────────────────────────────────────────────────────────────── */
+.dark {
+  --background:       0 0% 0%;           /* #000000 — pure deadly black */
+  --foreground:       0 0% 88%;          /* #E0E0E0 — crisp off-white text */
+
+  --card:             0 0% 0%;           /* #000000 */
+  --card-foreground:  0 0% 88%;
+
+  --popover:          0 0% 0%;
+  --popover-foreground: 0 0% 88%;
+
+  /* Primary — crisp bright white for buttons/accents */
+  --primary:          0 0% 98%;          /* #FAFAFA */
+  --primary-foreground: 0 0% 0%;         /* #000000 */
+
+  --secondary:        0 0% 9%;           /* #171717 — very subtle grey */
+  --secondary-foreground: 0 0% 98%;
+
+  --muted:            0 0% 9%;           /* #171717 */
+  --muted-foreground: 0 0% 55%;          /* #8C8C8C — dim */
+
+  --accent:           0 0% 9%;           /* #171717 */
+  --accent-foreground: 0 0% 98%;
+
+  --destructive:      0 62.8% 30.6%;
+  --destructive-foreground: 0 0% 98%;
+
+  --border:           0 0% 15%;          /* #262626 — very subtle border */
+  --input:            0 0% 15%;
+  --ring:             0 0% 83%;
+
+  /* Sidebar — matches pure black background */
+  --sidebar:             hsl(0 0% 0%);         
+  --sidebar-foreground:  hsl(0 0% 88%);
+  --sidebar-primary:     hsl(0 0% 98%);
+  --sidebar-primary-foreground: hsl(0 0% 0%);
+  --sidebar-accent:      hsl(0 0% 9%);
+  --sidebar-accent-foreground: hsl(0 0% 88%);
+  --sidebar-border:      hsl(0 0% 15%);
+  --sidebar-ring:        hsl(0 0% 83%);
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   THEME INLINE MAPPING
+───────────────────────────────────────────────────────────────────────────── */
+@theme inline {
+  --color-background:              hsl(var(--background));
+  --color-foreground:              hsl(var(--foreground));
+  --color-card:                    hsl(var(--card));
+  --color-card-foreground:         hsl(var(--card-foreground));
+  --color-popover:                 hsl(var(--popover));
+  --color-popover-foreground:      hsl(var(--popover-foreground));
+  --color-primary:                 hsl(var(--primary));
+  --color-primary-foreground:      hsl(var(--primary-foreground));
+  --color-secondary:               hsl(var(--secondary));
+  --color-secondary-foreground:    hsl(var(--secondary-foreground));
+  --color-muted:                   hsl(var(--muted));
+  --color-muted-foreground:        hsl(var(--muted-foreground));
+  --color-accent:                  hsl(var(--accent));
+  --color-accent-foreground:       hsl(var(--accent-foreground));
+  --color-destructive:             hsl(var(--destructive));
+  --color-destructive-foreground:  hsl(var(--destructive-foreground));
+  --color-border:                  hsl(var(--border));
+  --color-input:                   hsl(var(--input));
+  --color-ring:                    hsl(var(--ring));
+
+  --color-sidebar:                    var(--sidebar);
+  --color-sidebar-foreground:         var(--sidebar-foreground);
+  --color-sidebar-primary:            var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent:             var(--sidebar-accent);
+  --color-sidebar-accent-foreground:  var(--sidebar-accent-foreground);
+  --color-sidebar-border:             var(--sidebar-border);
+  --color-sidebar-ring:               var(--sidebar-ring);
+
+  --animate-shimmer-slide: shimmer-slide var(--speed) ease-in-out infinite alternate;
+  --animate-spin-around: spin-around calc(var(--speed) * 2) infinite linear;
+
+  @keyframes shimmer-slide {
+    to { transform: translate(calc(100cqw - 100%), 0); }
   }
-  
-  /* Apply overflow hidden only to editor container */
+  @keyframes spin-around {
+    0%          { transform: translateZ(0) rotate(0); }
+    15%, 35%    { transform: translateZ(0) rotate(90deg); }
+    65%, 85%    { transform: translateZ(0) rotate(270deg); }
+    100%        { transform: translateZ(0) rotate(360deg); }
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   BASE LAYER
+───────────────────────────────────────────────────────────────────────────── */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Alexandria", sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  /* Smooth scrollbar in dark mode */
+  .dark ::-webkit-scrollbar { width: 5px; }
+  .dark ::-webkit-scrollbar-track { background: transparent; }
+  .dark ::-webkit-scrollbar-thumb { background: hsl(220 11% 22%); border-radius: 10px; }
+  .dark ::-webkit-scrollbar-thumb:hover { background: hsl(215 12% 35%); }
+
+  /* Warm scrollbar in light mode */
+  ::-webkit-scrollbar { width: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: hsl(35 18% 78%); border-radius: 10px; }
+  ::-webkit-scrollbar-thumb:hover { background: hsl(28 14% 64%); }
+
   .editor-container {
     overflow: hidden;
     height: 100vh;
   }
 }
 
-:root {
-    /* Real viewport height - updated by JS */
-    --vh: 1vh;
-    --viewport-scale: 1;
-    /* Core design system variables */
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 84% 4.9%;
-    --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96%;
-    --accent-foreground: 222.2 84% 4.9%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
-    --radius: 0.5rem;
-
-    /* Sidebar variables */
-    --sidebar: hsl(0 0% 98%);
-    --sidebar-foreground: hsl(240 5.3% 26.1%);
-    --sidebar-primary: hsl(240 5.9% 10%);
-    --sidebar-primary-foreground: hsl(0 0% 98%);
-    --sidebar-accent: hsl(240 4.8% 95.9%);
-    --sidebar-accent-foreground: hsl(240 5.9% 10%);
-    --sidebar-border: hsl(220 13% 91%);
-    --sidebar-ring: hsl(217.2 91.2% 59.8%);
+/* ─────────────────────────────────────────────────────────────────────────────
+   EDITOR WRITING AREA — comfortable reading/writing background
+───────────────────────────────────────────────────────────────────────────── */
+/* Light: creamy white paper */
+.slate-editor-wrapper, [data-slate-editor] {
+  background: transparent;
 }
 
-.dark {
-    /* Core design system variables - dark mode */
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-
-    /* Sidebar variables - dark mode */
-    --sidebar: hsl(240 5.9% 10%);
-    --sidebar-foreground: hsl(240 4.8% 95.9%);
-    --sidebar-primary: hsl(224.3 76.3% 48%);
-    --sidebar-primary-foreground: hsl(0 0% 100%);
-    --sidebar-accent: hsl(240 3.7% 15.9%);
-    --sidebar-accent-foreground: hsl(240 4.8% 95.9%);
-    --sidebar-border: hsl(240 3.7% 15.9%);
-    --sidebar-ring: hsl(217.2 91.2% 59.8%);
+/* Editor text in light mode */
+.text-gray-800 {
+  color: hsl(25 18% 22%) !important; /* #382D24 — warm dark brown */
 }
 
-@theme inline {
-    /* Core colors */
-    --color-background: hsl(var(--background));
-    --color-foreground: hsl(var(--foreground));
-    --color-card: hsl(var(--card));
-    --color-card-foreground: hsl(var(--card-foreground));
-    --color-popover: hsl(var(--popover));
-    --color-popover-foreground: hsl(var(--popover-foreground));
-    --color-primary: hsl(var(--primary));
-    --color-primary-foreground: hsl(var(--primary-foreground));
-    --color-secondary: hsl(var(--secondary));
-    --color-secondary-foreground: hsl(var(--secondary-foreground));
-    --color-muted: hsl(var(--muted));
-    --color-muted-foreground: hsl(var(--muted-foreground));
-    --color-accent: hsl(var(--accent));
-    --color-accent-foreground: hsl(var(--accent-foreground));
-    --color-destructive: hsl(var(--destructive));
-    --color-destructive-foreground: hsl(var(--destructive-foreground));
-    --color-border: hsl(var(--border));
-    --color-input: hsl(var(--input));
-    --color-ring: hsl(var(--ring));
-
-    /* Sidebar colors */
-    --color-sidebar: var(--sidebar);
-    --color-sidebar-foreground: var(--sidebar-foreground);
-    --color-sidebar-primary: var(--sidebar-primary);
-    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-    --color-sidebar-accent: var(--sidebar-accent);
-    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-    --color-sidebar-border: var(--sidebar-border);
-    --color-sidebar-ring: var(--sidebar-ring);
-    --animate-shimmer-slide: shimmer-slide var(--speed) ease-in-out infinite alternate;
-    --animate-spin-around: spin-around calc(var(--speed) * 2) infinite linear;
-  @keyframes shimmer-slide {
-  to {
-    transform: translate(calc(100cqw - 100%), 0);
-    }
-  }
-  @keyframes spin-around {
-  0% {
-    transform: translateZ(0) rotate(0);
-    }
-  15%, 35% {
-    transform: translateZ(0) rotate(90deg);
-    }
-  65%, 85% {
-    transform: translateZ(0) rotate(270deg);
-    }
-  100% {
-    transform: translateZ(0) rotate(360deg);
-    }
-  }
-}
-
-@layer base {
-    * {
-        @apply border-border outline-ring/50;
-    }
-
-    body {
-        @apply bg-background text-foreground;
-    }
+/* Dark mode editor text override */
+.dark .text-gray-800 {
+  color: hsl(210 14% 80%) !important;
 }

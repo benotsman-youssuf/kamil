@@ -24,13 +24,13 @@ function GradeBadge({ grades }: { grades?: HadithGrade[] }) {
 
   let colorClass: string;
   if (grade.includes("sahih")) {
-    colorClass = "bg-green-100 text-green-700 border-green-300";
+    colorClass = "bg-primary/10 text-primary border-primary/20";
   } else if (grade.includes("hasan")) {
-    colorClass = "bg-yellow-100 text-yellow-700 border-yellow-300";
+    colorClass = "bg-secondary/40 text-secondary-foreground border-secondary/50";
   } else if (grade.includes("da")) {
-    colorClass = "bg-red-100 text-red-700 border-red-300";
+    colorClass = "bg-destructive/10 text-destructive border-destructive/20";
   } else {
-    colorClass = "bg-gray-100 text-gray-600 border-gray-300";
+    colorClass = "bg-muted text-muted-foreground border-border";
   }
 
   return (
@@ -54,7 +54,7 @@ export function HadithElement(props: PlateElementProps<HadithElementNode>) {
       {...props}
       as="span"
       className={cn(
-        "hadith-node cursor-pointer rounded-sm bg-amber-50/40 px-0.5 font-medium text-amber-950/90 transition-all hover:bg-amber-100/60 border-b border-amber-600/20 inline decoration-amber-600/30",
+        "hadith-node cursor-pointer rounded-sm bg-secondary/30 px-1 py-0.5 font-medium text-foreground transition-all hover:bg-secondary/60 border-b border-border inline decoration-muted-foreground/30",
         className
       )}
     >
