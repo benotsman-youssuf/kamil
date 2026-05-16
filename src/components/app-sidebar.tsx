@@ -2,8 +2,6 @@ import * as React from "react";
 import {
   Sidebar,
   SidebarContent,
-  SidebarHeader,
-  SidebarRail,
 } from "@/components/ui/sidebar";
 import { AddPageDialog } from "./AddPageDialog";
 import { usePages } from "@/hooks/use-pages";
@@ -11,11 +9,19 @@ import { Link, useLocation } from "react-router-dom";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { PageActions } from "./PageActions";
-import { Pin } from "lucide-react";
+import { Pin, Sun, Moon } from "lucide-react";
+import { UserAccount } from "./UserAccount";
+import { useTheme } from "@/hooks/use-theme";
 
-export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+interface AppSidebarProps extends React.ComponentProps<typeof Sidebar> {
+  pinned?: boolean;
+  onTogglePin?: () => void;
+}
+
+export function AppSidebar({ pinned, onTogglePin, ...props }: AppSidebarProps) {
   const pages = usePages();
   const location = useLocation();
+  const { theme, toggleTheme } = useTheme();
 
   const sortedPages = pages?.sort((a, b) => {
     if (a.isPinned === b.isPinned) return 0;
@@ -24,55 +30,89 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   return (
     <Sidebar
-      className="border-r-0 bg-gradient-to-b from-muted/50 to-muted/30 backdrop-blur-md"
+      collapsible="none"
+      className="h-full w-[240px] flex-shrink-0 border-r border-sidebar-border bg-sidebar flex flex-col"
       {...props}
     >
-      {/* Logo Section */}
-
-
-      {/* Add Page */}
-      <SidebarHeader className="px-4 py-5 border-b border-border/30 bg-gradient-to-r from-background/90 to-muted/40 shadow-sm flex flex-row ">
+      {/* ── Top bar: Logo + Actions ─────────────────────────────────────────── */}
+      <div className="flex items-center justify-between px-3 py-3 flex-shrink-0 border-b border-sidebar-border">
+        {/* Logo */}
         <Link
           to="/"
-          className="flex items-center gap-2 hover:scale-105 transition-transform duration-150"
+          className="flex items-center gap-2 group"
           aria-label="العودة للرئيسية"
         >
           <img
             src="/logo.png"
             alt="Logo"
-            className="h-10 w-10 rounded-lg shadow ring-1 ring-border/20 bg-white"
+            className="h-7 w-7 rounded-md shadow-sm ring-1 ring-border/20 bg-white transition-transform duration-150 group-hover:scale-105"
             draggable={false}
           />
         </Link>
-        <AddPageDialog />
-      </SidebarHeader>
 
-      {/* Pages List */}
-      <SidebarContent>
-        <ScrollArea className="h-full px-3">
-          <nav className="flex flex-col gap-1 py-3">
+        {/* Action icons row */}
+        <div className="flex items-center gap-0.5">
+          {/* Theme toggle */}
+          <button
+            onClick={toggleTheme}
+            title={theme === "dark" ? "الوضع الفاتح" : "الوضع الداكن"}
+            className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted/60 transition-all duration-150"
+          >
+            {theme === "dark"
+              ? <Sun className="h-4 w-4" />
+              : <Moon className="h-4 w-4" />}
+          </button>
+
+          {/* Pin / Unpin sidebar */}
+          {onTogglePin && (
+            <button
+              onClick={onTogglePin}
+              title={pinned ? "إلغاء تثبيت الشريط" : "تثبيت الشريط الجانبي"}
+              className={cn(
+                "p-1.5 rounded-md transition-all duration-150",
+                pinned
+                  ? "text-foreground bg-muted/60"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+              )}
+            >
+              <Pin className={cn("h-4 w-4 transition-transform duration-150", pinned ? "" : "rotate-45")} />
+            </button>
+          )}
+
+          {/* New page — compact icon-only button */}
+          <AddPageDialog compact />
+        </div>
+      </div>
+
+      {/* ── Pages list ──────────────────────────────────────────────────────── */}
+      <SidebarContent className="flex-1 min-h-0">
+        <ScrollArea className="h-full">
+          <nav className="flex flex-col gap-0.5 px-2 py-2">
             {sortedPages?.map((page) => {
               const isActive = location.pathname === `/pages/${page.id}`;
               return (
                 <div
                   key={page.id}
                   className={cn(
-                    "group flex items-center justify-between rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200 ease-out",
+                    "group flex items-center justify-between rounded-lg px-2 py-1.5 text-sm transition-all duration-150 ease-out",
                     isActive
-                      ? "bg-primary/10 text-primary shadow-sm border border-primary/20"
-                      : "text-muted-foreground hover:bg-accent/20 hover:text-foreground"
+                      ? "bg-primary/10 text-primary"
+                      : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
                   )}
                 >
                   <Link
                     to={`/pages/${page.id}`}
-                    className="flex items-center gap-2 overflow-hidden flex-1"
+                    className="flex items-center gap-2 overflow-hidden flex-1 min-w-0"
                     title={page.name}
-                    aria-label={`فتح ${page.name}`}
                   >
-                    {page.isPinned && <Pin className="h-3 w-3 rotate-45 flex-shrink-0 text-muted-foreground/70" />}
+                    {page.isPinned && (
+                      <Pin className="h-3 w-3 rotate-45 flex-shrink-0 opacity-50" />
+                    )}
                     <span className="truncate">{page.name}</span>
                   </Link>
-                  <PageActions page={page} isActive={isActive} />
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-100 flex-shrink-0">
+                    <PageActions page={page} isActive={isActive} />
+                  </div>
                 </div>
               );
             })}
@@ -80,8 +120,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         </ScrollArea>
       </SidebarContent>
 
-      {/* Rail */}
-      <SidebarRail />
+      {/* ── Bottom: User account ─────────────────────────────────────────────── */}
+      <div className="flex-shrink-0 border-t border-sidebar-border">
+        <UserAccount />
+      </div>
     </Sidebar>
   );
 }

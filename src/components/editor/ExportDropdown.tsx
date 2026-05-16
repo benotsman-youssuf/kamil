@@ -6,7 +6,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
-import { exportToJSON, exportToHTML, exportToMarkdown, exportToPDF } from "@/lib/utils/export";
+import { exportToJSON, exportToHTMLAsync, exportToMarkdownAsync, exportToPDF } from "@/lib/utils/export";
 import { toast } from "sonner";
 import { db } from "@/lib/db";
 import { useParams } from "react-router-dom";
@@ -37,7 +37,7 @@ export function ExportDropdown({
         }
     }, [id]);
 
-    const handleExport = (type: "pdf" | "json" | "html" | "markdown") => {
+    const handleExport = async (type: "pdf" | "json" | "html" | "markdown") => {
         if (!editor) return;
 
         switch (type) {
@@ -50,11 +50,11 @@ export function ExportDropdown({
                 toast.success("تم تصدير الملف بصيغة JSON");
                 break;
             case "html":
-                exportToHTML(editor.children, pageName);
+                await exportToHTMLAsync(editor.children, pageName);
                 toast.success("تم تصدير الملف بصيغة HTML");
                 break;
             case "markdown":
-                exportToMarkdown(editor.children, pageName);
+                await exportToMarkdownAsync(editor.children, pageName);
                 toast.success("تم تصدير الملف بصيغة Markdown");
                 break;
         }

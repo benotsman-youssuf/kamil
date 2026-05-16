@@ -5,13 +5,30 @@ import { VitePWA } from "vite-plugin-pwa";
 import { defineConfig, loadEnv } from "vite";
 
 export default defineConfig(({ mode }) => {
-  // Load env file based on `mode` in the current working directory.
-  // Set the third parameter to '' to load all env regardless of the
-  // `VITE_` prefix.
   const env = loadEnv(mode, process.cwd(), "");
+  const isProduction = env.VITE_QF_ENV === "production" || env.VITE_QF_ENV === "prod";
+  const authTarget = isProduction
+    ? "https://oauth2.quran.foundation"
+    : "https://prelive-oauth2.quran.foundation";
+  const apiTarget = isProduction
+    ? "https://apis.quran.foundation"
+    : "https://apis-prelive.quran.foundation";
   return {
-    // vite config
     publicDir: "public",
+    server: {
+      proxy: {
+        '/proxy-auth': {
+          target: authTarget,
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/proxy-auth/, ''),
+        },
+        '/proxy-api': {
+          target: apiTarget,
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/proxy-api/, ''),
+        },
+      },
+    },
     optimizeDeps: {
       exclude: ['chunk-TQQ3JMWI']
     },

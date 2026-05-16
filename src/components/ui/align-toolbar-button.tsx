@@ -1,4 +1,4 @@
-'use client';
+ 'use client';
 
 import * as React from 'react';
 import type { Alignment } from '@platejs/basic-styles';
@@ -50,14 +50,14 @@ export function AlignToolbarButton(props: DropdownMenuProps) {
           pressed={open}
           tooltip="Align"
           isDropdown
-          className="p-2 hover:bg-[#2e2e30] rounded-md transition-colors"
+          className="p-2 hover:bg-primary-foreground/10 active:bg-primary-foreground/20 rounded-md transition-colors group"
         >
-          <IconValue className="w-4 h-4 text-white" />
+          <IconValue className="w-4 h-4 text-primary-foreground/70 group-hover:text-primary-foreground" />
         </ToolbarButton>
       </DropdownMenuTrigger>
 
       <DropdownMenuContent
-        className="min-w-8 bg-[#262628] text-gray-100 rounded-md shadow-lg border border-gray-700"
+        className="min-w-8 bg-popover text-popover-foreground rounded-md shadow-lg border border-border"
         align="start"
       >
         <DropdownMenuRadioGroup
@@ -71,9 +71,9 @@ export function AlignToolbarButton(props: DropdownMenuProps) {
             <DropdownMenuRadioItem
               key={itemValue}
               value={itemValue}
-              className="flex items-center gap-2 px-2 py-1.5 cursor-pointer rounded-sm transition-colors hover:bg-[#2e2e30] data-[state=checked]:bg-[#3a3a3d]"
+              className="flex items-center gap-2 px-2 py-1.5 cursor-pointer rounded-sm transition-colors hover:bg-muted data-[state=checked]:bg-accent data-[state=checked]:text-accent-foreground"
             >
-              <Icon className="w-4 h-4 text-white" />
+              <Icon className="w-4 h-4" />
             </DropdownMenuRadioItem>
           ))}
         </DropdownMenuRadioGroup>

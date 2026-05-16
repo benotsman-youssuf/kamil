@@ -17,6 +17,8 @@ import { BaseSuggestionKit } from './plugins/suggestion-base-kit';
 import { BaseTableKit } from './plugins/table-base-kit';
 import { BaseTocKit } from './plugins/toc-base-kit';
 import { BaseToggleKit } from './plugins/toggle-base-kit';
+import { VersePlugin } from './plugins/verse-kit';
+import { HadithPlugin } from './plugins/hadith-kit';
 
 export const BaseEditorKit = [
   ...BaseBasicBlocksKit,
@@ -38,4 +40,6 @@ export const BaseEditorKit = [
   ...BaseCommentKit,
   ...BaseSuggestionKit,
   ...MarkdownKit,
+  VersePlugin,
+  HadithPlugin,
 ];
