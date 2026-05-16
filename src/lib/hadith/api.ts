@@ -1,5 +1,4 @@
 import type {
-  ApiResponse,
   HadithCollection,
   HadithBook,
   HadithChapter,

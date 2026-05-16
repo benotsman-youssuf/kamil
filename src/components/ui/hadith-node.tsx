@@ -18,33 +18,6 @@ export interface HadithElementNode {
   [key: string]: unknown;
 }
 
-function GradeBadge({ grades }: { grades?: HadithGrade[] }) {
-  if (!grades || grades.length === 0) return null;
-  const grade = grades[0].grade.toLowerCase();
-
-  let colorClass: string;
-  if (grade.includes("sahih")) {
-    colorClass = "bg-primary/10 text-primary border-primary/20";
-  } else if (grade.includes("hasan")) {
-    colorClass = "bg-secondary/40 text-secondary-foreground border-secondary/50";
-  } else if (grade.includes("da")) {
-    colorClass = "bg-destructive/10 text-destructive border-destructive/20";
-  } else {
-    colorClass = "bg-muted text-muted-foreground border-border";
-  }
-
-  return (
-    <span
-      className={cn(
-        "inline-flex items-center rounded px-1 py-0 text-[10px] font-medium border mr-1",
-        colorClass
-      )}
-    >
-      {grades[0].grade}
-    </span>
-  );
-}
-
 export function HadithElement(props: PlateElementProps<HadithElementNode>) {
   const { element, children, className } = props;
   const { collection, bookNumber, hadithNumber, grades, hadithText, hadithTextEn } = element;
@@ -59,7 +32,7 @@ export function HadithElement(props: PlateElementProps<HadithElementNode>) {
       )}
     >
       <span
-        onMouseDown={(e) => {
+        onMouseDown={() => {
           console.log("HadithElement inner: onMouseDown", hadithNumber);
           
           const event = new CustomEvent("open-hadith-panel", {

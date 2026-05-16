@@ -28,7 +28,7 @@ export function VerseElement(props: PlateElementProps<VerseElementNode>) {
       )}
     >
       <span
-        onMouseDown={(e) => {
+        onMouseDown={() => {
           console.log("VerseElement inner: onMouseDown", verseKey);
           
           const event = new CustomEvent("open-verse-panel", {

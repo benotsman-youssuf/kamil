@@ -1,0 +1,28 @@
+$ tsc -b && vite build
+vite v5.4.21 building for production...
+transforming...
+✓ 3644 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/registerSW.js                          0.13 kB
+dist/index.html                             0.77 kB │ gzip:   0.45 kB
+dist/manifest.webmanifest                   0.97 kB
+dist/assets/index-BKbl8nBN.css            165.91 kB │ gzip:  24.56 kB
+dist/assets/server.browser-BKCO70DC.js    166.51 kB │ gzip:  50.48 kB
+dist/assets/index-DDusHgkg.js           3,064.82 kB │ gzip: 970.03 kB
+
+(!) Some chunks are larger than 500 kB after minification. Consider:
+- Using dynamic import() to code-split the application
+- Use build.rollupOptions.output.manualChunks to improve chunking: https://rollupjs.org/configuration-options/#output-manualchunks
+- Adjust chunk size limit for this warning via build.chunkSizeWarningLimit.
+✓ built in 9.50s
+Browserslist: browsers data (caniuse-lite) is 11 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+
+PWA v1.3.0
+mode      generateSW
+precache  29 entries (3560.80 KiB)
+files generated
+  dist/sw.js
+  dist/workbox-835c8c05.js

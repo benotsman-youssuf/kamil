@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
-import { Check, Loader2, AlertCircle } from "lucide-react";
+import { AlertCircle } from "lucide-react";
 
 export type SaveState = "idle" | "saving" | "saved" | "error";
 

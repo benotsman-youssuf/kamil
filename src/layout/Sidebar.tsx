@@ -20,8 +20,8 @@ const SWIPE_EDGE_PX = 24;
 
 export default function SideBar() {
   const [pageContent, setPageContent] = useState<string>();
-  const [saveState, setSaveState] = useState<SaveState>("idle");
-  const [titleValue, setTitleValue] = useState("");
+  const [_saveState, setSaveState] = useState<SaveState>("idle");
+  const [_titleValue, setTitleValue] = useState("");
   const { id } = useParams();
 
   // ── Sidebar open/pin state ────────────────────────────────────────────────

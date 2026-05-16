@@ -15,7 +15,6 @@ import type { Hadith, HadithGrade } from "@/lib/hadith/types";
 import {
   InlineCombobox,
   InlineComboboxContent,
-  InlineComboboxEmpty,
   InlineComboboxInput,
   InlineComboboxItem,
 } from "./inline-combobox";

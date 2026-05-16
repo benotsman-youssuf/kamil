@@ -17,7 +17,7 @@ interface EditorToolbarProps {
   exportHandlers?: ExportHandlers;
 }
 
-export function EditorToolbar({ className = "", editor, exportHandlers }: EditorToolbarProps) {
+export function EditorToolbar({ className = "", editor }: EditorToolbarProps) {
   // Icon + hover style for the dark toolbar
   const btnCls = "p-1.5 rounded-lg hover:bg-primary-foreground/10 active:bg-primary-foreground/20 transition-all duration-150 ease-out group";
   const iconCls = "w-5 h-5 text-primary-foreground/70 group-hover:text-primary-foreground transition-colors";

@@ -1,14 +1,13 @@
 "use client";
 
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState } from "react";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { fetchHadith } from "@/lib/hadith/api";
 import type { Hadith } from "@/lib/hadith/types";
-import { X, BookOpen, MessageCircle, Info, ChevronLeft, ChevronRight } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { X, BookOpen, Info } from "lucide-react";
 
 export function HadithPanelContent({ 
   hadithData, 

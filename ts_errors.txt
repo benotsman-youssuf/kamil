@@ -1,0 +1,19 @@
+src/components/HadithPanel.tsx(3,31): error TS6133: 'useRef' is declared but its value is never read.
+src/components/HadithPanel.tsx(3,39): error TS6133: 'useCallback' is declared but its value is never read.
+src/components/HadithPanel.tsx(10,23): error TS6133: 'MessageCircle' is declared but its value is never read.
+src/components/HadithPanel.tsx(10,44): error TS6133: 'ChevronLeft' is declared but its value is never read.
+src/components/HadithPanel.tsx(10,57): error TS6133: 'ChevronRight' is declared but its value is never read.
+src/components/HadithPanel.tsx(11,1): error TS6133: 'cn' is declared but its value is never read.
+src/components/HoverSidebar.tsx(3,52): error TS6133: 'useId' is declared but its value is never read.
+src/components/SaveStatus.tsx(2,10): error TS6133: 'Check' is declared but its value is never read.
+src/components/SaveStatus.tsx(2,17): error TS6133: 'Loader2' is declared but its value is never read.
+src/components/SharedRightPanel.tsx(124,23): error TS2448: Block-scoped variable 'close' used before its declaration.
+src/components/SharedRightPanel.tsx(124,23): error TS2454: Variable 'close' is used before being assigned.
+src/components/editor/EditorToolbar.tsx(20,57): error TS6133: 'exportHandlers' is declared but its value is never read.
+src/components/ui/hadith-node.tsx(21,10): error TS6133: 'GradeBadge' is declared but its value is never read.
+src/components/ui/hadith-node.tsx(62,23): error TS6133: 'e' is declared but its value is never read.
+src/components/ui/slash-node.tsx(18,3): error TS6133: 'InlineComboboxEmpty' is declared but its value is never read.
+src/components/ui/verse-node.tsx(31,23): error TS6133: 'e' is declared but its value is never read.
+src/layout/Sidebar.tsx(23,10): error TS6133: 'saveState' is declared but its value is never read.
+src/layout/Sidebar.tsx(24,10): error TS6133: 'titleValue' is declared but its value is never read.
+src/lib/hadith/api.ts(2,3): error TS6196: 'ApiResponse' is declared but never used.
