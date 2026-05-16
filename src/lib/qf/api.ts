@@ -1,0 +1,516 @@
+import { getValidAccessToken, fetchContentToken } from "./auth";
+import { QF_CONFIG } from "./config";
+
+const API_BASE_URL = QF_CONFIG.apiBaseUrl;
+const CLIENT_ID = QF_CONFIG.clientId;
+
+// API base paths per spec
+const CONTENT_API = `${API_BASE_URL}/content/api/v4`;
+const SEARCH_API = `${API_BASE_URL}/search/api/v1`;
+const USER_API = `${API_BASE_URL}/auth/v1`;
+
+let contentToken: string | null = null;
+let contentTokenPromise: Promise<string | null> | null = null;
+
+async function ensureContentToken(): Promise<string | null> {
+  if (contentToken) return contentToken;
+  if (!contentTokenPromise) {
+    contentTokenPromise = fetchContentToken().then((token) => {
+      contentToken = token;
+      contentTokenPromise = null;
+      return token;
+    });
+  }
+  return contentTokenPromise;
+}
+
+async function getAuthHeaders(): Promise<Record<string, string>> {
+  const headers: Record<string, string> = {
+    "x-client-id": CLIENT_ID,
+  };
+
+  const token = await getValidAccessToken();
+  if (token) {
+    headers["x-auth-token"] = token;
+    return headers;
+  }
+
+  const ct = await ensureContentToken();
+  if (ct) {
+    headers["x-auth-token"] = ct;
+  }
+
+  return headers;
+}
+
+// ─── Types ────────────────────────────────────────────────────────
+
+export interface Translation {
+  id: number;
+  resource_id: number;
+  text: string;
+  language_name?: string;
+}
+
+export interface Tafsir {
+  id: number;
+  resource_id: number;
+  text: string;
+  language_name?: string;
+  name?: string;
+  verse_key?: string;
+}
+
+export interface HadithItem {
+  lang: string;
+  chapterNumber?: string;
+  chapterTitle?: string;
+  body: string;
+  urn: number;
+  grades?: { graded_by: string; grade: string }[];
+}
+
+export interface Hadith {
+  urn: number;
+  collection: string;
+  bookNumber: string;
+  chapterId: string;
+  hadithNumber: string;
+  name: string;
+  hadith: HadithItem[];
+}
+
+export interface Word {
+  id: number;
+  position: number;
+  audio_url?: string;
+  char_type_name: string;
+  translation?: { text: string; language_name: string };
+  transliteration?: { text: string; language_name: string };
+  code_v1?: string;
+  text?: string;
+  line_number?: number;
+  page_number?: number;
+}
+
+export interface VerseDetails {
+  id: number;
+  verse_number: number;
+  verse_key: string;
+  chapter_id?: number;
+  text_uthmani?: string;
+  text_uthmani_simple?: string;
+  text_imlaei?: string;
+  text_imlaei_simple?: string;
+  text_indopak?: string;
+  juz_number?: number;
+  hizb_number?: number;
+  rub_el_hizb_number?: number;
+  page_number?: number;
+  image_url?: string;
+  words?: Word[];
+  translations?: Translation[];
+  tafsirs?: Tafsir[];
+  hadiths?: Hadith[];
+  audio_url?: string;
+}
+
+export interface SearchNavigationResult {
+  result_type: string;
+  key: number | string;
+  name: string;
+  isArabic: boolean;
+}
+
+export interface SearchVerseResult {
+  result_type: string;
+  key: string;
+  name: string;
+  isArabic: boolean;
+}
+
+export interface SearchResponse {
+  pagination: {
+    current_page: number;
+    next_page: number | null;
+    per_page: number;
+    total_pages: number;
+    total_records: number;
+  };
+  result: {
+    navigation: SearchNavigationResult[];
+    verses: SearchVerseResult[];
+  };
+}
+
+export interface ApiErrorResponse {
+  message?: string;
+  type?: string;
+  success?: boolean;
+  status?: number;
+  error?: {
+    code: string;
+    message: string;
+    details?: Record<string, string>;
+  };
+}
+
+// ─── Content APIs ─────────────────────────────────────────────────
+
+export async function fetchVerseDetails(verseKey: string): Promise<VerseDetails> {
+  const headers = await getAuthHeaders();
+  const params = new URLSearchParams({
+    language: "ar",
+    words: "true",
+    translations: "85",
+    tafsirs: "169",
+    audio: "7",
+    fields: "text_uthmani,text_imlaei,text_indopak,image_url",
+  });
+
+  const url = `${CONTENT_API}/verses/by_key/${verseKey}?${params}`;
+  const response = await fetch(url, { headers });
+
+  if (!response.ok) {
+    const err: ApiErrorResponse = await response.json().catch(() => ({}));
+    throw new Error(err.message || err.error?.message || `Failed to fetch verse: ${response.status}`);
+  }
+
+  const data = await response.json();
+  const verse: VerseDetails = data.verse;
+
+  if (data.verse?.audio) {
+    verse.audio_url = data.verse.audio.url;
+  }
+
+  // Fetch hadith references separately
+  try {
+    const hadiths = await fetchHadithsByAyah(verseKey);
+    verse.hadiths = hadiths;
+  } catch {
+    // hadiths may not be available in prelive
+  }
+
+  return verse;
+}
+
+export async function fetchHadithsByAyah(ayahKey: string): Promise<Hadith[]> {
+  const headers = await getAuthHeaders();
+  try {
+    const params = new URLSearchParams({ language: "ar", per_page: "5" });
+    const response = await fetch(
+      `${CONTENT_API}/hadith_references/by_ayah/${ayahKey}/hadiths?${params}`,
+      { headers }
+    );
+    if (!response.ok) return [];
+    const data = await response.json();
+    return data.hadiths || [];
+  } catch {
+    return [];
+  }
+}
+
+export async function fetchTafsir(verseKey: string, tafsirId: number): Promise<Tafsir | null> {
+  const headers = await getAuthHeaders();
+  try {
+    const params = new URLSearchParams({ fields: "verse_key", tafsirs: String(tafsirId) });
+    const response = await fetch(`${CONTENT_API}/verses/by_key/${verseKey}?${params}`, { headers });
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data.verse?.tafsirs?.[0] || null;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchTafsirsBulk(verseKey: string, tafsirIds: number[]): Promise<Record<number, Tafsir>> {
+  if (tafsirIds.length === 0) return {};
+  const headers = await getAuthHeaders();
+  const result: Record<number, Tafsir> = {};
+
+  // Fetch in chunks of 5 (per page size limit, but also to avoid huge URLs)
+  const chunkSize = 5;
+  for (let i = 0; i < tafsirIds.length; i += chunkSize) {
+    const chunk = tafsirIds.slice(i, i + chunkSize);
+    try {
+      const params = new URLSearchParams({
+        fields: "verse_key",
+        tafsirs: chunk.join(","),
+      });
+      const response = await fetch(`${CONTENT_API}/verses/by_key/${verseKey}?${params}`, { headers });
+      if (response.ok) {
+        const data = await response.json();
+        const tafsirs: Tafsir[] = data.verse?.tafsirs || [];
+        for (const t of tafsirs) {
+          result[t.resource_id] = t;
+        }
+      }
+    } catch {
+      // skip failed chunk
+    }
+  }
+
+  return result;
+}
+
+export async function fetchTranslation(verseKey: string, translationId: number = 131): Promise<Translation | null> {
+  const headers = await getAuthHeaders();
+  try {
+    const url = `${CONTENT_API}/translations/${translationId}/by_ayah/${verseKey}`;
+    const response = await fetch(url, { headers });
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data.translations?.[0] || null;
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchAyahRecitation(verseKey: string, reciterId: number = 7): Promise<string | null> {
+  const headers = await getAuthHeaders();
+  try {
+    const params = new URLSearchParams({ audio: String(reciterId), fields: "verse_key" });
+    const response = await fetch(`${CONTENT_API}/verses/by_key/${verseKey}?${params}`, { headers });
+    if (!response.ok) return null;
+    const data = await response.json();
+    return data.verse?.audio?.url || null;
+  } catch {
+    return null;
+  }
+}
+
+export async function listChapters(): Promise<any[]> {
+  const headers = await getAuthHeaders();
+  const response = await fetch(`${CONTENT_API}/chapters`, { headers });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch chapters: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data.chapters || [];
+}
+
+export async function getChapter(chapterId: number): Promise<any> {
+  const headers = await getAuthHeaders();
+  const response = await fetch(`${CONTENT_API}/chapters/${chapterId}`, { headers });
+
+  if (!response.ok) {
+    throw new Error(`Failed to fetch chapter: ${response.status}`);
+  }
+
+  const data = await response.json();
+  return data.chapter;
+}
+
+export async function getResourcesTranslations(): Promise<any[]> {
+  const headers = await getAuthHeaders();
+  try {
+    const response = await fetch(`${CONTENT_API}/resources/translations`, { headers });
+    if (!response.ok) return [];
+    const data = await response.json();
+    return data.translations || [];
+  } catch {
+    return [];
+  }
+}
+
+export async function getResourcesTafsirs(language?: string): Promise<any[]> {
+  const headers = await getAuthHeaders();
+
+  // Try the Foundation API first
+  try {
+    const params = language ? `?language=${encodeURIComponent(language)}` : "";
+    const response = await fetch(`${CONTENT_API}/resources/tafsirs${params}`, { headers });
+    if (response.ok) {
+      const data = await response.json();
+      const tafsirs = data.tafsirs || [];
+      if (tafsirs.length >= 12) return tafsirs;
+    }
+  } catch {
+    // fall through
+  }
+
+  // Foundation API returned too few; fall back to legacy Quran.com API (public, no auth, complete list)
+  try {
+    const response = await fetch("https://api.quran.com/api/v4/resources/tafsirs");
+    if (response.ok) {
+      const data = await response.json();
+      return data.tafsirs || [];
+    }
+  } catch {
+    // fall through
+  }
+
+  return [];
+}
+
+export async function getRecitations(): Promise<any[]> {
+  const headers = await getAuthHeaders();
+  try {
+    const response = await fetch(`${CONTENT_API}/recitations`, { headers });
+    if (!response.ok) return [];
+    const data = await response.json();
+    return data.recitations || [];
+  } catch {
+    return [];
+  }
+}
+
+// ─── Search API ───────────────────────────────────────────────────
+
+export async function searchQuran(query: string, options?: {
+  mode?: "quick" | "advanced";
+  size?: number;
+  page?: number;
+  navigationalResultsNumber?: number;
+  versesResultsNumber?: number;
+  translationIds?: number[];
+}): Promise<SearchResponse> {
+  const headers = await getAuthHeaders();
+  const mode = options?.mode || "advanced";
+
+  const params = new URLSearchParams({ mode, query });
+  if (options?.navigationalResultsNumber) params.set("navigationalResultsNumber", String(options.navigationalResultsNumber));
+  if (options?.versesResultsNumber) params.set("versesResultsNumber", String(options.versesResultsNumber));
+  if (options?.size) params.set("size", String(options.size));
+  if (options?.page) params.set("page", String(options.page));
+  if (options?.translationIds?.length) {
+    params.set("translation_ids", options.translationIds.join(","));
+  }
+
+  const url = `${SEARCH_API}/search?${params.toString()}`;
+
+  try {
+    const response = await fetch(url, { headers });
+    if (!response.ok) {
+      console.warn("Search API error:", response.status, "- falling back to legacy search");
+      return legacySearch(query, options?.size || 20);
+    }
+    return await response.json();
+  } catch (error) {
+    console.error("Search error, falling back to legacy search:", error);
+    return legacySearch(query, options?.size || 20);
+  }
+}
+
+async function legacySearch(query: string, size: number): Promise<SearchResponse> {
+  try {
+    const url = `https://api.quran.com/api/v4/search?q=${encodeURIComponent(query)}&size=${size}`;
+    const response = await fetch(url);
+    if (!response.ok) return emptySearchResponse();
+    const data = await response.json();
+    const results = data.search?.results || [];
+    return {
+      pagination: {
+        current_page: data.search?.current_page || 1,
+        next_page: null,
+        per_page: size,
+        total_pages: data.search?.total_pages || 1,
+        total_records: data.search?.total_results || results.length,
+      },
+      result: {
+        navigation: [],
+        verses: results.map((r: any) => ({
+          result_type: "ayah",
+          key: r.verse_key,
+          name: r.text || "",
+          isArabic: true,
+        })),
+      },
+    };
+  } catch {
+    return emptySearchResponse();
+  }
+}
+
+function emptySearchResponse(): SearchResponse {
+  return {
+    pagination: { current_page: 1, next_page: null, per_page: 20, total_pages: 0, total_records: 0 },
+    result: { navigation: [], verses: [] },
+  };
+}
+
+// ─── User APIs (authenticated) ────────────────────────────────────
+
+async function userApiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+  const token = await getValidAccessToken();
+  if (!token) throw new Error("Not authenticated");
+
+  const url = `${USER_API}${path}`;
+  const headers: Record<string, string> = {
+    "x-auth-token": token,
+    "x-client-id": CLIENT_ID,
+    "Content-Type": "application/json",
+    ...(options?.headers as Record<string, string> || {}),
+  };
+
+  const response = await fetch(url, { ...options, headers });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({}));
+    throw new Error(err.message || err.error?.message || `User API error: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+export async function fetchBookmarks(params?: { first?: number; after?: string }) {
+  const qp = new URLSearchParams();
+  if (params?.first) qp.set("first", String(params.first));
+  if (params?.after) qp.set("after", params.after);
+  const qs = qp.toString();
+  return userApiFetch<any>(`/bookmarks${qs ? `?${qs}` : ""}`);
+}
+
+export async function addBookmark(verseKey: string) {
+  return userApiFetch<any>("/bookmarks", {
+    method: "POST",
+    body: JSON.stringify({ verse_key: verseKey }),
+  });
+}
+
+export async function deleteBookmark(verseKey: string) {
+  return userApiFetch<any>(`/bookmarks/${verseKey}`, { method: "DELETE" });
+}
+
+export async function fetchNotes(params?: { first?: number }) {
+  const qp = new URLSearchParams();
+  if (params?.first) qp.set("first", String(params.first));
+  const qs = qp.toString();
+  return userApiFetch<any>(`/notes${qs ? `?${qs}` : ""}`);
+}
+
+export async function addNote(data: { verse_key: string; text: string }) {
+  return userApiFetch<any>("/notes", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function fetchCollections(params?: { first?: number }) {
+  const qp = new URLSearchParams();
+  if (params?.first) qp.set("first", String(params.first));
+  const qs = qp.toString();
+  return userApiFetch<any>(`/collections${qs ? `?${qs}` : ""}`);
+}
+
+export async function fetchGoals() {
+  return userApiFetch<any>("/goals");
+}
+
+export async function fetchStreaks() {
+  return userApiFetch<any>("/streaks");
+}
+
+export async function fetchReadingSessions() {
+  return userApiFetch<any>("/reading_sessions");
+}
+
+export async function fetchUserProfile() {
+  return userApiFetch<any>("/users/profile");
+}
+
+export async function fetchPreferences() {
+  return userApiFetch<any>("/preferences");
+}

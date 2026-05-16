@@ -171,6 +171,7 @@ const InlineCombobox = ({
   );
 
   const store = useComboboxStore({
+    placement: 'bottom-end',
     // open: ,
     setValue: (newValue) => React.startTransition(() => setValue(newValue)),
   });

@@ -5,6 +5,12 @@ import type { PlateEditor, PlateElementProps } from "platejs/react";
 import { type TComboboxInputElement } from "platejs";
 import { PlateElement } from "platejs/react";
 import { useFuzzySearchList, Highlight } from '@nozbe/microfuzz/react'
+import { searchQuran } from "@/lib/qf/api";
+import type { SearchVerseResult } from "@/lib/qf/api";
+import { useDebounce } from "@/hooks/use-debounce";
+import { SURAH_NAMES } from "@/constants/surahs";
+import { searchHadiths } from "@/lib/hadith/api";
+import type { Hadith, HadithGrade } from "@/lib/hadith/types";
 
 import {
   InlineCombobox,
@@ -25,52 +31,183 @@ type Group = {
   onSelect: (editor: PlateEditor, value: string, color?: string) => void;
 };
 
-const loadQuran = async () => {
+let quranCache: Aya[] | null = null;
+
+const loadQuran = async (): Promise<Aya[]> => {
+  if (quranCache) return quranCache;
   try {
     const response = await fetch(import.meta.env.VITE_DATA_URL);
     if (!response.ok) {
       console.error("Failed to load quran data");
       return [];
     }
-    return await response.json();
+    quranCache = await response.json();
+    return quranCache || [];
   } catch (error) {
     console.error("Failed to load quran data", error);
     return [];
   }
 };
 
-const quran = await loadQuran();
+const SURAH_NAME_TO_ID: Record<string, number> = {};
+for (const [id, name] of Object.entries(SURAH_NAMES)) {
+  SURAH_NAME_TO_ID[name] = Number(id);
+}
 
 interface Aya {
+  id: number;
   surah: string;
+  surah_id: number;
   aya: number;
   textNoTashkeel: string;
   textMinTashkeel: string;
   textTashkeel: string;
 }
 
-const groups: Group[] = quran.map((item: Aya) => ({
-  ...item,
-  onSelect: (editor: PlateEditor, value: string, color = "#16a34a") => {
-    const fontSize = editor.api.marks()?.[KEYS.fontSize];
-    editor.tf.addMarks({ color });
-    editor.tf.addMarks({ fontSize });
-    editor.tf.insertText(` ﴿${value}﴾ [${item.surah} ${item.aya}] `);
-    editor.tf.removeMark("color");
+const buildGroups = (quran: Aya[]): Group[] => {
+  return quran.map((item: Aya) => ({
+    ...item,
+    onSelect: (editor: PlateEditor, value: string) => {
+      const surahId = SURAH_NAME_TO_ID[item.surah] || (item as any).surah_number || (item as any).chapter_id;
 
-  },
-}));
+      editor.tf.insertNodes({
+        type: "verse",
+        verseKey: `${surahId}:${item.aya}`,
+        surahName: item.surah,
+        ayaNumber: item.aya,
+        verseText: value,
+        children: [{ text: `﴿${value}﴾ [${item.surah} ${item.aya}]` }],
+      });
+      editor.tf.insertText(" ");
+      editor.tf.move({ distance: 1, unit: 'character' });
+    },
+  }));
+};
 
+const COLLECTION_NAMES: Record<string, string> = {
+  bukhari: "صحيح البخاري",
+  muslim: "صحيح مسلم",
+  nasai: "سنن النسائي",
+  abudawud: "سنن أبي داود",
+  tirmidhi: "جامع الترمذي",
+  ibnmajah: "سنن ابن ماجه",
+  malik: "موطأ مالك",
+  ahmad: "مسند أحمد",
+  darimi: "سنن الدارمي",
+  riyadussalihin: "رياض الصالحين",
+  adab: "الأدب المفرد",
+  shamail: "الشمائل المحمدية",
+  mishkat: "مشكاة المصابيح",
+  bulugh: "بلوغ المرام",
+  forty: "الأربعون النووية",
+  hisn: "حصن المسلم",
+  virtues: "فضائل القرآن",
+};
 
+function GradeBadge({ grades }: { grades?: HadithGrade[] }) {
+  if (!grades || grades.length === 0) return null;
+  const gradeText = grades[0].grade;
+  const grade = gradeText.toLowerCase();
 
+  let colorClass: string;
+  if (grade.includes("sahih")) {
+    colorClass = "bg-green-50 text-green-700 border-green-200";
+  } else if (grade.includes("hasan")) {
+    colorClass = "bg-yellow-50 text-yellow-700 border-yellow-200";
+  } else if (grade.includes("da")) {
+    colorClass = "bg-red-50 text-red-700 border-red-200";
+  } else {
+    colorClass = "bg-gray-50 text-gray-600 border-gray-200";
+  }
+
+  return (
+    <span className={`inline-flex items-center rounded px-1 py-0 text-[10px] font-medium border mr-1 ${colorClass}`}>
+      {gradeText}
+    </span>
+  );
+}
+
+type SearchMode = "verse" | "hadith";
 
 export function SlashInputElement(
   props: PlateElementProps<TComboboxInputElement>
 ) {
   const { editor, element } = props;
   const [value, setValue] = React.useState("");
+  const [apiResults, setApiResults] = React.useState<any[]>([]);
+  const [hadithResults, setHadithResults] = React.useState<Hadith[]>([]);
+  const [isSearching, setIsSearching] = React.useState(false);
+  const debouncedValue = useDebounce(value, 400);
+  const [searchMode, setSearchMode] = React.useState<SearchMode | null>(null);
+  const [groups, setGroups] = React.useState<Group[]>([]);
+
+  React.useEffect(() => {
+    loadQuran().then((data) => setGroups(buildGroups(data)));
+  }, []);
+
+  React.useEffect(() => {
+    if (searchMode === null) {
+      setHadithResults([]);
+      setApiResults([]);
+    }
+  }, [searchMode]);
+
+  React.useEffect(() => {
+    if (searchMode === "verse") {
+      if (debouncedValue.length > 2) {
+        setIsSearching(true);
+        searchQuran(debouncedValue, { mode: "quick" }).then(response => {
+          const verses = response?.result?.verses || [];
+          setApiResults(verses.map((r: SearchVerseResult) => {
+            const [sId, aNum] = r.key.split(':').map(Number);
+            const surahName = SURAH_NAMES[sId] ? "سورة " + SURAH_NAMES[sId] : "سورة " + sId;
+
+            return {
+              id: r.key,
+              surah: surahName,
+              surah_id: sId,
+              aya: aNum,
+              textTashkeel: r.name,
+              textNoTashkeel: r.isArabic ? r.name.replace(/<[^>]*>?/gm, '') : r.name,
+              onSelect: (editor: PlateEditor, val: string) => {
+                editor.tf.insertNodes({
+                  type: "verse",
+                  verseKey: r.key,
+                  surahName: surahName,
+                  ayaNumber: aNum,
+                  verseText: val,
+                  children: [{ text: `﴿${val}﴾ [${surahName} ${aNum}]` }],
+                });
+                editor.tf.insertText(" ");
+                editor.tf.move({ distance: 1, unit: 'character' });
+              }
+            };
+          }));
+        }).catch(console.error).finally(() => setIsSearching(false));
+      } else if (debouncedValue.length === 0) {
+        setApiResults([]);
+      }
+    }
+  }, [debouncedValue, searchMode]);
+
+  React.useEffect(() => {
+    if (searchMode === "hadith") {
+      if (debouncedValue.length > 1) {
+        setIsSearching(true);
+        searchHadiths({ q: debouncedValue, lang: "both", limit: 10 })
+          .then(response => {
+            setHadithResults(response.results || []);
+          })
+          .catch(console.error)
+          .finally(() => setIsSearching(false));
+      } else if (debouncedValue.length === 0) {
+        setHadithResults([]);
+      }
+    }
+  }, [debouncedValue, searchMode]);
+
   const fontSize = editor.api.marks()?.[KEYS.fontSize];
-  const filteredResults = useFuzzySearchList({
+  const localResults = useFuzzySearchList({
     list: groups,
     queryText: value,
     getText: (item: Group) => [item.textNoTashkeel],
@@ -78,7 +215,33 @@ export function SlashInputElement(
       item,
       highlightRanges,
     }),
-  }).slice(0, 10); // Limit to 10 results
+  });
+
+  const filteredResults = [...localResults, ...apiResults.map(item => ({ item, highlightRanges: [] }))].slice(0, 10);
+
+  const insertHadith = (hadith: Hadith) => {
+    const rawAr = hadith.ar?.body || hadith.ar?.text || "";
+    const rawEn = hadith.en?.body || hadith.en?.text || "";
+    
+    // Strip HTML tags (like <p>) that the API returns in the body field
+    const hadithText = rawAr.replace(/<[^>]*>?/gm, '');
+    const hadithTextEn = rawEn.replace(/<[^>]*>?/gm, '');
+
+    editor.tf.insertNodes({
+      type: "hadith",
+      collection: hadith.collection,
+      bookNumber: hadith.bookNumber,
+      hadithNumber: hadith.hadithNumber,
+      hadithText,
+      hadithTextEn,
+      grades: hadith.ar?.grades || hadith.en?.grades || [],
+      chapterTitle: hadith.chapterTitle?.ar || "",
+      children: [{ text: `﴿${hadithText}﴾ [${COLLECTION_NAMES[hadith.collection] || hadith.collection} ${hadith.hadithNumber}]` }],
+    });
+    editor.tf.insertText(" ");
+    editor.tf.move({ distance: 1, unit: 'character' });
+  };
+
   return (
     <PlateElement {...props} as="span">
       <InlineCombobox
@@ -86,64 +249,128 @@ export function SlashInputElement(
         trigger="/"
         setValue={setValue}
         value={value}
+        filter={false}
       >
         <span
-          style={
-            {
-              fontSize:
-                fontSize !== undefined
-                  ? typeof fontSize === "number"
-                    ? `${fontSize}px`
-                    : String(fontSize)
-                  : "inherit",
-            } as React.CSSProperties
-          }
+          style={{
+            fontSize: fontSize !== undefined ? (typeof fontSize === "number" ? `${fontSize}px` : String(fontSize)) : "inherit",
+          } as React.CSSProperties}
         >
-          ﴿<InlineComboboxInput className="bg-green-50" />﴾
+          <InlineComboboxInput />
         </span>
 
-        <InlineComboboxContent className=" font-[amiri] divide-y divide-gray-100/50 p-0 shadow-lg rounded-xl border border-gray-200/60 bg-white">
-          {filteredResults.length === 0 ? (
-            <InlineComboboxEmpty>
-              <span className="block px-3 py-6 text-center text-gray-500 text-base">
-                لا يوجد نتائج
-              </span>
-            </InlineComboboxEmpty>
-          ) : (
-            filteredResults.map(({ item, highlightRanges }) => (
-              <InlineComboboxItem
-                key={item.id}
-                value={item.textNoTashkeel}
-                focusEditor={false}
-                onClick={() =>
-                  item.onSelect(editor, item.textTashkeel, "#16a34a")
-                }
-                className="py-3 px-4 hover:bg-gray-50/80 transition-colors duration-200 cursor-pointer"
-                style={{
-                  direction: "rtl",
-                  fontSize: "1.2rem",
-                }}
+        <InlineComboboxContent className="z-50 overflow-y-auto overflow-x-hidden rounded-md border bg-popover text-popover-foreground shadow-md min-w-[340px] max-h-[400px] p-1 font-[amiri]" dir="rtl">
+          <InlineComboboxItem value={value || "dummy"} className="hidden" disabled />
+          
+          {searchMode === null ? (
+            <div className="flex flex-col gap-1 w-full min-h-0">
+              <div className="px-2 py-1.5 text-xs font-medium text-muted-foreground text-right w-full">اختر نوع البحث</div>
+              <div
+                onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setSearchMode("verse"); }}
+                className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground w-full"
               >
-                <span
-                  className="text-xs text-green-600 block mb-2"
-                  dir="ltr"
-                  style={{ fontSize: "1.2rem" }}
+                بحث عن آية
+              </div>
+              <div
+                onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setSearchMode("hadith"); }}
+                className="relative flex cursor-pointer select-none items-center rounded-sm px-2 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground w-full"
+              >
+                بحث عن حديث
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Header with back button */}
+              <div className="flex items-center px-2 py-1.5 border-b mb-1">
+                <button
+                  type="button"
+                  onMouseDown={(e) => { e.preventDefault(); e.stopPropagation(); setSearchMode(null); setValue(""); }}
+                  className="text-xs text-muted-foreground hover:text-foreground ml-2 px-2 py-1 rounded-sm hover:bg-accent transition-colors"
                 >
-                  {item.surah} {item.aya}
+                  &rarr; رجوع
+                </button>
+                <span className="text-xs font-medium text-muted-foreground mr-auto">
+                  {searchMode === "verse" ? "البحث في القرآن..." : "البحث في الحديث..."}
                 </span>
-                <span
-                  className="font-medium text-gray-900 leading-relaxed"
-                  dir="rtl"
-                  style={{ fontSize: "1.2rem" }}
-                >
-                  <Highlight text={item.textTashkeel} ranges={highlightRanges} />
-                </span>
-              </InlineComboboxItem>
-            ))
+                {isSearching && (
+                  <span className="text-xs text-muted-foreground animate-pulse mr-2">جاري البحث...</span>
+                )}
+              </div>
+
+              {/* Search content */}
+              {value.length === 0 ? (
+                <div className="py-6 text-center text-sm text-muted-foreground bg-transparent w-full">
+                  {searchMode === "verse" ? "اكتب للبحث عن آية" : "اكتب للبحث عن حديث"}
+                </div>
+              ) : searchMode === "verse" ? (
+                filteredResults.length === 0 && !isSearching ? (
+                  <div className="py-6 text-center text-muted-foreground text-sm w-full">
+                    لا يوجد نتائج
+                  </div>
+                ) : (
+                  filteredResults.map(({ item, highlightRanges }) => (
+                    <InlineComboboxItem
+                      key={item.id}
+                      value={item.textNoTashkeel}
+                      focusEditor={false}
+                      onClick={() => item.onSelect(editor, item.textTashkeel)}
+                      className="relative flex cursor-pointer select-none flex-col items-start gap-1 rounded-sm px-3 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground data-[active-item=true]:bg-accent data-[active-item=true]:text-accent-foreground"
+                    >
+                      <span className="text-xs text-muted-foreground block" dir="ltr">
+                        {item.surah} — {item.aya}
+                      </span>
+                      <span className="text-sm font-medium leading-relaxed" dir="rtl">
+                        <Highlight text={item.textTashkeel} ranges={highlightRanges} />
+                      </span>
+                    </InlineComboboxItem>
+                  ))
+                )
+              ) : (
+                /* Hadith search results */
+                hadithResults.length === 0 && debouncedValue.length > 1 && !isSearching ? (
+                  <div className="py-6 text-center text-muted-foreground text-sm w-full">
+                    لا يوجد نتائج
+                  </div>
+                ) : debouncedValue.length <= 1 ? (
+                  <div className="py-6 text-center text-sm text-muted-foreground">
+                    اكتب كلمتين على الأقل للبحث
+                  </div>
+                ) : isSearching && hadithResults.length === 0 ? (
+                  <div className="py-6 text-center text-sm text-muted-foreground animate-pulse w-full">
+                    جاري البحث في الحديث...
+                  </div>
+                ) : (
+                  hadithResults.map((hadith, i) => (
+                    <InlineComboboxItem
+                      key={`${hadith.collection}-${hadith.bookNumber}-${hadith.hadithNumber}-${i}`}
+                      value={hadith.ar?.text || hadith.ar?.body || hadith.en?.text || `hadith-${i}`}
+                      focusEditor={false}
+                      onClick={() => insertHadith(hadith)}
+                      className="relative flex cursor-pointer select-none flex-col items-start gap-1 rounded-sm px-3 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground data-[active-item=true]:bg-accent data-[active-item=true]:text-accent-foreground"
+                    >
+                      <div className="flex items-center gap-2 flex-wrap w-full">
+                        <span className="text-xs text-muted-foreground font-medium">
+                          {COLLECTION_NAMES[hadith.collection] || hadith.collection}
+                          {hadith.hadithNumber ? ` — ${hadith.hadithNumber}` : ""}
+                        </span>
+                        <GradeBadge grades={hadith.ar?.grades || hadith.en?.grades || []} />
+                      </div>
+                      <span 
+                        className="text-sm leading-relaxed block text-foreground [&_mark]:bg-amber-200/60 [&_mark]:text-amber-900 [&_mark]:rounded-sm [&_mark]:px-0.5" 
+                        dir="auto"
+                        dangerouslySetInnerHTML={{ 
+                          __html: hadith.snippet?.ar || hadith.snippet?.en || (hadith.ar?.text || "").slice(0, 200) + ((hadith.ar?.text || "").length > 200 ? "…" : "")
+                        }}
+                      />
+                    </InlineComboboxItem>
+                  ))
+                )
+              )}
+            </>
           )}
         </InlineComboboxContent>
       </InlineCombobox>
       {props.children}
     </PlateElement>
   );
-}   
+}

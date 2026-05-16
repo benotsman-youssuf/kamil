@@ -13,6 +13,8 @@ import { cn } from "@/lib/utils";
 import { PageActions } from "./PageActions";
 import { Pin } from "lucide-react";
 
+import { UserAccount } from "./UserAccount";
+
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pages = usePages();
   const location = useLocation();
@@ -78,6 +80,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             })}
           </nav>
         </ScrollArea>
+        <UserAccount />
       </SidebarContent>
 
       {/* Rail */}

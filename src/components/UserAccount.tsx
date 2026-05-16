@@ -1,0 +1,131 @@
+import { useEffect, useState } from "react";
+import { Button } from "@/components/ui/button";
+import { login, logout, getTokens, fetchUserInfo } from "@/lib/qf/auth";
+import { User, LogOut, Settings, Target, Bookmark, BookOpen, Flame, BarChart3 } from "lucide-react";
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem,
+  DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { useNavigate } from "react-router-dom";
+
+interface UserInfo {
+  sub?: string;
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+}
+
+export function UserAccount() {
+  const [user, setUser] = useState<UserInfo | null>(null);
+  const [loading, setLoading] = useState(false);
+  const tokens = getTokens();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (tokens?.access_token) {
+      setLoading(true);
+      fetchUserInfo()
+        .then((info) => setUser(info))
+        .catch(() => setUser(null))
+        .finally(() => setLoading(false));
+    }
+  }, [tokens?.access_token]);
+
+  const displayName = user
+    ? [user.first_name, user.last_name].filter(Boolean).join(" ") || "المستخدم"
+    : null;
+
+  const initials = displayName
+    ? displayName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()
+    : null;
+
+  if (!tokens) {
+    return (
+      <div className="p-4 border-t border-border/30">
+        <Button
+          variant="outline"
+          className="w-full justify-start gap-2 text-muted-foreground hover:text-foreground transition-colors"
+          onClick={() => login()}
+        >
+          <User className="h-4 w-4" />
+          <span>تسجيل الدخول بحساب Quran.com</span>
+        </Button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4 border-t border-border/30">
+      <DropdownMenu dir="rtl">
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" className="w-full justify-start gap-3 px-2 hover:bg-accent/50 transition-all duration-200">
+            <Avatar className="h-8 w-8 border border-border/50">
+              <AvatarFallback className="bg-primary/10 text-primary font-bold text-sm">
+                {initials || <User className="h-4 w-4" />}
+              </AvatarFallback>
+            </Avatar>
+            <div className="flex flex-col items-start overflow-hidden">
+              <span className="text-sm font-semibold truncate w-full">
+                {loading ? "..." : displayName || "المستخدم"}
+              </span>
+              <span className="text-[10px] text-muted-foreground truncate w-full">
+                {user?.email || "Quran.com"}
+              </span>
+            </div>
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="start" className="w-56">
+          <DropdownMenuLabel className="text-right font-amiri">حسابي</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem className="flex justify-between items-center cursor-pointer" onClick={() => navigate("/pages/1")}>
+            <div className="flex items-center gap-2">
+              <BookOpen className="h-4 w-4" />
+              <span>المجلدات</span>
+            </div>
+          </DropdownMenuItem>
+          <DropdownMenuItem className="flex justify-between items-center cursor-pointer" onClick={() => navigate("/pages/1")}>
+            <div className="flex items-center gap-2">
+              <Bookmark className="h-4 w-4" />
+              <span>العلامات المرجعية</span>
+            </div>
+          </DropdownMenuItem>
+          <DropdownMenuItem className="flex justify-between items-center cursor-pointer" onClick={() => navigate("/pages/1")}>
+            <div className="flex items-center gap-2">
+              <Target className="h-4 w-4" />
+              <span>الأهداف اليومية</span>
+            </div>
+          </DropdownMenuItem>
+          <DropdownMenuItem className="flex justify-between items-center cursor-pointer" onClick={() => navigate("/pages/1")}>
+            <div className="flex items-center gap-2">
+              <Flame className="h-4 w-4" />
+              <span>التسلسل اليومي</span>
+            </div>
+          </DropdownMenuItem>
+          <DropdownMenuItem className="flex justify-between items-center cursor-pointer" onClick={() => navigate("/pages/1")}>
+            <div className="flex items-center gap-2">
+              <BarChart3 className="h-4 w-4" />
+              <span>جلسات القراءة</span>
+            </div>
+          </DropdownMenuItem>
+          <DropdownMenuItem className="flex justify-between items-center cursor-pointer" onClick={() => navigate("/pages/1")}>
+            <div className="flex items-center gap-2">
+              <Settings className="h-4 w-4" />
+              <span>الإعدادات</span>
+            </div>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            className="flex justify-between items-center cursor-pointer text-red-500 focus:text-red-500"
+            onClick={logout}
+          >
+            <div className="flex items-center gap-2">
+              <LogOut className="h-4 w-4" />
+              <span>تسجيل الخروج</span>
+            </div>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
+    </div>
+  );
+}
