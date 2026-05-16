@@ -47,7 +47,7 @@ export async function login(scope?: string) {
   localStorage.setItem("qf_nonce", nonce);
   localStorage.setItem("qf_code_verifier", codeVerifier);
 
-  const requestedScope = scope || "openid offline_access user collection";
+  const requestedScope = scope || "openid offline_access user collection bookmark";
 
   const params = new URLSearchParams({
     client_id: CLIENT_ID,
@@ -81,21 +81,22 @@ export async function handleCallback(code: string, state: string): Promise<Token
     throw new Error("State mismatch - possible CSRF attack");
   }
 
+  const headers: Record<string, string> = {
+    "Content-Type": "application/x-www-form-urlencoded",
+  };
+
   const body = new URLSearchParams({
     grant_type: "authorization_code",
-    client_id: CLIENT_ID,
     code,
     redirect_uri: REDIRECT_URI,
     code_verifier: codeVerifier!,
   });
 
-  const headers: Record<string, string> = {
-    "Content-Type": "application/x-www-form-urlencoded",
-  };
-
   if (CLIENT_SECRET) {
     const basicAuth = btoa(`${CLIENT_ID}:${CLIENT_SECRET}`);
     headers["Authorization"] = `Basic ${basicAuth}`;
+  } else {
+    body.set("client_id", CLIENT_ID);
   }
 
   const response = await fetch(`${TOKEN_BASE_URL}/oauth2/token`, {
@@ -125,19 +126,20 @@ export async function refreshTokens(): Promise<TokenSet | null> {
   const tokens = getTokensRaw();
   if (!tokens?.refresh_token) return null;
 
-  const body = new URLSearchParams({
-    grant_type: "refresh_token",
-    refresh_token: tokens.refresh_token,
-    client_id: CLIENT_ID,
-  });
-
   const headers: Record<string, string> = {
     "Content-Type": "application/x-www-form-urlencoded",
   };
 
+  const body = new URLSearchParams({
+    grant_type: "refresh_token",
+    refresh_token: tokens.refresh_token,
+  });
+
   if (CLIENT_SECRET) {
     const basicAuth = btoa(`${CLIENT_ID}:${CLIENT_SECRET}`);
     headers["Authorization"] = `Basic ${basicAuth}`;
+  } else {
+    body.set("client_id", CLIENT_ID);
   }
 
   try {

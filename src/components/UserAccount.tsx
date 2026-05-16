@@ -1,23 +1,18 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { login, logout, getTokens, fetchUserInfo } from "@/lib/qf/auth";
-import { User, LogOut, Settings, Target, Bookmark, BookOpen, Flame, BarChart3 } from "lucide-react";
+import { login, logout, getTokens } from "@/lib/qf/auth";
+import { fetchUserProfile } from "@/lib/qf/api";
+import type { UserProfile } from "@/lib/qf/api";
+import { User, LogOut, Settings, Bookmark, BookOpen } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
 
-interface UserInfo {
-  sub?: string;
-  email?: string;
-  first_name?: string;
-  last_name?: string;
-}
-
 export function UserAccount() {
-  const [user, setUser] = useState<UserInfo | null>(null);
+  const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(false);
   const tokens = getTokens();
   const navigate = useNavigate();
@@ -25,15 +20,15 @@ export function UserAccount() {
   useEffect(() => {
     if (tokens?.access_token) {
       setLoading(true);
-      fetchUserInfo()
-        .then((info) => setUser(info))
+      fetchUserProfile()
+        .then((res) => setUser(res.data))
         .catch(() => setUser(null))
         .finally(() => setLoading(false));
     }
   }, [tokens?.access_token]);
 
   const displayName = user
-    ? [user.first_name, user.last_name].filter(Boolean).join(" ") || "المستخدم"
+    ? [user.firstName, user.lastName].filter(Boolean).join(" ") || "المستخدم"
     : null;
 
   const initials = displayName
@@ -61,6 +56,7 @@ export function UserAccount() {
         <DropdownMenuTrigger asChild>
           <Button variant="ghost" className="w-full justify-start gap-3 px-2 hover:bg-accent/50 transition-all duration-200">
             <Avatar className="h-8 w-8 border border-border/50">
+              <AvatarImage src={user?.photoUrl || user?.avatarUrls?.small} alt={displayName || ""} />
               <AvatarFallback className="bg-primary/10 text-primary font-bold text-sm">
                 {initials || <User className="h-4 w-4" />}
               </AvatarFallback>
@@ -78,37 +74,19 @@ export function UserAccount() {
         <DropdownMenuContent align="start" className="w-56">
           <DropdownMenuLabel className="text-right font-amiri">حسابي</DropdownMenuLabel>
           <DropdownMenuSeparator />
-          <DropdownMenuItem className="flex justify-between items-center cursor-pointer" onClick={() => navigate("/pages/1")}>
+          <DropdownMenuItem className="flex justify-between items-center cursor-pointer" onClick={() => navigate("/collections")}>
             <div className="flex items-center gap-2">
               <BookOpen className="h-4 w-4" />
               <span>المجلدات</span>
             </div>
           </DropdownMenuItem>
-          <DropdownMenuItem className="flex justify-between items-center cursor-pointer" onClick={() => navigate("/pages/1")}>
+          <DropdownMenuItem className="flex justify-between items-center cursor-pointer" onClick={() => navigate("/bookmarks")}>
             <div className="flex items-center gap-2">
               <Bookmark className="h-4 w-4" />
               <span>العلامات المرجعية</span>
             </div>
           </DropdownMenuItem>
-          <DropdownMenuItem className="flex justify-between items-center cursor-pointer" onClick={() => navigate("/pages/1")}>
-            <div className="flex items-center gap-2">
-              <Target className="h-4 w-4" />
-              <span>الأهداف اليومية</span>
-            </div>
-          </DropdownMenuItem>
-          <DropdownMenuItem className="flex justify-between items-center cursor-pointer" onClick={() => navigate("/pages/1")}>
-            <div className="flex items-center gap-2">
-              <Flame className="h-4 w-4" />
-              <span>التسلسل اليومي</span>
-            </div>
-          </DropdownMenuItem>
-          <DropdownMenuItem className="flex justify-between items-center cursor-pointer" onClick={() => navigate("/pages/1")}>
-            <div className="flex items-center gap-2">
-              <BarChart3 className="h-4 w-4" />
-              <span>جلسات القراءة</span>
-            </div>
-          </DropdownMenuItem>
-          <DropdownMenuItem className="flex justify-between items-center cursor-pointer" onClick={() => navigate("/pages/1")}>
+          <DropdownMenuItem className="flex justify-between items-center cursor-pointer" onClick={() => navigate("/settings")}>
             <div className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
               <span>الإعدادات</span>

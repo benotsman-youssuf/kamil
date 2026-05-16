@@ -155,6 +155,69 @@ export interface ApiErrorResponse {
   };
 }
 
+// ─── User Types ─────────────────────────────────────────────────
+
+export interface UserProfile {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  username: string;
+  photoUrl?: string;
+  avatarUrls?: { small: string; medium: string; large: string };
+  bio?: string;
+  country?: string;
+  languageIsoCode?: string;
+  verified?: boolean;
+  postsCount?: number;
+  followersCount?: number;
+  likesCount?: number;
+  createdAt?: string;
+  joiningYear?: number;
+}
+
+export interface BookmarkItem {
+  id: string;
+  type: "ayah";
+  key: number;
+  verseNumber: number;
+  group: string;
+  createdAt: string;
+  isInDefaultCollection?: boolean;
+  isReading?: boolean;
+  collectionsCount?: number;
+}
+
+export interface CollectionItem {
+  id: string;
+  name: string;
+  slug: string;
+  isPrivate: boolean;
+  isDefault: boolean;
+  bookmarksCount: number;
+  count: number;
+  updatedAt: string;
+}
+
+export interface CursorPagination {
+  startCursor?: string;
+  endCursor?: string;
+  hasNextPage: boolean;
+  hasPreviousPage: boolean;
+}
+
+export interface BookmarkListResponse {
+  success: boolean;
+  data: BookmarkItem[];
+  pagination: CursorPagination;
+}
+
+export interface CollectionListResponse {
+  success: boolean;
+  data: CollectionItem[];
+  pagination: CursorPagination;
+}
+
 // ─── Content APIs ─────────────────────────────────────────────────
 
 export async function fetchVerseDetails(verseKey: string): Promise<VerseDetails> {
@@ -455,23 +518,39 @@ async function userApiFetch<T>(path: string, options?: RequestInit): Promise<T> 
   return response.json();
 }
 
-export async function fetchBookmarks(params?: { first?: number; after?: string }) {
+export async function fetchBookmarks(params?: { first?: number; after?: string; mushafId?: number }): Promise<BookmarkListResponse> {
   const qp = new URLSearchParams();
+  qp.set("mushafId", String(params?.mushafId ?? 1));
   if (params?.first) qp.set("first", String(params.first));
   if (params?.after) qp.set("after", params.after);
   const qs = qp.toString();
-  return userApiFetch<any>(`/bookmarks${qs ? `?${qs}` : ""}`);
+  return userApiFetch<BookmarkListResponse>(`/bookmarks?${qs}`);
 }
 
-export async function addBookmark(verseKey: string) {
-  return userApiFetch<any>("/bookmarks", {
+export async function addBookmark(verseKey: string): Promise<{ success: boolean; data: BookmarkItem }> {
+  const [chapterId, verseNumber] = verseKey.split(":").map(Number);
+  return userApiFetch<{ success: boolean; data: BookmarkItem }>(`/bookmarks?mushafId=1`, {
     method: "POST",
-    body: JSON.stringify({ verse_key: verseKey }),
+    body: JSON.stringify({ key: chapterId, verseNumber, group: verseKey, type: "ayah" }),
   });
 }
 
-export async function deleteBookmark(verseKey: string) {
-  return userApiFetch<any>(`/bookmarks/${verseKey}`, { method: "DELETE" });
+export async function deleteBookmark(bookmarkId: string): Promise<{ success: boolean }> {
+  return userApiFetch<{ success: boolean }>(`/bookmarks/${bookmarkId}?mushafId=1`, { method: "DELETE" });
+}
+
+export async function fetchCollections(params?: { first?: number }): Promise<CollectionListResponse> {
+  const qp = new URLSearchParams();
+  if (params?.first) qp.set("first", String(params.first));
+  const qs = qp.toString();
+  return userApiFetch<CollectionListResponse>(`/collections${qs ? `?${qs}` : ""}`);
+}
+
+export async function fetchCollectionsWithItems(params?: { first?: number }): Promise<{ success: boolean; data: BookmarkItem[]; pagination: CursorPagination }> {
+  const qp = new URLSearchParams();
+  if (params?.first) qp.set("first", String(params.first));
+  const qs = qp.toString();
+  return userApiFetch<{ success: boolean; data: BookmarkItem[]; pagination: CursorPagination }>(`/collections/all${qs ? `?${qs}` : ""}`);
 }
 
 export async function fetchNotes(params?: { first?: number }) {
@@ -488,13 +567,6 @@ export async function addNote(data: { verse_key: string; text: string }) {
   });
 }
 
-export async function fetchCollections(params?: { first?: number }) {
-  const qp = new URLSearchParams();
-  if (params?.first) qp.set("first", String(params.first));
-  const qs = qp.toString();
-  return userApiFetch<any>(`/collections${qs ? `?${qs}` : ""}`);
-}
-
 export async function fetchGoals() {
   return userApiFetch<any>("/goals");
 }
@@ -507,8 +579,8 @@ export async function fetchReadingSessions() {
   return userApiFetch<any>("/reading_sessions");
 }
 
-export async function fetchUserProfile() {
-  return userApiFetch<any>("/users/profile");
+export async function fetchUserProfile(): Promise<{ success: boolean; data: UserProfile }> {
+  return userApiFetch<{ success: boolean; data: UserProfile }>("/users/profile");
 }
 
 export async function fetchPreferences() {

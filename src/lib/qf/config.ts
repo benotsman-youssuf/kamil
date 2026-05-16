@@ -2,7 +2,7 @@ const ENV = import.meta.env.VITE_QF_ENV || "prelive";
 const isDev = import.meta.env.DEV;
 
 function getDefaultRedirectUri(): string {
-  return `${window.location.origin}/auth/callback`;
+  return `${window.location.origin}/callback`;
 }
 
 interface QFConfig {
