@@ -161,7 +161,7 @@ export function VersePanelContent({
 
     fetchNotesByVerse(verseData.verseKey).then((res) => {
       if (res?.data) {
-        setNotes(res.data);
+        setNotes(Array.isArray(res.data) ? res.data : []);
       }
     }).catch(() => {});
 
@@ -201,7 +201,7 @@ export function VersePanelContent({
       await addNote({ verse_key: verseData.verseKey, text });
       setNoteText("");
       const res = await fetchNotesByVerse(verseData.verseKey);
-      if (res?.data) setNotes(res.data);
+      if (res?.data) setNotes(Array.isArray(res.data) ? res.data : []);
     } catch {
     } finally {
       setSavingNote(false);

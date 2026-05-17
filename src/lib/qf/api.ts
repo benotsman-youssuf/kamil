@@ -582,7 +582,7 @@ async function userApiFetch<T>(path: string, options?: RequestInit): Promise<T> 
 export async function fetchBookmarks(params?: { first?: number; after?: string; mushafId?: number }): Promise<BookmarkListResponse> {
   const qp = new URLSearchParams();
   qp.set("mushafId", String(params?.mushafId ?? 1));
-  if (params?.first) qp.set("first", String(params.first));
+  if (params?.first) qp.set("first", String(Math.min(params.first, 20)));
   if (params?.after) qp.set("after", params.after);
   const qs = qp.toString();
   return userApiFetch<BookmarkListResponse>(`/bookmarks?${qs}`);
@@ -657,6 +657,7 @@ export async function addNote(data: { verse_key: string; text: string }) {
     method: "POST",
     body: JSON.stringify({
       body: data.text,
+      saveToQR: false,
       ranges: [formattedRange],
     }),
   });
@@ -756,7 +757,11 @@ export async function fetchGoals(): Promise<{ success: boolean; data: Goal[] }> 
 
 export async function fetchTodaysGoalPlan(): Promise<{ success: boolean; data: any }> {
   try {
-    return await userApiFetch<{ success: boolean; data: any }>("/goals/get-todays-plan");
+    const qp = new URLSearchParams({
+      type: "QURAN_TIME",
+      mushafId: "1",
+    });
+    return await userApiFetch<{ success: boolean; data: any }>(`/goals/get-todays-plan?${qp.toString()}`);
   } catch {
     return { success: false, data: null };
   }

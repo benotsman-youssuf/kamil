@@ -20,7 +20,7 @@ export function Collections() {
   useEffect(() => {
     setLoading(true);
     fetchCollections({ first: 20 })
-      .then((res) => setCollections(res.data))
+      .then((res) => setCollections(Array.isArray(res.data) ? res.data : []))
       .catch(() => setError("فشل تحميل المجلدات"))
       .finally(() => setLoading(false));
   }, []);
@@ -30,9 +30,9 @@ export function Collections() {
     setItemsLoading(true);
     fetchCollectionItems(selectedId, { first: 20 })
       .then((res) => {
-        setItems(res.data);
-        setHasMoreItems(res.pagination.hasNextPage);
-        setItemsCursor(res.pagination.endCursor);
+        setItems(Array.isArray(res.data) ? res.data : []);
+        setHasMoreItems(res.pagination?.hasNextPage ?? false);
+        setItemsCursor(res.pagination?.endCursor);
       })
       .catch(() => setItems([]))
       .finally(() => setItemsLoading(false));
@@ -41,9 +41,9 @@ export function Collections() {
   const handleLoadMoreItems = async () => {
     if (!selectedId || !itemsCursor) return;
     const res = await fetchCollectionItems(selectedId, { first: 30, after: itemsCursor });
-    setItems((prev) => [...prev, ...res.data]);
-    setHasMoreItems(res.pagination.hasNextPage);
-    setItemsCursor(res.pagination.endCursor);
+    setItems((prev) => [...prev, ...(Array.isArray(res.data) ? res.data : [])]);
+    setHasMoreItems(res.pagination?.hasNextPage ?? false);
+    setItemsCursor(res.pagination?.endCursor);
   };
 
   const openVerse = (item: CollectionBookmarkItem) => {

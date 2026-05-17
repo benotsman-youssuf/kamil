@@ -32,9 +32,9 @@ export function Bookmarks() {
     setLoading(true);
     loadBookmarks()
       .then((res) => {
-        setBookmarks(res.data);
-        setHasMore(res.pagination.hasNextPage);
-        setCursor(res.pagination.endCursor);
+        setBookmarks(Array.isArray(res.data) ? res.data : []);
+        setHasMore(res.pagination?.hasNextPage ?? false);
+        setCursor(res.pagination?.endCursor);
       })
       .catch(() => setError("فشل تحميل العلامات المرجعية"))
       .finally(() => setLoading(false));
@@ -45,9 +45,9 @@ export function Bookmarks() {
     setLoadingMore(true);
     try {
       const res = await loadBookmarks(cursor);
-      setBookmarks((prev) => [...prev, ...res.data]);
-      setHasMore(res.pagination.hasNextPage);
-      setCursor(res.pagination.endCursor);
+      setBookmarks((prev) => [...prev, ...(Array.isArray(res.data) ? res.data : [])]);
+      setHasMore(res.pagination?.hasNextPage ?? false);
+      setCursor(res.pagination?.endCursor);
     } finally {
       setLoadingMore(false);
     }

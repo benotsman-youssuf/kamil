@@ -1,6 +1,18 @@
 {
   "version": 1,
   "skills": {
+    "develop-ai-functions-example": {
+      "source": "vercel/ai",
+      "sourceType": "github",
+      "skillPath": "skills/develop-ai-functions-example/SKILL.md",
+      "computedHash": "c83ef2e93700a05862e9d37fa7c21ca81d7a1b7b1de5c4ef758a379f2c158b97"
+    },
+    "find-skills": {
+      "source": "vercel-labs/skills",
+      "sourceType": "github",
+      "skillPath": "skills/find-skills/SKILL.md",
+      "computedHash": "d31e234f0c90694a670222cdd1dafa853e051d7066beda389f1097c22dadd461"
+    },
     "tiptap": {
       "source": "ueberdosis/tiptap",
       "sourceType": "github",
