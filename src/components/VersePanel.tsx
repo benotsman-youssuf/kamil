@@ -411,7 +411,7 @@ export function VersePanelContent({
                 <TabsContent value="verse" className="absolute inset-0">
                   <div className="h-full overflow-y-auto px-4 py-3 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-transparent [&::-webkit-scrollbar-track]:bg-transparent">
                     <VerseTab
-                      verseText={verseData?.verseText || ""}
+                      verseText={verseData?.verseText || details?.text_uthmani || details?.text_imlaei || ""}
                       details={details}
                       translationName={translationName}
                       audioProgress={progressPercent}
