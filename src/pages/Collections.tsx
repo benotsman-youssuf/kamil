@@ -21,7 +21,7 @@ function isDomainName(name: string) {
 }
 
 function faviconImg(name: string) {
-  return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(name)}&sz=32`;
+  return `https://favicon.im/${encodeURIComponent(name)}?larger=true`;
 }
 
 export function Collections() {

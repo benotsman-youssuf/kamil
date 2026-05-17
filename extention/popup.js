@@ -37,11 +37,7 @@ let currentFavicon = '';
 
 function faviconUrlForDomain(domain) {
   if (!domain || domain === 'الموقع') return 'globe.svg';
-  try {
-    return chrome.runtime.getURL('_favicon/?pageUrl=' + encodeURIComponent('https://' + domain) + '&size=32');
-  } catch {
-    return 'globe.svg';
-  }
+  return `https://favicon.im/${encodeURIComponent(domain)}?larger=true`;
 }
 
 // ═══════════════════════════════════════════════════════════════
