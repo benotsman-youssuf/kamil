@@ -374,25 +374,26 @@ export function Stats() {
           <div className="space-y-2">
             {notes.slice(0, 5).map((note) => {
               const range = note.ranges?.[0] || "";
-              const [chapStr] = range.split(":");
+              const verseKey = range.split("-")[0];
+              const [chapStr, verseStr] = verseKey.split(":");
               const chapNum = parseInt(chapStr);
+              const verseNum = parseInt(verseStr);
               const surahName = chapNum ? SURAH_NAMES[chapNum] || `سورة ${chapNum}` : "";
               return (
                 <div
                   key={note.id}
                   className="bg-card border rounded-xl p-3 cursor-pointer hover:bg-accent/30 transition-colors"
                   onClick={() => {
-                    if (range) {
-                      const [, v] = range.split(":");
+                    if (verseKey) {
                       window.dispatchEvent(new CustomEvent("open-verse-panel", {
-                        detail: { verseKey: range, surahName, ayaNumber: parseInt(v), verseText: "" },
+                        detail: { verseKey, surahName, ayaNumber: verseNum, verseText: "" },
                       }));
                     }
                   }}
                 >
                   <p className="text-sm text-foreground/85 line-clamp-2 leading-relaxed">{note.body}</p>
                   <div className="flex items-center gap-2 mt-1.5 text-[10px] text-muted-foreground">
-                    {surahName && <span>{surahName} · الآية {range.split(":")[1]}</span>}
+                    {surahName && <span>{surahName} · الآية {verseNum}</span>}
                     <span className="mr-auto">
                       {note.createdAt ? new Date(note.createdAt).toLocaleDateString("ar-SA", { month: "short", day: "numeric" }) : ""}
                     </span>

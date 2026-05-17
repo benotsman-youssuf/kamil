@@ -671,6 +671,9 @@ export async function fetchAllNotes(params?: { limit?: number; cursor?: string; 
 }
 
 export async function addNote(data: { verse_key: string; text: string }) {
+  if (data.text.length < 6) {
+    throw new Error("يجب أن تحتوي الملاحظة على 6 أحرف على الأقل");
+  }
   const formattedRange = data.verse_key.includes("-") ? data.verse_key : `${data.verse_key}-${data.verse_key}`;
   return userApiFetch<any>("/notes", {
     method: "POST",

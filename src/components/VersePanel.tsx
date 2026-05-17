@@ -196,6 +196,10 @@ export function VersePanelContent({
   const handleAddNote = useCallback(async () => {
     const text = noteText.trim();
     if (!text || savingNote) return;
+    if (text.length < 6) {
+      toast.error("يجب أن تحتوي الملاحظة على 6 أحرف على الأقل");
+      return;
+    }
     setSavingNote(true);
     try {
       await addNote({ verse_key: verseData.verseKey, text });
@@ -203,6 +207,7 @@ export function VersePanelContent({
       const res = await fetchNotesByVerse(verseData.verseKey);
       if (res?.data) setNotes(Array.isArray(res.data) ? res.data : []);
     } catch {
+      toast.error("فشل حفظ الملاحظة. يرجى المحاولة مرة أخرى.");
     } finally {
       setSavingNote(false);
     }
