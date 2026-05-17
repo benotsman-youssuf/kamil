@@ -39,6 +39,8 @@ import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { CollectionPicker } from "./CollectionPicker";
 
+const AUDIO_BASE = "https://verses.quran.com/";
+
 export function VersePanelContent({ 
   verseData, 
   close 
