@@ -11,6 +11,7 @@ const USER_API = `${API_BASE_URL}/auth/v1`;
 
 let contentToken: string | null = null;
 let contentTokenPromise: Promise<string | null> | null = null;
+const hadithRequestBlocklist = new Set<string>();
 
 async function ensureContentToken(): Promise<string | null> {
   if (contentToken) return contentToken;
@@ -320,18 +321,33 @@ export async function fetchVerseDetails(verseKey: string): Promise<VerseDetails>
 }
 
 export async function fetchHadithsByAyah(ayahKey: string): Promise<Hadith[]> {
+  if (hadithRequestBlocklist.has(ayahKey)) return [];
+
   const headers = await getAuthHeaders();
+  const params = new URLSearchParams({ language: "ar", per_page: "5" });
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 6000);
+
   try {
-    const params = new URLSearchParams({ language: "ar", per_page: "5" });
     const response = await fetch(
       `${CONTENT_API}/hadith_references/by_ayah/${ayahKey}/hadiths?${params}`,
-      { headers }
+      { headers, signal: controller.signal }
     );
-    if (!response.ok) return [];
+
+    if (!response.ok) {
+      if ([429, 500, 502, 503, 504].includes(response.status)) {
+        hadithRequestBlocklist.add(ayahKey);
+      }
+      return [];
+    }
+
     const data = await response.json();
     return data.hadiths || [];
   } catch {
+    hadithRequestBlocklist.add(ayahKey);
     return [];
+  } finally {
+    window.clearTimeout(timeout);
   }
 }
 
@@ -570,6 +586,9 @@ async function userApiFetch<T>(path: string, options?: RequestInit): Promise<T> 
   const response = await fetch(url, { ...options, headers });
 
   if (!response.ok) {
+    if (response.status === 401 || response.status === 403) {
+      localStorage.removeItem("qf_tokens");
+    }
     const err = await response.json().catch(() => ({}));
     throw new Error(err.message || err.error?.message || `User API error: ${response.status}`);
   }
