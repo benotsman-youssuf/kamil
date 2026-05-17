@@ -564,58 +564,64 @@
   // ═══════════════════════════════════════════════════════════════
 
   function getTextareaCaretCoords(el) {
-    const pos = el.selectionEnd ?? el.value.length;
-    const cs = getComputedStyle(el);
-    const isInput = el.tagName === 'INPUT';
+    try {
+      const value = el.value ?? '';
+      const pos = el.selectionEnd ?? value.length;
+      const cs = getComputedStyle(el);
+      const isInput = el.tagName === 'INPUT';
 
-    const mirror = document.createElement('div');
-    const s = mirror.style;
+      const mirror = document.createElement('div');
+      const s = mirror.style;
 
-    const textProps = [
-      'direction', 'fontStyle', 'fontVariant', 'fontWeight', 'fontStretch',
-      'fontSize', 'fontSizeAdjust', 'lineHeight', 'fontFamily',
-      'textAlign', 'textTransform', 'textIndent', 'textDecoration',
-      'letterSpacing', 'wordSpacing', 'tabSize', 'MozTabSize',
-    ];
-    textProps.forEach((p) => { s[p] = cs[p]; });
+      const textProps = [
+        'direction', 'fontStyle', 'fontVariant', 'fontWeight', 'fontStretch',
+        'fontSize', 'fontSizeAdjust', 'lineHeight', 'fontFamily',
+        'textAlign', 'textTransform', 'textIndent', 'textDecoration',
+        'letterSpacing', 'wordSpacing', 'tabSize', 'MozTabSize',
+      ];
+      textProps.forEach((p) => { s[p] = cs[p]; });
 
-    s.paddingTop = cs.paddingTop;
-    s.paddingRight = cs.paddingRight;
-    s.paddingBottom = cs.paddingBottom;
-    s.paddingLeft = cs.paddingLeft;
+      s.paddingTop = cs.paddingTop;
+      s.paddingRight = cs.paddingRight;
+      s.paddingBottom = cs.paddingBottom;
+      s.paddingLeft = cs.paddingLeft;
 
-    s.boxSizing = 'border-box';
-    s.width = el.clientWidth + 'px';
-    s.height = el.clientHeight + 'px';
+      s.boxSizing = 'border-box';
+      s.width = el.clientWidth + 'px';
+      s.height = el.clientHeight + 'px';
 
-    s.position = 'absolute';
-    s.top = '0';
-    s.left = '0';
-    s.visibility = 'hidden';
-    s.overflow = 'hidden';
-    s.whiteSpace = 'pre-wrap';
-    if (!isInput) s.wordWrap = 'break-word';
+      s.position = 'absolute';
+      s.top = '0';
+      s.left = '0';
+      s.visibility = 'hidden';
+      s.overflow = 'hidden';
+      s.whiteSpace = 'pre-wrap';
+      if (!isInput) s.wordWrap = 'break-word';
 
-    document.body.appendChild(mirror);
-    mirror.textContent = el.value.substring(0, pos);
+      document.body.appendChild(mirror);
+      mirror.textContent = value.substring(0, pos);
 
-    const caret = document.createElement('span');
-    caret.textContent = el.value.substring(pos) || '.';
-    mirror.appendChild(caret);
+      const caret = document.createElement('span');
+      caret.textContent = value.substring(pos) || '.';
+      mirror.appendChild(caret);
 
-    const mirrorRect = mirror.getBoundingClientRect();
-    const caretRect = caret.getBoundingClientRect();
-    document.body.removeChild(mirror);
+      const mirrorRect = mirror.getBoundingClientRect();
+      const caretRect = caret.getBoundingClientRect();
+      document.body.removeChild(mirror);
 
-    const borderLeft = parseInt(cs.borderLeftWidth) || 0;
-    const borderTop = parseInt(cs.borderTopWidth) || 0;
-    const lineHeight = parseInt(cs.lineHeight) || 16;
-    const taRect = el.getBoundingClientRect();
+      const borderLeft = parseInt(cs.borderLeftWidth) || 0;
+      const borderTop = parseInt(cs.borderTopWidth) || 0;
+      const lineHeight = parseInt(cs.lineHeight) || 16;
+      const taRect = el.getBoundingClientRect();
 
-    return {
-      x: taRect.left + borderLeft + (caretRect.left - mirrorRect.left) - el.scrollLeft,
-      y: taRect.top + borderTop + (caretRect.top - mirrorRect.top) - el.scrollTop + lineHeight,
-    };
+      return {
+        x: taRect.left + borderLeft + (caretRect.left - mirrorRect.left) - el.scrollLeft,
+        y: taRect.top + borderTop + (caretRect.top - mirrorRect.top) - el.scrollTop + lineHeight,
+      };
+    } catch {
+      const r = el.getBoundingClientRect();
+      return { x: r.left, y: r.bottom };
+    }
   }
 
   function getCaretCoords(el) {
@@ -667,79 +673,130 @@
       @import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap');
 
       :host { all: initial; }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
 
       #kamil-quran-results {
         position: absolute;
         top: 0; left: 0;
-        background: rgba(255,255,255,0.97);
-        border: 1px solid #e6e8ec;
-        border-radius: 8px;
-        box-shadow: 0 10px 30px rgba(2,6,23,0.1);
-        max-width: 420px;
-        min-width: 320px;
-        max-height: 320px;
-        overflow-y: auto;
+        background: #141414;
+        border: 1px solid #2a2a2a;
+        border-radius: 10px;
+        width: 380px;
+        overflow: hidden;
+        display: flex;
+        flex-direction: column;
         direction: rtl;
-        text-align: right;
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        font-size: 14px;
+        font-size: 13px;
         line-height: 1.5;
         opacity: 0;
-        transform: translateY(4px);
-        transition: opacity 150ms ease, transform 150ms ease;
+        transform: translateY(-4px);
+        transition: opacity 120ms ease, transform 120ms ease;
         pointer-events: none;
-        color: #111827;
+        color: #e8e8e8;
       }
+
       #kamil-quran-results.kamil-visible {
         opacity: 1;
         transform: translateY(0);
         pointer-events: auto;
       }
-      #kamil-quran-results::-webkit-scrollbar { width: 4px; }
-      #kamil-quran-results::-webkit-scrollbar-thumb { background:#cfd6de; border-radius:2px; }
 
-      .kamil-result-item {
-        padding: 12px 14px;
-        cursor: pointer;
-        border-bottom: 1px solid #f3f4f6;
-        transition: background-color 0.12s, box-shadow 0.12s;
+      /* Scroll area */
+      .kamil-results-scroll {
+        overflow-y: auto;
+        flex: 1;
+        max-height: 320px;
+        padding: 6px 0;
       }
-      .kamil-result-item:last-child { border-bottom: none; }
+      .kamil-results-scroll::-webkit-scrollbar { width: 0px; }
+
+      /* Section label */
+      .kamil-section-label {
+        padding: 5px 14px 3px;
+        font-size: 11px;
+        color: #555;
+        direction: rtl;
+        text-align: right;
+      }
+
+      /* Result item */
+      .kamil-result-item {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 12px;
+        cursor: pointer;
+        border-radius: 6px;
+        margin: 1px 5px;
+      }
       .kamil-result-item:hover,
       .kamil-result-item.kamil-selected {
-        background-color: #f3f4f6;
-        box-shadow: inset -3px 0 0 #6366f1;
+        background: #1e1e1e;
       }
-      .kamil-result-info {
+
+      /* Badge */
+      .kamil-badge {
+        flex-shrink: 0;
         font-size: 11px;
-        color: #6b7280;
-        margin-bottom: 5px;
+        color: #555;
         direction: ltr;
+        font-variant-numeric: tabular-nums;
+        min-width: 40px;
         text-align: left;
       }
+
+      /* Arabic verse text */
       .kamil-result-text {
         font-family: 'Amiri', serif;
-        font-size: 18px;
-        line-height: 1.8;
-        color: #0f172a;
+        font-size: 17px;
+        line-height: 1.7;
+        color: #e8e8e8;
+        flex: 1;
+        direction: rtl;
+        overflow: hidden;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
       }
+
+      /* Enter hint */
+      .kamil-enter-hint {
+        flex-shrink: 0;
+        font-size: 11px;
+        color: #444;
+        opacity: 0;
+        transition: opacity 80ms ease;
+      }
+      .kamil-result-item.kamil-selected .kamil-enter-hint {
+        opacity: 1;
+      }
+
+      /* Empty */
       .kamil-no-results {
-        padding: 20px;
+        padding: 24px 16px;
         text-align: center;
-        color: #6b7280;
+        color: #555;
+        font-size: 13px;
         direction: rtl;
       }
+
     `;
     shadow.appendChild(style);
 
     const panel = document.createElement('div');
     panel.id = 'kamil-quran-results';
+
+    const scrollEl = document.createElement('div');
+    scrollEl.className = 'kamil-results-scroll';
+    panel.appendChild(scrollEl);
+
     shadow.appendChild(panel);
 
-    return { host, shadow, panel };
+    return { host, shadow, panel, scrollEl };
   }
 
-  const { host: dropdownHost, shadow: dropdownShadow, panel: dropdown } = createDropdown();
+  const { host: dropdownHost, shadow: dropdownShadow, panel: dropdown, scrollEl: dropdownScroll } = createDropdown();
   let selectedIndex = -1;
 
   function positionDropdown(el) {
@@ -747,8 +804,8 @@
     dropdown.style.visibility = 'hidden';
 
     const { x, y } = getCaretCoords(el);
-    const dw = dropdown.offsetWidth;
-    const dh = dropdown.offsetHeight;
+    const dw = dropdown.offsetWidth || 340;
+    const dh = dropdown.offsetHeight || 200;
     const vw = window.innerWidth;
     const vh = window.innerHeight;
 
@@ -775,16 +832,21 @@
     item.className = 'kamil-result-item';
     item.dataset.index = index;
 
-    const info = document.createElement('div');
-    info.className = 'kamil-result-info';
-    info.textContent = `${result.item.surah} : ${result.item.aya}`;
+    const badge = document.createElement('span');
+    badge.className = 'kamil-badge';
+    badge.textContent = `${result.item.surah}:${result.item.aya}`;
 
     const text = document.createElement('div');
     text.className = 'kamil-result-text';
     text.textContent = result.item.textTashkeel;
 
-    item.appendChild(info);
+    const hint = document.createElement('span');
+    hint.className = 'kamil-enter-hint';
+    hint.textContent = '↵';
+
+    item.appendChild(hint);
     item.appendChild(text);
+    item.appendChild(badge);
     return item;
   }
 
@@ -814,7 +876,7 @@
   function handleKeydown(e) {
     if (!kamilEnabled) return;
 
-    const items = dropdown.querySelectorAll('.kamil-result-item');
+    const items = dropdownScroll.querySelectorAll('.kamil-result-item');
     if (!items.length && e.key !== 'Escape') return;
 
     const isVisible = dropdown.classList.contains('kamil-visible');
@@ -850,15 +912,15 @@
   let activeElement = null;
   let lastTriggerOffset = -1;
 
-  function renderResults(results, el, triggerOffset) {
-    dropdown.innerHTML = '';
+  function renderResults(results, el, triggerOffset, query) {
+    dropdownScroll.innerHTML = '';
     selectedIndex = -1;
 
     if (results.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'kamil-no-results';
-      empty.textContent = '\u0644\u0627 \u062A\u0648\u062C\u062F \u0646\u062A\u0627\u0626\u062C';
-      dropdown.appendChild(empty);
+      empty.innerHTML = `<div class="kamil-no-results-icon">☽</div>لا توجد نتائج للبحث`;
+      dropdownScroll.appendChild(empty);
       return;
     }
 
@@ -866,7 +928,7 @@
       const item = buildResultItem(result, i);
       item.addEventListener('click', () => {
         const strategy = resolveStrategy(el);
-        const formatted = `\uFEFD${result.item.textNoTashkeel}\uFEFE (\u0633\u0648\u0631\u0629 ${result.item.surah}: ${result.item.aya})`;
+        const formatted = `${result.item.textNoTashkeel} (${result.item.surah}: ${result.item.aya})`;
         strategy.insertAtTrigger(el, triggerOffset, formatted);
         closeDropdown();
         el.focus();
@@ -877,9 +939,9 @@
         saveVerseToBackend(verseKey);
       });
       item.addEventListener('mouseenter', () => {
-        updateSelection(dropdown.querySelectorAll('.kamil-result-item'), i);
+        updateSelection(dropdownScroll.querySelectorAll('.kamil-result-item'), i);
       });
-      dropdown.appendChild(item);
+      dropdownScroll.appendChild(item);
     });
   }
 
@@ -888,41 +950,45 @@
   // ═══════════════════════════════════════════════════════════════
 
   async function handleInput(e) {
-    if (!kamilEnabled) return;
+    try {
+      if (!kamilEnabled) return;
 
-    const el = e.target;
-    activeElement = el;
-    const strategy = resolveStrategy(el);
-    const text = strategy.getText(el);
+      const el = e.target;
+      activeElement = el;
+      const strategy = resolveStrategy(el);
+      const text = strategy.getText(el);
 
-    const slashIdx = (() => {
-      for (let i = text.length - 1; i >= 0; i--) {
-        if (text[i] === '/') {
-          if (i === 0 || /\s/.test(text[i - 1])) return i;
+      const slashIdx = (() => {
+        for (let i = text.length - 1; i >= 0; i--) {
+          if (text[i] === '/') {
+            if (i === 0 || /\s/.test(text[i - 1])) return i;
+          }
         }
+        return -1;
+      })();
+
+      if (slashIdx === -1) {
+        closeDropdown();
+        return;
       }
-      return -1;
-    })();
 
-    if (slashIdx === -1) {
-      closeDropdown();
-      return;
+      const query = text.slice(slashIdx + 1);
+
+      if (query.length === 0) {
+        closeDropdown();
+        return;
+      }
+
+      lastTriggerOffset = slashIdx;
+
+      console.log('[Kamil] handleInput: slash at', slashIdx, 'query:', query, 'el:', el.tagName, el.className);
+      const results = await searchQuran(query);
+      renderResults(results, el, slashIdx, query);
+      positionDropdown(el);
+      openDropdown();
+    } catch (err) {
+      console.warn('[Kamil] handleInput error:', err);
     }
-
-    const query = text.slice(slashIdx + 1);
-
-    if (query.length === 0) {
-      closeDropdown();
-      return;
-    }
-
-    lastTriggerOffset = slashIdx;
-
-    console.log('[Kamil] handleInput: slash at', slashIdx, 'query:', query, 'el:', el.tagName, el.className);
-    const results = await searchQuran(query);
-    renderResults(results, el, slashIdx);
-    positionDropdown(el);
-    openDropdown();
   }
 
   const debouncedHandleInput = debounce(handleInput, 220);
