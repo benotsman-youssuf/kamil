@@ -2,6 +2,7 @@ import { QF_CONFIG } from "./config";
 
 const AUTH_BASE_URL = QF_CONFIG.authBaseUrl;
 const TOKEN_BASE_URL = QF_CONFIG.tokenBaseUrl;
+const PROXY_BASE_URL = QF_CONFIG.proxyBaseUrl;
 const CLIENT_ID = QF_CONFIG.clientId;
 const CLIENT_SECRET = QF_CONFIG.clientSecret;
 const REDIRECT_URI = QF_CONFIG.redirectUri;
@@ -47,7 +48,7 @@ export async function login(scope?: string) {
   localStorage.setItem("qf_nonce", nonce);
   localStorage.setItem("qf_code_verifier", codeVerifier);
 
-  const requestedScope = scope || "openid offline_access user collection bookmark";
+  const requestedScope = scope || "openid offline_access user collection bookmark note preferences reading_sessions goals streaks activity_days";
 
   const params = new URLSearchParams({
     client_id: CLIENT_ID,
@@ -221,7 +222,7 @@ export async function fetchUserInfo(): Promise<{
   if (!token) return null;
 
   try {
-    const response = await fetch(`${AUTH_BASE_URL}/userinfo`, {
+    const response = await fetch(`${PROXY_BASE_URL}/userinfo`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     if (!response.ok) return null;

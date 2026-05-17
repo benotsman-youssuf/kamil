@@ -4,7 +4,9 @@ import type { UserProfile } from "@/lib/qf/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Mail, Globe, Award, FileText, Heart, Users, AlertCircle } from "lucide-react";
+import { Mail, Globe, Award, FileText, Heart, Users, AlertCircle, Download, Upload, CloudLightning, ShieldCheck } from "lucide-react";
+import { db } from "@/lib/db";
+import { toast } from "sonner";
 
 export function Settings() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
@@ -18,6 +20,80 @@ export function Settings() {
       .catch(() => setError("فشل تحميل الملف الشخصي"))
       .finally(() => setLoading(false));
   }, []);
+
+  const [exporting, setExporting] = useState(false);
+  const [importing, setImporting] = useState(false);
+
+  const handleExportBackup = async () => {
+    try {
+      setExporting(true);
+      const pages = await db.pages.toArray();
+      const backupData = {
+        version: 1,
+        appName: "kamil",
+        exportedAt: new Date().toISOString(),
+        pages
+      };
+      const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `kamil-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      link.click();
+      URL.revokeObjectURL(url);
+      toast.success("تم تصدير النسخة الاحتياطية بنجاح!", { duration: 3000 });
+    } catch (error) {
+      console.error(error);
+      toast.error("فشل تصدير النسخة الاحتياطية");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleImportBackup = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setImporting(true);
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const text = e.target?.result as string;
+          const backupData = JSON.parse(text);
+          
+          if (backupData.appName !== "kamil" || !Array.isArray(backupData.pages)) {
+            toast.error("ملف النسخة الاحتياطية غير صالح");
+            return;
+          }
+
+          let importedCount = 0;
+          for (const page of backupData.pages) {
+            const existing = await db.pages.get(page.id);
+            if (existing) {
+              await db.pages.put({
+                ...page,
+                id: undefined,
+              });
+            } else {
+              await db.pages.put(page);
+            }
+            importedCount++;
+          }
+          toast.success(`تم استيراد ${importedCount} صفحات بنجاح! يرجى تحديث الصفحة لمشاهدة التحديثات.`, { duration: 5000 });
+        } catch (err) {
+          toast.error("ملف غير صالح أو تالف");
+        }
+      };
+      reader.readAsText(file);
+    } catch (error) {
+      console.error(error);
+      toast.error("فشل استيراد النسخة الاحتياطية");
+    } finally {
+      setImporting(false);
+      event.target.value = "";
+    }
+  };
 
   if (loading) {
     return (
@@ -130,6 +206,73 @@ export function Settings() {
             <span className="text-xs text-muted-foreground">{stat.label}</span>
           </div>
         ))}
+      </div>
+
+      {/* Sync & Backup Center */}
+      <div className="p-6 rounded-xl border bg-card/60 backdrop-blur-md space-y-6">
+        <div className="flex items-center gap-3">
+          <CloudLightning className="h-6 w-6 text-indigo-500 animate-pulse" />
+          <h3 className="text-xl font-bold font-amiri">مركز المزامنة والنسخ الاحتياطي (Sync & Backup)</h3>
+        </div>
+
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          جميع صفحاتك ونصوصك تُحفظ محلياً على جهازك لضمان الخصوصية والسرعة القصوى. عندما تقوم بتسجيل الدخول، يمكنك مزامنة وحفظ تقدمك أو نقل صفحاتك بين الأجهزة بسهولة تامة من خلال الخيارات أدناه.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Export card */}
+          <div className="p-4 rounded-lg border bg-background flex flex-col justify-between gap-4">
+            <div>
+              <h4 className="text-sm font-semibold flex items-center gap-2">
+                <Download className="h-4 w-4 text-emerald-500" />
+                تصدير نسخة احتياطية (Export)
+              </h4>
+              <p className="text-xs text-muted-foreground mt-1 leading-normal">
+                قم بتحميل نسخة احتياطية كاملة تحتوي على كافة صفحاتك ونصوصك وملاحظاتك بصيغة ملف مشفر آمن للحفاظ عليها.
+              </p>
+            </div>
+            <button
+              onClick={handleExportBackup}
+              disabled={exporting}
+              className="w-full py-2 px-4 rounded bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity active:scale-[0.98] transition-transform duration-100 flex items-center justify-center gap-2"
+            >
+              <Download className="h-4 w-4" />
+              {exporting ? "جاري التصدير..." : "تصدير الملف الآن"}
+            </button>
+          </div>
+
+          {/* Import card */}
+          <div className="p-4 rounded-lg border bg-background flex flex-col justify-between gap-4">
+            <div>
+              <h4 className="text-sm font-semibold flex items-center gap-2">
+                <Upload className="h-4 w-4 text-blue-500" />
+                استيراد نسخة احتياطية (Import)
+              </h4>
+              <p className="text-xs text-muted-foreground mt-1 leading-normal">
+                استعد صفحاتك أو انقلها من جهاز آخر عن طريق رفع ملف النسخة الاحتياطية (.json) المحفوظ مسبقاً.
+              </p>
+            </div>
+            <label className="w-full py-2 px-4 rounded border-2 border-dashed border-muted-foreground/30 hover:border-primary/50 transition-colors cursor-pointer font-medium text-sm flex items-center justify-center gap-2 active:scale-[0.98] transition-transform duration-100">
+              <Upload className="h-4 w-4" />
+              <span>{importing ? "جاري الاستيراد..." : "رفع واستيراد الملف"}</span>
+              <input
+                type="file"
+                accept=".json"
+                onChange={handleImportBackup}
+                disabled={importing}
+                className="hidden"
+              />
+            </label>
+          </div>
+        </div>
+
+        <div className="p-4 rounded-lg border bg-amber-500/5 text-amber-600/90 dark:text-amber-400 flex items-start gap-3 text-xs leading-normal">
+          <ShieldCheck className="h-5 w-5 shrink-0 mt-0.5" />
+          <div className="space-y-1">
+            <span className="font-semibold block">مزامنة الحساب السحابي نشطة:</span>
+            <span>بمجرد تسجيل الدخول بحسابك، يتم تلقائياً مزامنة وحفظ أهدافك، إحصائيات القراءة اليومية، سلاسل الاستمرار (Streaks)، العلامات المرجعية ومجموعاتها، والملاحظات المكتوبة على الآيات مباشرة مع خوادم Quran.com.</span>
+          </div>
+        </div>
       </div>
     </div>
   );

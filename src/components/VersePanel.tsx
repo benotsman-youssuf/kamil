@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { fetchVerseDetails, getResourcesTafsirs, getResourcesTranslations, fetchTafsirsBulk } from "@/lib/qf/api";
+import { fetchVerseDetails, getResourcesTafsirs, getResourcesTranslations, fetchTafsirsBulk, addBookmark, deleteBookmark, getBookmark, fetchNotesByVerse, addNote, updateNote, deleteNote } from "@/lib/qf/api";
 import type { VerseDetails, Hadith, Word, Tafsir } from "@/lib/qf/api";
 import {
   Play,
@@ -26,7 +26,21 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
+  Bookmark,
+  Pencil,
+  Trash2,
+  Send,
+  Search,
+  Check,
+  Eye,
+  Sparkles,
+  Bold,
+  Italic,
+  Quote
 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { db } from "@/lib/db";
+import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
 
@@ -43,11 +57,70 @@ export function VersePanelContent({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [translationName, setTranslationName] = useState("");
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [bookmarkId, setBookmarkId] = useState<string | null>(null);
+  const [bookmarkLoading, setBookmarkLoading] = useState(false);
+  const [notes, setNotes] = useState<any[]>([]);
+  const [noteText, setNoteText] = useState("");
+  const [savingNote, setSavingNote] = useState(false);
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState("");
+  const [savingEdit, setSavingEdit] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioProgress, setAudioProgress] = useState(0);
   const [audioDuration, setAudioDuration] = useState(0);
   const [activeTab, setActiveTab] = useState("verse");
+
+  const navigate = useNavigate();
+
+  const handleOpenAsDocument = useCallback(async (noteBody: string) => {
+    try {
+      const slateContent = [
+        {
+          type: "h1",
+          children: [{ text: `تأملات وكتابات: سورة ${verseData.surahName}` }]
+        },
+        {
+          type: "p",
+          children: [
+            { text: `سورة ${verseData.surahName}، آية ${verseData.ayaNumber} ` },
+            { text: `[${verseData.verseKey}]` }
+          ]
+        },
+        {
+          type: "p",
+          children: [
+            { text: `﴿${verseData.verseText || ""}﴾`, italic: true }
+          ]
+        },
+        {
+          type: "p",
+          children: [{ text: "" }]
+        },
+        ...noteBody.split("\n").map(line => ({
+          type: "p",
+          children: [{ text: line }]
+        }))
+      ];
+
+      const addedId = await db.pages.add({
+        name: `تأملات الآية ${verseData.verseKey}`,
+        description: `سورة ${verseData.surahName}، آية ${verseData.ayaNumber}`,
+        content: JSON.stringify(slateContent),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        isPinned: false
+      });
+
+      navigate(`/pages/${addedId}`);
+      close();
+      toast.success("تم فتح الملاحظة في المحرر المتقدم!");
+    } catch (err) {
+      console.error(err);
+      toast.error("فشل فتح الملاحظة في المحرر المتقدم");
+    }
+  }, [verseData, navigate, close]);
 
   useEffect(() => {
     if (audioRef.current) {
@@ -61,6 +134,10 @@ export function VersePanelContent({
     setDetails(null);
     setError(null);
     setLoading(true);
+    setIsBookmarked(false);
+    setBookmarkId(null);
+    setNotes([]);
+    setNoteText("");
 
     fetchVerseDetails(verseData.verseKey)
       .then((data) => {
@@ -80,12 +157,86 @@ export function VersePanelContent({
       }
     });
 
+    getBookmark(verseData.verseKey).then((res) => {
+      if (res?.data) {
+        setIsBookmarked(true);
+        setBookmarkId(res.data.id);
+      }
+    });
+
+    fetchNotesByVerse(verseData.verseKey).then((res) => {
+      if (res?.data) {
+        setNotes(res.data);
+      }
+    }).catch(() => {});
+
     return () => {
       if (audioRef.current) {
         audioRef.current.pause();
       }
     };
   }, [verseData]);
+
+  const toggleBookmark = useCallback(async () => {
+    if (bookmarkLoading) return;
+    setBookmarkLoading(true);
+    try {
+      if (isBookmarked && bookmarkId) {
+        await deleteBookmark(bookmarkId);
+        setIsBookmarked(false);
+        setBookmarkId(null);
+      } else {
+        const res = await addBookmark(verseData.verseKey);
+        if (res?.data) {
+          setIsBookmarked(true);
+          setBookmarkId(res.data.id);
+        }
+      }
+    } catch {
+    } finally {
+      setBookmarkLoading(false);
+    }
+  }, [isBookmarked, bookmarkId, bookmarkLoading, verseData.verseKey]);
+
+  const handleAddNote = useCallback(async () => {
+    const text = noteText.trim();
+    if (!text || savingNote) return;
+    setSavingNote(true);
+    try {
+      await addNote({ verse_key: verseData.verseKey, text });
+      setNoteText("");
+      const res = await fetchNotesByVerse(verseData.verseKey);
+      if (res?.data) setNotes(res.data);
+    } catch {
+    } finally {
+      setSavingNote(false);
+    }
+  }, [noteText, savingNote, verseData.verseKey]);
+
+  const handleDeleteNote = useCallback(async (noteId: string) => {
+    try {
+      await deleteNote(noteId);
+      setNotes((prev) => prev.filter((n) => n.id !== noteId));
+    } catch {}
+  }, []);
+
+  const handleStartEdit = useCallback((note: any) => {
+    setEditingNoteId(note.id);
+    setEditingText(note.body || "");
+  }, []);
+
+  const handleSaveEdit = useCallback(async () => {
+    if (!editingNoteId || !editingText.trim() || savingEdit) return;
+    setSavingEdit(true);
+    try {
+      await updateNote(editingNoteId, editingText.trim());
+      setNotes((prev) => prev.map((n) => n.id === editingNoteId ? { ...n, body: editingText.trim() } : n));
+      setEditingNoteId(null);
+      setEditingText("");
+    } catch {} finally {
+      setSavingEdit(false);
+    }
+  }, [editingNoteId, editingText, savingEdit]);
 
   const toggleAudio = useCallback(() => {
     if (!details?.audio_url) return;
@@ -164,15 +315,32 @@ export function VersePanelContent({
   return (
     <>
         <div className="flex items-center justify-between px-4 py-3 border-b border-sidebar-border flex-shrink-0">
-          <Button
-            size="icon"
-            variant="ghost"
-            className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
-            onClick={close}
-            aria-label="إغلاق"
-          >
-            <X className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-1">
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7 rounded-md text-muted-foreground hover:text-foreground hover:bg-sidebar-accent"
+              onClick={close}
+              aria-label="إغلاق"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className={cn(
+                "h-7 w-7 rounded-md hover:bg-sidebar-accent",
+                isBookmarked
+                  ? "text-amber-500 hover:text-amber-600"
+                  : "text-muted-foreground hover:text-foreground"
+              )}
+              onClick={toggleBookmark}
+              disabled={bookmarkLoading}
+              aria-label={isBookmarked ? "إزالة من العلامات المرجعية" : "إضافة إلى العلامات المرجعية"}
+            >
+              <Bookmark className={cn("h-4 w-4", isBookmarked && "fill-amber-500")} />
+            </Button>
+          </div>
           <h2 className="text-sm font-semibold truncate" dir="rtl">
             {verseData
               ? `${verseData.surahName} - ${verseData.ayaNumber}`
@@ -214,6 +382,20 @@ export function VersePanelContent({
               >
                 <Info className="h-3.5 w-3.5 ml-1" />
                 المعلومات
+              </TabsTrigger>
+              <TabsTrigger
+                value="notes"
+                className="rounded-md data-[state=active]:bg-muted/70 data-[state=active]:text-foreground text-xs px-2 py-1.5 h-auto"
+              >
+                <Pencil className="h-3.5 w-3.5 ml-1" />
+                الملاحظات
+              </TabsTrigger>
+              <TabsTrigger
+                value="search"
+                className="rounded-md data-[state=active]:bg-muted/70 data-[state=active]:text-foreground text-xs px-2 py-1.5 h-auto"
+              >
+                <Search className="h-3.5 w-3.5 ml-1" />
+                بحث
               </TabsTrigger>
             </TabsList>
           </div>
@@ -268,6 +450,32 @@ export function VersePanelContent({
                 <TabsContent value="info" className="absolute inset-0">
                   <div className="h-full overflow-y-auto px-4 py-3 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-transparent [&::-webkit-scrollbar-track]:bg-transparent">
                     <InfoTab details={details} />
+                  </div>
+                </TabsContent>
+                <TabsContent value="notes" className="absolute inset-0">
+                  <div className="h-full overflow-y-auto px-4 py-3 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-transparent [&::-webkit-scrollbar-track]:bg-transparent">
+                    <NotesTab
+                      notes={notes}
+                      loading={false}
+                      noteText={noteText}
+                      onNoteTextChange={setNoteText}
+                      onAddNote={handleAddNote}
+                      onDeleteNote={handleDeleteNote}
+                      savingNote={savingNote}
+                      editingNoteId={editingNoteId}
+                      editingText={editingText}
+                      onEditingTextChange={setEditingText}
+                      onStartEdit={handleStartEdit}
+                      onSaveEdit={handleSaveEdit}
+                      onCancelEdit={() => { setEditingNoteId(null); setEditingText(""); }}
+                      savingEdit={savingEdit}
+                      onOpenAsDocument={handleOpenAsDocument}
+                    />
+                  </div>
+                </TabsContent>
+                <TabsContent value="search" className="absolute inset-0">
+                  <div className="h-full overflow-y-auto px-4 py-3 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-transparent [&::-webkit-scrollbar-track]:bg-transparent">
+                    <SearchTab verseData={verseData} />
                   </div>
                 </TabsContent>
               </>
@@ -867,6 +1075,457 @@ function HadithSection({ hadiths }: { hadiths: Hadith[] }) {
               </div>
             );
           })}
+      </div>
+    </div>
+  );
+}
+
+function parseInlineStyles(text: string) {
+  const regex = /(﴿[^﴾]+﴾|\*\*[^*]+\*\*|\*[^*]+\*|==[^=]+==)/g;
+  const parts = text.split(regex);
+  
+  return parts.map((part, index) => {
+    if (part.startsWith("﴿") && part.endsWith("﴾")) {
+      return (
+        <span key={index} className="font-amiri text-emerald-600 dark:text-emerald-400 font-semibold text-base px-0.5" dir="rtl">
+          {part}
+        </span>
+      );
+    }
+    if (part.startsWith("**") && part.endsWith("**")) {
+      return (
+        <strong key={index} className="font-semibold text-foreground">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    if (part.startsWith("*") && part.endsWith("*")) {
+      return (
+        <em key={index} className="italic text-foreground/80">
+          {part.slice(1, -1)}
+        </em>
+      );
+    }
+    if (part.startsWith("==") && part.endsWith("==")) {
+      return (
+        <mark key={index} className="bg-amber-100 dark:bg-amber-900/30 text-amber-950 dark:text-amber-100 rounded px-1 py-0.5 mx-0.5 font-medium">
+          {part.slice(2, -2)}
+        </mark>
+      );
+    }
+    return part;
+  });
+}
+
+function PreviewContent({ text }: { text: string }) {
+  if (!text || !text.trim()) {
+    return <p className="text-muted-foreground text-xs italic">لا يوجد محتوى لعرضه...</p>;
+  }
+
+  const lines = text.split("\n");
+  return (
+    <div className="space-y-1 text-sm leading-relaxed text-foreground/85 font-normal">
+      {lines.map((line, idx) => {
+        // Blockquote
+        if (line.trim().startsWith(">")) {
+          const content = line.trim().slice(1).trim();
+          return (
+            <blockquote key={idx} className="border-r-3 border-emerald-500 bg-emerald-500/5 dark:bg-emerald-950/10 px-3 py-1.5 rounded-l text-muted-foreground my-1 border-l-0">
+              {parseInlineStyles(content)}
+            </blockquote>
+          );
+        }
+        // Bullet list
+        if (line.trim().startsWith("-")) {
+          const content = line.trim().slice(1).trim();
+          return (
+            <div key={idx} className="flex items-start gap-1.5 mr-2">
+              <span className="text-emerald-500 mt-1 select-none font-bold">•</span>
+              <span>{parseInlineStyles(content)}</span>
+            </div>
+          );
+        }
+        // Normal paragraph
+        return (
+          <p key={idx} className={line.trim() === "" ? "h-2" : ""}>
+            {parseInlineStyles(line)}
+          </p>
+        );
+      })}
+    </div>
+  );
+}
+
+function NotesTab({
+  notes, loading, noteText, onNoteTextChange, onAddNote, onDeleteNote, savingNote,
+  editingNoteId, editingText, onEditingTextChange, onStartEdit, onSaveEdit, onCancelEdit, savingEdit,
+  onOpenAsDocument,
+}: {
+  notes: any[];
+  loading: boolean;
+  noteText: string;
+  onNoteTextChange: (text: string) => void;
+  onAddNote: () => void;
+  onDeleteNote: (id: string) => void;
+  savingNote: boolean;
+  editingNoteId: string | null;
+  editingText: string;
+  onEditingTextChange: (t: string) => void;
+  onStartEdit: (note: any) => void;
+  onSaveEdit: () => void;
+  onCancelEdit: () => void;
+  savingEdit: boolean;
+  onOpenAsDocument: (body: string) => void;
+}) {
+  const [activeMode, setActiveMode] = useState<"edit" | "preview">("edit");
+  const noteTextRef = useRef<HTMLTextAreaElement>(null);
+  const editTextRef = useRef<HTMLTextAreaElement>(null);
+
+  // Auto-grow heights
+  useEffect(() => {
+    if (noteTextRef.current) {
+      noteTextRef.current.style.height = "auto";
+      noteTextRef.current.style.height = `${noteTextRef.current.scrollHeight}px`;
+    }
+  }, [noteText]);
+
+  useEffect(() => {
+    if (editTextRef.current) {
+      editTextRef.current.style.height = "auto";
+      editTextRef.current.style.height = `${editTextRef.current.scrollHeight}px`;
+    }
+  }, [editingText, editingNoteId]);
+
+  const insertFormat = (
+    ref: React.RefObject<HTMLTextAreaElement | null>,
+    placeholder: string,
+    setText: (t: string) => void,
+    prefix: string,
+    suffix: string = ""
+  ) => {
+    const el = ref.current;
+    if (!el) return;
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const currentVal = el.value;
+    const selection = currentVal.substring(start, end);
+    const replacement = prefix + (selection || placeholder) + suffix;
+    
+    setText(currentVal.substring(0, start) + replacement + currentVal.substring(end));
+    
+    setTimeout(() => {
+      el.focus();
+      const newCursorPos = start + prefix.length + (selection || placeholder).length + suffix.length;
+      el.setSelectionRange(newCursorPos, newCursorPos);
+    }, 0);
+  };
+
+  return (
+    <div className="space-y-4 font-sans" dir="rtl">
+      {/* Premium Header Mode Switch */}
+      <div className="flex items-center justify-between border-b border-border/40 pb-2">
+        <span className="text-xs font-semibold text-foreground/80 flex items-center gap-1">
+          <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
+          مفكرة التدبر
+        </span>
+        <div className="flex items-center gap-1 bg-muted/40 p-0.5 rounded-lg border border-border/30">
+          <button
+            type="button"
+            onClick={() => setActiveMode("edit")}
+            className={cn(
+              "px-2.5 py-1 text-[11px] rounded-md transition-all duration-150 flex items-center gap-1",
+              activeMode === "edit"
+                ? "bg-background shadow-sm text-foreground font-semibold"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Pencil className="w-3 h-3" />
+            تحرير
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveMode("preview")}
+            className={cn(
+              "px-2.5 py-1 text-[11px] rounded-md transition-all duration-150 flex items-center gap-1",
+              activeMode === "preview"
+                ? "bg-background shadow-sm text-foreground font-semibold"
+                : "text-muted-foreground hover:text-foreground"
+            )}
+          >
+            <Eye className="w-3 h-3" />
+            معاينة
+          </button>
+        </div>
+      </div>
+
+      {/* New note input / Preview view */}
+      {activeMode === "edit" ? (
+        <div className="flex flex-col rounded-lg border border-input bg-background overflow-hidden focus-within:ring-2 focus-within:ring-ring focus-within:border-transparent transition-all">
+          {/* Micro-Toolbar */}
+          <div className="flex items-center gap-0.5 border-b border-border/40 bg-muted/20 px-2 py-1.5 flex-wrap">
+            <button
+              type="button"
+              onClick={() => insertFormat(noteTextRef, "نص عريض", onNoteTextChange, "**", "**")}
+              title="خط عريض"
+              className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Bold className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => insertFormat(noteTextRef, "نص مائل", onNoteTextChange, "*", "*")}
+              title="خط مائل"
+              className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Italic className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => insertFormat(noteTextRef, "تأمل خاص", onNoteTextChange, "==", "==")}
+              title="تظليل النص"
+              className="p-1 rounded hover:bg-muted text-amber-600 dark:text-amber-400 transition-colors"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+            </button>
+            <div className="w-[1px] h-3.5 bg-border mx-1" />
+            <button
+              type="button"
+              onClick={() => insertFormat(noteTextRef, "آية كريمة", onNoteTextChange, "﴿", "﴾")}
+              title="أقواس قرانية"
+              className="p-1 rounded hover:bg-muted text-emerald-600 dark:text-emerald-400 font-semibold font-amiri text-xs transition-colors"
+            >
+              ﴿ ﴾
+            </button>
+            <button
+              type="button"
+              onClick={() => insertFormat(noteTextRef, "نقطة جديدة", onNoteTextChange, "- ")}
+              title="قائمة نقطية"
+              className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <List className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => insertFormat(noteTextRef, "اقتباس تدبري", onNoteTextChange, "> ")}
+              title="اقتباس"
+              className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <Quote className="w-3.5 h-3.5" />
+            </button>
+          </div>
+          <textarea
+            ref={noteTextRef}
+            value={noteText}
+            onChange={(e) => onNoteTextChange(e.target.value)}
+            placeholder="اكتب ملاحظة أو تأمل على هذه الآية..."
+            rows={3}
+            className="w-full resize-none bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground/60 focus:outline-none min-h-[80px]"
+            dir="rtl"
+          />
+          <div className="flex items-center justify-between px-3 py-2 bg-muted/10 border-t border-border/20">
+            <span className="text-[10px] text-muted-foreground">{noteText.length} حرف</span>
+            <Button size="sm" className="h-7 gap-1.5 font-medium px-3 text-xs bg-emerald-600 hover:bg-emerald-700 text-white" onClick={onAddNote} disabled={!noteText.trim() || savingNote}>
+              <Send className="h-3 w-3" />
+              {savingNote ? "جاري الحفظ..." : "حفظ الملاحظة"}
+            </Button>
+          </div>
+        </div>
+      ) : (
+        <div className="p-4 rounded-lg border border-border/60 bg-muted/10 min-h-[120px] max-h-[250px] overflow-y-auto">
+          <PreviewContent text={noteText} />
+        </div>
+      )}
+
+      {notes.length === 0 && !loading && (
+        <div className="text-center py-12 bg-muted/10 rounded-lg border border-dashed border-border/50">
+          <Sparkles className="h-8 w-8 text-muted-foreground/20 mx-auto mb-2" />
+          <p className="text-sm font-medium text-foreground/80">مفكرتك فارغة لهذه الآية</p>
+          <p className="text-xs text-muted-foreground/60 mt-1">اكتب تأملاتك أو ملاحظاتك أعلاه لتبدأ</p>
+        </div>
+      )}
+
+      <div className="space-y-3">
+        {notes.map((note: any) => {
+          const isEditing = editingNoteId === note.id;
+          const date = note.createdAt
+            ? new Date(note.createdAt).toLocaleDateString("ar-SA", { year: "numeric", month: "short", day: "numeric" })
+            : "";
+          return (
+            <div key={note.id} className="bg-background rounded-lg p-3.5 border border-border/80 group shadow-2xs hover:border-border/100 hover:shadow-xs transition-all duration-150">
+              {isEditing ? (
+                <div className="space-y-2.5">
+                  <div className="flex items-center gap-0.5 border-b border-border/40 bg-muted/20 px-2 py-1 flex-wrap rounded-t">
+                    <button
+                      type="button"
+                      onClick={() => insertFormat(editTextRef, "نص عريض", onEditingTextChange, "**", "**")}
+                      title="خط عريض"
+                      className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <Bold className="w-3 h-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertFormat(editTextRef, "نص مائل", onEditingTextChange, "*", "*")}
+                      title="خط مائل"
+                      className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <Italic className="w-3 h-3" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => insertFormat(editTextRef, "تأمل خاص", onEditingTextChange, "==", "==")}
+                      title="تظليل النص"
+                      className="p-1 rounded hover:bg-muted text-amber-600 dark:text-amber-400 transition-colors"
+                    >
+                      <Sparkles className="w-3 h-3" />
+                    </button>
+                    <div className="w-[1px] h-3 bg-border mx-1" />
+                    <button
+                      type="button"
+                      onClick={() => insertFormat(editTextRef, "آية كريمة", onEditingTextChange, "﴿", "﴾")}
+                      title="أقواس قرانية"
+                      className="p-1 rounded hover:bg-muted text-emerald-600 dark:text-emerald-400 font-semibold font-amiri text-xs transition-colors"
+                    >
+                      ﴿ ﴾
+                    </button>
+                  </div>
+                  <textarea
+                    ref={editTextRef}
+                    value={editingText}
+                    onChange={(e) => onEditingTextChange(e.target.value)}
+                    rows={4}
+                    className="w-full resize-none rounded-md border border-primary/40 bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring min-h-[80px]"
+                    dir="rtl"
+                    autoFocus
+                  />
+                  <div className="flex items-center gap-2 justify-end">
+                    <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={onCancelEdit}>إلغاء</Button>
+                    <Button size="sm" className="h-7 text-xs gap-1 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={onSaveEdit} disabled={!editingText.trim() || savingEdit}>
+                      <Check className="h-3 w-3" />
+                      {savingEdit ? "جاري..." : "حفظ"}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="text-sm leading-relaxed text-foreground/90 font-normal">
+                    <PreviewContent text={note.body} />
+                  </div>
+                  <div className="flex items-center justify-between mt-3 pt-2.5 border-t border-border/30">
+                    <span className="text-[9px] font-medium text-muted-foreground">{date}</span>
+                    <div className="flex items-center gap-1 md:opacity-0 group-hover:opacity-100 transition-opacity duration-150">
+                      {/* Open as Document Button */}
+                      <button
+                        onClick={() => onOpenAsDocument(note.body)}
+                        className="h-6 px-2 rounded flex items-center gap-1 text-[10px] text-emerald-600 dark:text-emerald-400 bg-emerald-500/5 hover:bg-emerald-500/10 transition-colors"
+                        title="فتح كمستند كامل في المحرر المتقدم"
+                        aria-label="افتح كمستند"
+                      >
+                        <BookOpen className="h-3 w-3" />
+                        <span>افتح كمستند كامل</span>
+                      </button>
+                      <div className="w-[1px] h-3 bg-border mx-0.5" />
+                      <button
+                        onClick={() => onStartEdit(note)}
+                        className="h-6 w-6 rounded flex items-center justify-center text-muted-foreground hover:text-primary hover:bg-primary/10 transition-colors"
+                        title="تعديل"
+                        aria-label="تعديل الملاحظة"
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </button>
+                      <button
+                        onClick={() => onDeleteNote(note.id)}
+                        className="h-6 w-6 rounded flex items-center justify-center text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
+                        title="حذف"
+                        aria-label="حذف الملاحظة"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function SearchTab({ verseData }: { verseData: { verseKey: string; surahName: string; ayaNumber: number } }) {
+  const { surahName, ayaNumber, verseKey } = verseData;
+  const encodedAr = encodeURIComponent(`تفسير ${surahName} آية ${ayaNumber}`);
+  const encodedEn = encodeURIComponent(`${surahName} verse ${ayaNumber} tafsir`);
+
+  const links = [
+    {
+      label: "IslamQA — فتاوى متعلقة",
+      sub: "islamqa.info",
+      href: `https://islamqa.info/ar/search?q=${encodedAr}`,
+      color: "text-emerald-600",
+      bg: "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800",
+    },
+    {
+      label: "إسلام ويب — بحث",
+      sub: "islamweb.net",
+      href: `https://www.islamweb.net/ar/search/?str=${encodedAr}`,
+      color: "text-blue-600",
+      bg: "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800",
+    },
+    {
+      label: "الدرر السنية",
+      sub: "dorar.net",
+      href: `https://dorar.net/quran/search?q=${encodedAr}`,
+      color: "text-amber-600",
+      bg: "bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800",
+    },
+    {
+      label: "Quran.com — الآية",
+      sub: "quran.com",
+      href: `https://quran.com/${verseKey.replace(":", "/")}`,
+      color: "text-violet-600",
+      bg: "bg-violet-50 dark:bg-violet-950/20 border-violet-200 dark:border-violet-800",
+    },
+    {
+      label: "بحث Google بالعربية",
+      sub: "google.com",
+      href: `https://www.google.com/search?q=${encodedAr}`,
+      color: "text-red-600",
+      bg: "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800",
+    },
+    {
+      label: "Google — English tafsir",
+      sub: "google.com",
+      href: `https://www.google.com/search?q=${encodedEn}`,
+      color: "text-slate-600",
+      bg: "bg-slate-50 dark:bg-slate-950/20 border-slate-200 dark:border-slate-800",
+    },
+  ];
+
+  return (
+    <div className="space-y-3" dir="rtl">
+      <div className="flex items-center gap-2 mb-1">
+        <Search className="h-4 w-4 text-primary" />
+        <span className="text-sm font-semibold">{surahName} · الآية {ayaNumber}</span>
+      </div>
+      <p className="text-xs text-muted-foreground mb-3">افتح أحد المصادر العلمية الخارجية لمزيد من التفسير والفتاوى</p>
+      <div className="space-y-2">
+        {links.map((link) => (
+          <a
+            key={link.href}
+            href={link.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={`flex items-center gap-3 p-3 rounded-lg border transition-all hover:shadow-sm ${link.bg}`}
+          >
+            <div className="flex-1 min-w-0">
+              <p className={`text-sm font-medium ${link.color}`}>{link.label}</p>
+              <p className="text-[10px] text-muted-foreground">{link.sub}</p>
+            </div>
+            <Search className={`h-3.5 w-3.5 shrink-0 ${link.color} opacity-60`} />
+          </a>
+        ))}
       </div>
     </div>
   );

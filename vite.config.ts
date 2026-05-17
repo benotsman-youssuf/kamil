@@ -6,13 +6,8 @@ import { defineConfig, loadEnv } from "vite";
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
-  const isProduction = env.VITE_QF_ENV === "production" || env.VITE_QF_ENV === "prod";
-  const authTarget = isProduction
-    ? "https://oauth2.quran.foundation"
-    : "https://prelive-oauth2.quran.foundation";
-  const apiTarget = isProduction
-    ? "https://apis.quran.foundation"
-    : "https://apis-prelive.quran.foundation";
+  const authTarget = env.VITE_OAUTH_ENDPOINT;
+  const apiTarget = env.VITE_API_BASE;
   return {
     publicDir: "public",
     server: {

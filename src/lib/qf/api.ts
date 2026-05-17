@@ -29,15 +29,15 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
     "x-client-id": CLIENT_ID,
   };
 
-  const token = await getValidAccessToken();
-  if (token) {
-    headers["x-auth-token"] = token;
-    return headers;
-  }
-
   const ct = await ensureContentToken();
   if (ct) {
     headers["x-auth-token"] = ct;
+    return headers;
+  }
+
+  const token = await getValidAccessToken();
+  if (token) {
+    headers["x-auth-token"] = token;
   }
 
   return headers;
@@ -199,6 +199,62 @@ export interface CollectionItem {
   updatedAt: string;
 }
 
+export interface CollectionBookmarkItem {
+  id: string;
+  type: "ayah";
+  key: number;
+  verseNumber: number;
+  createdAt: string;
+}
+
+export interface NoteItem {
+  id: string;
+  body: string;
+  ranges: string[];
+  isPublic?: boolean;
+  hasAttachment?: boolean;
+  createdAt: string;
+  updatedAt?: string;
+}
+
+export interface StreakItem {
+  currentStreak: number;
+  longestStreak: number;
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface ActivityDay {
+  date: string;
+  count?: number;
+  duration?: number;
+  pagesRead?: number;
+}
+
+export interface ReadingSession {
+  id?: string;
+  date: string;
+  duration: number;
+  startVerse?: string;
+  endVerse?: string;
+  pagesRead?: number;
+}
+
+export interface Goal {
+  id: string;
+  type: string;
+  targetAmount: number;
+  currentAmount?: number;
+  startDate?: string;
+  endDate?: string;
+  isCompleted?: boolean;
+}
+
+export interface Preference {
+  key: string;
+  value: string | number | boolean;
+}
+
 export interface CursorPagination {
   startCursor?: string;
   endCursor?: string;
@@ -215,6 +271,12 @@ export interface BookmarkListResponse {
 export interface CollectionListResponse {
   success: boolean;
   data: CollectionItem[];
+  pagination: CursorPagination;
+}
+
+export interface NoteListResponse {
+  success: boolean;
+  data: NoteItem[];
   pagination: CursorPagination;
 }
 
@@ -291,7 +353,6 @@ export async function fetchTafsirsBulk(verseKey: string, tafsirIds: number[]): P
   const headers = await getAuthHeaders();
   const result: Record<number, Tafsir> = {};
 
-  // Fetch in chunks of 5 (per page size limit, but also to avoid huge URLs)
   const chunkSize = 5;
   for (let i = 0; i < tafsirIds.length; i += chunkSize) {
     const chunk = tafsirIds.slice(i, i + chunkSize);
@@ -381,7 +442,6 @@ export async function getResourcesTranslations(): Promise<any[]> {
 export async function getResourcesTafsirs(language?: string): Promise<any[]> {
   const headers = await getAuthHeaders();
 
-  // Try the Foundation API first
   try {
     const params = language ? `?language=${encodeURIComponent(language)}` : "";
     const response = await fetch(`${CONTENT_API}/resources/tafsirs${params}`, { headers });
@@ -394,7 +454,6 @@ export async function getResourcesTafsirs(language?: string): Promise<any[]> {
     // fall through
   }
 
-  // Foundation API returned too few; fall back to legacy Quran.com API (public, no auth, complete list)
   try {
     const response = await fetch("https://api.quran.com/api/v4/resources/tafsirs");
     if (response.ok) {
@@ -518,6 +577,8 @@ async function userApiFetch<T>(path: string, options?: RequestInit): Promise<T> 
   return response.json();
 }
 
+// ─── Bookmarks ────────────────────────────────────────────────────
+
 export async function fetchBookmarks(params?: { first?: number; after?: string; mushafId?: number }): Promise<BookmarkListResponse> {
   const qp = new URLSearchParams();
   qp.set("mushafId", String(params?.mushafId ?? 1));
@@ -529,9 +590,9 @@ export async function fetchBookmarks(params?: { first?: number; after?: string; 
 
 export async function addBookmark(verseKey: string): Promise<{ success: boolean; data: BookmarkItem }> {
   const [chapterId, verseNumber] = verseKey.split(":").map(Number);
-  return userApiFetch<{ success: boolean; data: BookmarkItem }>(`/bookmarks?mushafId=1`, {
+  return userApiFetch<{ success: boolean; data: BookmarkItem }>("/bookmarks", {
     method: "POST",
-    body: JSON.stringify({ key: chapterId, verseNumber, group: verseKey, type: "ayah" }),
+    body: JSON.stringify({ key: chapterId, verseNumber, type: "ayah", mushafId: 1 }),
   });
 }
 
@@ -539,50 +600,179 @@ export async function deleteBookmark(bookmarkId: string): Promise<{ success: boo
   return userApiFetch<{ success: boolean }>(`/bookmarks/${bookmarkId}?mushafId=1`, { method: "DELETE" });
 }
 
-export async function fetchCollections(params?: { first?: number }): Promise<CollectionListResponse> {
+export async function getBookmark(verseKey: string): Promise<{ success: boolean; data: BookmarkItem } | null> {
+  const [chapterId, verseNumber] = verseKey.split(":").map(Number);
+  try {
+    return await userApiFetch<{ success: boolean; data: BookmarkItem }>(
+      `/bookmarks/bookmark?key=${chapterId}&verseNumber=${verseNumber}&type=ayah&mushafId=1`
+    );
+  } catch {
+    return null;
+  }
+}
+
+// ─── Collections ──────────────────────────────────────────────────
+
+export async function fetchCollections(params?: { first?: number; after?: string; type?: string; sortBy?: string }): Promise<CollectionListResponse> {
   const qp = new URLSearchParams();
   if (params?.first) qp.set("first", String(params.first));
+  if (params?.after) qp.set("after", params.after);
+  if (params?.type) qp.set("type", params.type);
+  if (params?.sortBy) qp.set("sortBy", params.sortBy);
   const qs = qp.toString();
   return userApiFetch<CollectionListResponse>(`/collections${qs ? `?${qs}` : ""}`);
 }
 
-export async function fetchCollectionsWithItems(params?: { first?: number }): Promise<{ success: boolean; data: BookmarkItem[]; pagination: CursorPagination }> {
+export async function fetchCollectionItems(
+  collectionId: string,
+  params?: { first?: number; after?: string }
+): Promise<{ success: boolean; data: CollectionBookmarkItem[]; pagination: CursorPagination }> {
   const qp = new URLSearchParams();
   if (params?.first) qp.set("first", String(params.first));
+  if (params?.after) qp.set("after", params.after);
   const qs = qp.toString();
-  return userApiFetch<{ success: boolean; data: BookmarkItem[]; pagination: CursorPagination }>(`/collections/all${qs ? `?${qs}` : ""}`);
+  return userApiFetch<{ success: boolean; data: CollectionBookmarkItem[]; pagination: CursorPagination }>(
+    `/collections/${collectionId}${qs ? `?${qs}` : ""}`
+  );
 }
 
-export async function fetchNotes(params?: { first?: number }) {
+// ─── Notes ────────────────────────────────────────────────────────
+
+export async function fetchNotesByVerse(verseKey: string): Promise<{ success: boolean; data: NoteItem[]; pagination: any }> {
+  return userApiFetch<any>(`/notes/by-verse/${verseKey}`);
+}
+
+export async function fetchAllNotes(params?: { limit?: number; cursor?: string; sortBy?: string }): Promise<NoteListResponse> {
   const qp = new URLSearchParams();
-  if (params?.first) qp.set("first", String(params.first));
+  if (params?.limit) qp.set("limit", String(params.limit));
+  if (params?.cursor) qp.set("cursor", params.cursor);
+  if (params?.sortBy) qp.set("sortBy", params.sortBy);
   const qs = qp.toString();
-  return userApiFetch<any>(`/notes${qs ? `?${qs}` : ""}`);
+  return userApiFetch<NoteListResponse>(`/notes${qs ? `?${qs}` : ""}`);
 }
 
 export async function addNote(data: { verse_key: string; text: string }) {
   return userApiFetch<any>("/notes", {
     method: "POST",
+    body: JSON.stringify({
+      body: data.text,
+      ranges: [data.verse_key],
+    }),
+  });
+}
+
+export async function updateNote(noteId: string, text: string) {
+  return userApiFetch<any>(`/notes/${noteId}`, {
+    method: "PATCH",
+    body: JSON.stringify({ body: text }),
+  });
+}
+
+export async function deleteNote(noteId: string) {
+  return userApiFetch<any>(`/notes/${noteId}`, { method: "DELETE" });
+}
+
+// ─── Streaks & Activity ───────────────────────────────────────────
+
+export async function fetchStreaks(): Promise<{ success: boolean; data: StreakItem }> {
+  try {
+    const res = await userApiFetch<{ success: boolean; data: Array<{ id: string; days: number; status: string }> }>("/streaks");
+    if (res.success && Array.isArray(res.data)) {
+      const activeStreak = res.data.find((s) => s.status === "ACTIVE");
+      const currentStreak = activeStreak ? activeStreak.days : 0;
+      const longestStreak = res.data.reduce((max, s) => Math.max(max, s.days), 0);
+      return {
+        success: true,
+        data: { currentStreak, longestStreak },
+      };
+    }
+    return { success: false, data: { currentStreak: 0, longestStreak: 0 } };
+  } catch {
+    return { success: false, data: { currentStreak: 0, longestStreak: 0 } };
+  }
+}
+
+export async function fetchActivityDays(params?: { from?: string; to?: string }): Promise<{ success: boolean; data: ActivityDay[] }> {
+  try {
+    const qp = new URLSearchParams();
+    if (params?.from) qp.set("from", params.from);
+    if (params?.to) qp.set("to", params.to);
+    const qs = qp.toString();
+    return await userApiFetch<{ success: boolean; data: ActivityDay[] }>(`/activity-days${qs ? `?${qs}` : ""}`);
+  } catch {
+    return { success: false, data: [] };
+  }
+}
+
+export async function addOrUpdateActivityDay(data: { date: string; duration?: number; pagesRead?: number }) {
+  return userApiFetch<any>("/activity-days", {
+    method: "POST",
     body: JSON.stringify(data),
   });
 }
 
-export async function fetchGoals() {
-  return userApiFetch<any>("/goals");
+// ─── Reading Sessions ─────────────────────────────────────────────
+
+export async function fetchReadingSessions(params?: { from?: string; to?: string; first?: number }): Promise<{ success: boolean; data: ReadingSession[] }> {
+  try {
+    const qp = new URLSearchParams();
+    if (params?.from) qp.set("from", params.from);
+    if (params?.to) qp.set("to", params.to);
+    if (params?.first) qp.set("first", String(params.first));
+    const qs = qp.toString();
+    return await userApiFetch<{ success: boolean; data: ReadingSession[] }>(`/reading-sessions${qs ? `?${qs}` : ""}`);
+  } catch {
+    return { success: false, data: [] };
+  }
 }
 
-export async function fetchStreaks() {
-  return userApiFetch<any>("/streaks");
+// ─── Goals ────────────────────────────────────────────────────────
+
+export async function fetchGoals(): Promise<{ success: boolean; data: Goal[] }> {
+  try {
+    const res = await fetchTodaysGoalPlan();
+    if (res.success && res.data && res.data.hasGoal) {
+      const plan = res.data;
+      const isPages = plan.dailyTargetPages && plan.dailyTargetPages > 0;
+      const targetAmount = isPages ? plan.dailyTargetPages : (plan.dailyTargetSeconds || 0);
+      const currentAmount = isPages ? plan.pagesRead : (plan.secondsRead || 0);
+      const typeLabel = isPages ? "قراءة الصفحات اليومية" : "وقت القراءة اليومي";
+
+      const goal: Goal = {
+        id: plan.goalId || plan.id || "today-goal",
+        type: typeLabel,
+        targetAmount: Math.round(targetAmount * 10) / 10,
+        currentAmount: Math.round((currentAmount || 0) * 10) / 10,
+        isCompleted: plan.progress >= 1,
+      };
+      return { success: true, data: [goal] };
+    }
+    return { success: true, data: [] };
+  } catch {
+    return { success: false, data: [] };
+  }
 }
 
-export async function fetchReadingSessions() {
-  return userApiFetch<any>("/reading_sessions");
+export async function fetchTodaysGoalPlan(): Promise<{ success: boolean; data: any }> {
+  try {
+    return await userApiFetch<{ success: boolean; data: any }>("/goals/get-todays-plan");
+  } catch {
+    return { success: false, data: null };
+  }
 }
+
+// ─── Preferences ──────────────────────────────────────────────────
+
+export async function fetchUserPreferences(): Promise<{ success: boolean; data: Preference[] }> {
+  try {
+    return await userApiFetch<{ success: boolean; data: Preference[] }>("/preferences");
+  } catch {
+    return { success: false, data: [] };
+  }
+}
+
+// ─── User Profile ─────────────────────────────────────────────────
 
 export async function fetchUserProfile(): Promise<{ success: boolean; data: UserProfile }> {
   return userApiFetch<{ success: boolean; data: UserProfile }>("/users/profile");
-}
-
-export async function fetchPreferences() {
-  return userApiFetch<any>("/preferences");
 }

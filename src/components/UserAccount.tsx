@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { login, logout, getTokens } from "@/lib/qf/auth";
 import { fetchUserProfile } from "@/lib/qf/api";
 import type { UserProfile } from "@/lib/qf/api";
-import { User, LogOut, Settings, Bookmark, BookOpen } from "lucide-react";
+import { User, LogOut, Settings, Bookmark, BookOpen, BarChart2 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -84,6 +84,12 @@ export function UserAccount() {
             <div className="flex items-center gap-2">
               <Bookmark className="h-4 w-4" />
               <span>العلامات المرجعية</span>
+            </div>
+          </DropdownMenuItem>
+          <DropdownMenuItem className="flex justify-between items-center cursor-pointer" onClick={() => navigate("/stats")}>
+            <div className="flex items-center gap-2">
+              <BarChart2 className="h-4 w-4" />
+              <span>إحصائياتي</span>
             </div>
           </DropdownMenuItem>
           <DropdownMenuItem className="flex justify-between items-center cursor-pointer" onClick={() => navigate("/settings")}>

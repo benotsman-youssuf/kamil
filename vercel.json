@@ -1,0 +1,6 @@
+{
+  "rewrites": [
+    { "source": "/api/auth/(.*)", "destination": "https://oauth2.quran.foundation/$1" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}
