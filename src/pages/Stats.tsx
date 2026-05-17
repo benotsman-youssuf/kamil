@@ -72,7 +72,7 @@ function ActivityHeatmap({ days }: { days: ActivityDay[] }) {
 
   const byDate: Record<string, number> = {};
   for (const d of days) {
-    byDate[d.date] = (d.count ?? 0) + (d.duration ?? 0);
+    byDate[d.date] = d.duration ?? 0;
   }
 
   const max = Math.max(1, ...Object.values(byDate));
@@ -190,7 +190,7 @@ export function Stats() {
       fetchUserProfile(),
       fetchStreaks(),
       fetchActivityDays({ from: from.toISOString().slice(0, 10) }),
-      fetchBookmarks({ first: 1 }),
+      fetchBookmarks({ first: 20 }),
       fetchAllNotes({ limit: 50 }),
       fetchGoals(),
     ]).then(([p, s, a, b, n, g]) => {
