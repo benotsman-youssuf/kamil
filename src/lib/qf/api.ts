@@ -678,7 +678,7 @@ export async function deleteNote(noteId: string) {
 
 export async function fetchStreaks(): Promise<{ success: boolean; data: StreakItem }> {
   try {
-    const res = await userApiFetch<{ success: boolean; data: Array<{ id: string; days: number; status: string }> }>("/streaks");
+    const res = await userApiFetch<{ success: boolean; data: Array<{ id: string; days: number; status: string }> }>("/streaks?type=QURAN");
     if (res.success && Array.isArray(res.data)) {
       const activeStreak = res.data.find((s) => s.status === "ACTIVE");
       const currentStreak = activeStreak ? activeStreak.days : 0;
@@ -697,10 +697,11 @@ export async function fetchStreaks(): Promise<{ success: boolean; data: StreakIt
 export async function fetchActivityDays(params?: { from?: string; to?: string }): Promise<{ success: boolean; data: ActivityDay[] }> {
   try {
     const qp = new URLSearchParams();
+    qp.set("type", "QURAN");
     if (params?.from) qp.set("from", params.from);
     if (params?.to) qp.set("to", params.to);
     const qs = qp.toString();
-    return await userApiFetch<{ success: boolean; data: ActivityDay[] }>(`/activity-days${qs ? `?${qs}` : ""}`);
+    return await userApiFetch<{ success: boolean; data: ActivityDay[] }>(`/activity-days?${qs}`);
   } catch {
     return { success: false, data: [] };
   }
