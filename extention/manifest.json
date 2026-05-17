@@ -1,1 +1,41 @@
-{"manifest_version":3,"name":"كمّل - Quran Quick Insert","version":"1.0.0","description":"Quickly insert Quran verses by typing '/' followed by your search. Works on Facebook, Twitter, and all text fields.","icons":{"16":"icons/16.png","32":"icons/32.png","48":"icons/48.png","128":"icons/128.png"},"action":{"default_popup":"index.html","default_title":"كمّل - Quran Quick Insert"},"background":{"service_worker":"src/scripts/background.js","type":"module"},"content_scripts":[{"matches":["<all_urls>"],"js":["src/scripts/content.js"]}],"permissions":["activeTab","scripting","storage"],"host_permissions":["<all_urls>"],"web_accessible_resources":[{"resources":["quran.json"],"matches":["<all_urls>"]}]}
+{
+  "manifest_version": 3,
+  "name": "كمّل - Quran Quick Insert",
+  "version": "2.0.0",
+  "description": "Quickly insert Quran verses by typing '/' followed by your search. Auto-saves verses to per-website collections.",
+  "icons": {
+    "16": "icons/16.png",
+    "32": "icons/32.png",
+    "48": "icons/48.png",
+    "128": "icons/128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "كمّل - Quran Quick Insert"
+  },
+  "background": {
+    "service_worker": "src/scripts/background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["src/scripts/content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "permissions": [
+    "storage",
+    "favicon",
+    "tabs"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["quran.json", "_favicon/*"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}

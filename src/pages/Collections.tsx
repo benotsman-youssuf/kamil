@@ -16,6 +16,14 @@ import { cn } from "@/lib/utils";
 import { SURAH_NAMES } from "@/constants/surahs";
 import { toast } from "sonner";
 
+function isDomainName(name: string) {
+  return /^[a-zA-Z0-9][a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(name);
+}
+
+function faviconImg(name: string) {
+  return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(name)}&sz=32`;
+}
+
 export function Collections() {
   const [collections, setCollections] = useState<CollectionItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -62,7 +70,7 @@ export function Collections() {
 
   const handleLoadMoreItems = async () => {
     if (!selectedId || !itemsCursor) return;
-    const res = await fetchCollectionItems(selectedId, { first: 30, after: itemsCursor });
+    const res = await fetchCollectionItems(selectedId, { first: 20, after: itemsCursor });
     setItems((prev) => [...prev, ...(Array.isArray(res.data) ? res.data : [])]);
     setHasMoreItems(res.pagination?.hasNextPage ?? false);
     setItemsCursor(res.pagination?.endCursor);
@@ -155,8 +163,12 @@ export function Collections() {
         </Button>
 
         <div className="flex items-center gap-3 mb-5">
-          <div className="flex items-center justify-center h-11 w-11 rounded-xl bg-primary/10 text-primary shrink-0">
-            <FolderOpen className="h-5 w-5" />
+          <div className="flex items-center justify-center h-11 w-11 rounded-xl bg-primary/10 text-primary shrink-0 overflow-hidden">
+            {isDomainName(selected.name) ? (
+              <img src={faviconImg(selected.name)} alt="" className="h-full w-full object-contain bg-muted/20" />
+            ) : (
+              <FolderOpen className="h-5 w-5" />
+            )}
           </div>
           <div>
             <h2 className="font-bold text-lg">{selected.name}</h2>
@@ -245,8 +257,14 @@ export function Collections() {
                 "hover:bg-accent/50 hover:shadow-sm hover:border-primary/20"
               )}
             >
-              <div className="flex items-center justify-center h-11 w-11 rounded-xl bg-primary/10 text-primary shrink-0 group-hover:bg-primary/15 transition-colors">
-                {col.isDefault ? <Star className="h-5 w-5" /> : <FolderOpen className="h-5 w-5" />}
+              <div className="flex items-center justify-center h-11 w-11 rounded-xl bg-primary/10 text-primary shrink-0 overflow-hidden group-hover:bg-primary/15 transition-colors">
+                {col.isDefault ? (
+                  <Star className="h-5 w-5" />
+                ) : isDomainName(col.name) ? (
+                  <img src={faviconImg(col.name)} alt="" className="h-full w-full object-contain bg-muted/20" />
+                ) : (
+                  <FolderOpen className="h-5 w-5" />
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-1">

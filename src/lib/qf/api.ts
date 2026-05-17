@@ -634,7 +634,7 @@ export async function getBookmark(verseKey: string): Promise<{ success: boolean;
 
 export async function fetchCollections(params?: { first?: number; after?: string; type?: string; sortBy?: string }): Promise<CollectionListResponse> {
   const qp = new URLSearchParams();
-  if (params?.first) qp.set("first", String(params.first));
+  if (params?.first) qp.set("first", String(Math.min(params.first, 20)));
   if (params?.after) qp.set("after", params.after);
   if (params?.type) qp.set("type", params.type);
   if (params?.sortBy) qp.set("sortBy", params.sortBy);
@@ -647,7 +647,7 @@ export async function fetchCollectionItems(
   params?: { first?: number; after?: string }
 ): Promise<{ success: boolean; data: CollectionBookmarkItem[]; pagination: CursorPagination }> {
   const qp = new URLSearchParams();
-  if (params?.first) qp.set("first", String(params.first));
+  if (params?.first) qp.set("first", String(Math.min(params.first, 20)));
   if (params?.after) qp.set("after", params.after);
   const qs = qp.toString();
   const res = await userApiFetch<{
@@ -790,7 +790,7 @@ export async function fetchReadingSessions(params?: { from?: string; to?: string
     const qp = new URLSearchParams();
     if (params?.from) qp.set("from", params.from);
     if (params?.to) qp.set("to", params.to);
-    if (params?.first) qp.set("first", String(params.first));
+    if (params?.first) qp.set("first", String(Math.min(params.first, 20)));
     const qs = qp.toString();
     return await userApiFetch<{ success: boolean; data: ReadingSession[] }>(`/reading-sessions${qs ? `?${qs}` : ""}`);
   } catch {

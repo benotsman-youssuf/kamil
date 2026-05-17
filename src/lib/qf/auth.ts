@@ -232,7 +232,12 @@ export async function fetchUserInfo(): Promise<{
   }
 }
 
+let cachedContentToken: string | null = null;
+let cachedContentTokenExpiry = 0;
+
 export async function fetchContentToken(): Promise<string | null> {
+  if (cachedContentToken && Date.now() < cachedContentTokenExpiry - 60000) return cachedContentToken;
+
   const headers: Record<string, string> = {
     "Content-Type": "application/x-www-form-urlencoded",
   };
@@ -255,7 +260,9 @@ export async function fetchContentToken(): Promise<string | null> {
     if (!response.ok) return null;
 
     const data = await response.json();
-    return data.access_token;
+    cachedContentToken = data.access_token;
+    cachedContentTokenExpiry = Date.now() + (data.expires_in * 1000);
+    return cachedContentToken;
   } catch {
     return null;
   }
