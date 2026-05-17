@@ -34,7 +34,7 @@ export function UserLayout({ children, title }: { children: ReactNode; title: st
       )}
       {isMobile && sidebarOpen && (
         <div
-          className="fixed inset-0 z-30 bg-black/25 backdrop-blur-[2px] transition-opacity duration-200"
+          className="fixed inset-0 z-[55] bg-black/25 backdrop-blur-[2px] transition-opacity duration-200"
           onClick={() => setSidebarOpen(false)}
           aria-hidden
         />
@@ -44,8 +44,9 @@ export function UserLayout({ children, title }: { children: ReactNode; title: st
         onMouseEnter={handleSidebarMouseEnter}
         onMouseLeave={handleSidebarMouseLeave}
         className={cn(
-          "flex-shrink-0 h-full z-40 will-change-transform",
+          "flex-shrink-0 h-full will-change-transform",
           "transition-[transform,opacity,width] duration-[280ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
+          isMobile ? "z-[60]" : "z-40",
           !isMobile && sidebarPinned && "relative",
           !isMobile && !sidebarPinned && "absolute left-0 top-0 bottom-0",
           isMobile && "fixed left-0 top-0 bottom-0",
