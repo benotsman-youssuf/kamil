@@ -19,7 +19,7 @@ export function Collections() {
 
   useEffect(() => {
     setLoading(true);
-    fetchCollections({ first: 50 })
+    fetchCollections({ first: 20 })
       .then((res) => setCollections(res.data))
       .catch(() => setError("فشل تحميل المجلدات"))
       .finally(() => setLoading(false));
@@ -28,7 +28,7 @@ export function Collections() {
   useEffect(() => {
     if (!selectedId) { setItems([]); return; }
     setItemsLoading(true);
-    fetchCollectionItems(selectedId, { first: 30 })
+    fetchCollectionItems(selectedId, { first: 20 })
       .then((res) => {
         setItems(res.data);
         setHasMoreItems(res.pagination.hasNextPage);

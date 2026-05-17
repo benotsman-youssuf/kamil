@@ -30,13 +30,8 @@ import {
   Pencil,
   Trash2,
   Send,
-  Search,
   Check,
-  Eye,
-  Sparkles,
-  Bold,
-  Italic,
-  Quote
+  Sparkles
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { db } from "@/lib/db";
@@ -390,13 +385,6 @@ export function VersePanelContent({
                 <Pencil className="h-3.5 w-3.5 ml-1" />
                 الملاحظات
               </TabsTrigger>
-              <TabsTrigger
-                value="search"
-                className="rounded-md data-[state=active]:bg-muted/70 data-[state=active]:text-foreground text-xs px-2 py-1.5 h-auto"
-              >
-                <Search className="h-3.5 w-3.5 ml-1" />
-                بحث
-              </TabsTrigger>
             </TabsList>
           </div>
 
@@ -471,11 +459,6 @@ export function VersePanelContent({
                       savingEdit={savingEdit}
                       onOpenAsDocument={handleOpenAsDocument}
                     />
-                  </div>
-                </TabsContent>
-                <TabsContent value="search" className="absolute inset-0">
-                  <div className="h-full overflow-y-auto px-4 py-3 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-transparent [&::-webkit-scrollbar-track]:bg-transparent">
-                    <SearchTab verseData={verseData} />
                   </div>
                 </TabsContent>
               </>
@@ -1177,7 +1160,6 @@ function NotesTab({
   savingEdit: boolean;
   onOpenAsDocument: (body: string) => void;
 }) {
-  const [activeMode, setActiveMode] = useState<"edit" | "preview">("edit");
   const noteTextRef = useRef<HTMLTextAreaElement>(null);
   const editTextRef = useRef<HTMLTextAreaElement>(null);
 
@@ -1196,145 +1178,35 @@ function NotesTab({
     }
   }, [editingText, editingNoteId]);
 
-  const insertFormat = (
-    ref: React.RefObject<HTMLTextAreaElement | null>,
-    placeholder: string,
-    setText: (t: string) => void,
-    prefix: string,
-    suffix: string = ""
-  ) => {
-    const el = ref.current;
-    if (!el) return;
-    const start = el.selectionStart;
-    const end = el.selectionEnd;
-    const currentVal = el.value;
-    const selection = currentVal.substring(start, end);
-    const replacement = prefix + (selection || placeholder) + suffix;
-    
-    setText(currentVal.substring(0, start) + replacement + currentVal.substring(end));
-    
-    setTimeout(() => {
-      el.focus();
-      const newCursorPos = start + prefix.length + (selection || placeholder).length + suffix.length;
-      el.setSelectionRange(newCursorPos, newCursorPos);
-    }, 0);
-  };
-
   return (
     <div className="space-y-4 font-sans" dir="rtl">
-      {/* Premium Header Mode Switch */}
+      {/* Premium Header */}
       <div className="flex items-center justify-between border-b border-border/40 pb-2">
         <span className="text-xs font-semibold text-foreground/80 flex items-center gap-1">
           <Sparkles className="w-3.5 h-3.5 text-emerald-500" />
           مفكرة التدبر
         </span>
-        <div className="flex items-center gap-1 bg-muted/40 p-0.5 rounded-lg border border-border/30">
-          <button
-            type="button"
-            onClick={() => setActiveMode("edit")}
-            className={cn(
-              "px-2.5 py-1 text-[11px] rounded-md transition-all duration-150 flex items-center gap-1",
-              activeMode === "edit"
-                ? "bg-background shadow-sm text-foreground font-semibold"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <Pencil className="w-3 h-3" />
-            تحرير
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveMode("preview")}
-            className={cn(
-              "px-2.5 py-1 text-[11px] rounded-md transition-all duration-150 flex items-center gap-1",
-              activeMode === "preview"
-                ? "bg-background shadow-sm text-foreground font-semibold"
-                : "text-muted-foreground hover:text-foreground"
-            )}
-          >
-            <Eye className="w-3 h-3" />
-            معاينة
-          </button>
-        </div>
       </div>
 
-      {/* New note input / Preview view */}
-      {activeMode === "edit" ? (
-        <div className="flex flex-col rounded-lg border border-input bg-background overflow-hidden focus-within:ring-2 focus-within:ring-ring focus-within:border-transparent transition-all">
-          {/* Micro-Toolbar */}
-          <div className="flex items-center gap-0.5 border-b border-border/40 bg-muted/20 px-2 py-1.5 flex-wrap">
-            <button
-              type="button"
-              onClick={() => insertFormat(noteTextRef, "نص عريض", onNoteTextChange, "**", "**")}
-              title="خط عريض"
-              className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <Bold className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => insertFormat(noteTextRef, "نص مائل", onNoteTextChange, "*", "*")}
-              title="خط مائل"
-              className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <Italic className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => insertFormat(noteTextRef, "تأمل خاص", onNoteTextChange, "==", "==")}
-              title="تظليل النص"
-              className="p-1 rounded hover:bg-muted text-amber-600 dark:text-amber-400 transition-colors"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-            </button>
-            <div className="w-[1px] h-3.5 bg-border mx-1" />
-            <button
-              type="button"
-              onClick={() => insertFormat(noteTextRef, "آية كريمة", onNoteTextChange, "﴿", "﴾")}
-              title="أقواس قرانية"
-              className="p-1 rounded hover:bg-muted text-emerald-600 dark:text-emerald-400 font-semibold font-amiri text-xs transition-colors"
-            >
-              ﴿ ﴾
-            </button>
-            <button
-              type="button"
-              onClick={() => insertFormat(noteTextRef, "نقطة جديدة", onNoteTextChange, "- ")}
-              title="قائمة نقطية"
-              className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <List className="w-3.5 h-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={() => insertFormat(noteTextRef, "اقتباس تدبري", onNoteTextChange, "> ")}
-              title="اقتباس"
-              className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-            >
-              <Quote className="w-3.5 h-3.5" />
-            </button>
-          </div>
-          <textarea
-            ref={noteTextRef}
-            value={noteText}
-            onChange={(e) => onNoteTextChange(e.target.value)}
-            placeholder="اكتب ملاحظة أو تأمل على هذه الآية..."
-            rows={3}
-            className="w-full resize-none bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground/60 focus:outline-none min-h-[80px]"
-            dir="rtl"
-          />
-          <div className="flex items-center justify-between px-3 py-2 bg-muted/10 border-t border-border/20">
-            <span className="text-[10px] text-muted-foreground">{noteText.length} حرف</span>
-            <Button size="sm" className="h-7 gap-1.5 font-medium px-3 text-xs bg-emerald-600 hover:bg-emerald-700 text-white" onClick={onAddNote} disabled={!noteText.trim() || savingNote}>
-              <Send className="h-3 w-3" />
-              {savingNote ? "جاري الحفظ..." : "حفظ الملاحظة"}
-            </Button>
-          </div>
+      {/* New note input */}
+      <div className="flex flex-col rounded-lg border border-input bg-background overflow-hidden focus-within:ring-2 focus-within:ring-ring focus-within:border-transparent transition-all">
+        <textarea
+          ref={noteTextRef}
+          value={noteText}
+          onChange={(e) => onNoteTextChange(e.target.value)}
+          placeholder="اكتب ملاحظة أو تأمل على هذه الآية..."
+          rows={3}
+          className="w-full resize-none bg-transparent px-3 py-2 text-sm placeholder:text-muted-foreground/60 focus:outline-none min-h-[80px]"
+          dir="rtl"
+        />
+        <div className="flex items-center justify-between px-3 py-2 bg-muted/10 border-t border-border/20">
+          <span className="text-[10px] text-muted-foreground">{noteText.length} حرف</span>
+          <Button size="sm" className="h-7 gap-1.5 font-medium px-3 text-xs bg-emerald-600 hover:bg-emerald-700 text-white" onClick={onAddNote} disabled={!noteText.trim() || savingNote}>
+            <Send className="h-3 w-3" />
+            {savingNote ? "جاري الحفظ..." : "حفظ الملاحظة"}
+          </Button>
         </div>
-      ) : (
-        <div className="p-4 rounded-lg border border-border/60 bg-muted/10 min-h-[120px] max-h-[250px] overflow-y-auto">
-          <PreviewContent text={noteText} />
-        </div>
-      )}
+      </div>
 
       {notes.length === 0 && !loading && (
         <div className="text-center py-12 bg-muted/10 rounded-lg border border-dashed border-border/50">
@@ -1354,41 +1226,6 @@ function NotesTab({
             <div key={note.id} className="bg-background rounded-lg p-3.5 border border-border/80 group shadow-2xs hover:border-border/100 hover:shadow-xs transition-all duration-150">
               {isEditing ? (
                 <div className="space-y-2.5">
-                  <div className="flex items-center gap-0.5 border-b border-border/40 bg-muted/20 px-2 py-1 flex-wrap rounded-t">
-                    <button
-                      type="button"
-                      onClick={() => insertFormat(editTextRef, "نص عريض", onEditingTextChange, "**", "**")}
-                      title="خط عريض"
-                      className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      <Bold className="w-3 h-3" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => insertFormat(editTextRef, "نص مائل", onEditingTextChange, "*", "*")}
-                      title="خط مائل"
-                      className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      <Italic className="w-3 h-3" />
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => insertFormat(editTextRef, "تأمل خاص", onEditingTextChange, "==", "==")}
-                      title="تظليل النص"
-                      className="p-1 rounded hover:bg-muted text-amber-600 dark:text-amber-400 transition-colors"
-                    >
-                      <Sparkles className="w-3 h-3" />
-                    </button>
-                    <div className="w-[1px] h-3 bg-border mx-1" />
-                    <button
-                      type="button"
-                      onClick={() => insertFormat(editTextRef, "آية كريمة", onEditingTextChange, "﴿", "﴾")}
-                      title="أقواس قرانية"
-                      className="p-1 rounded hover:bg-muted text-emerald-600 dark:text-emerald-400 font-semibold font-amiri text-xs transition-colors"
-                    >
-                      ﴿ ﴾
-                    </button>
-                  </div>
                   <textarea
                     ref={editTextRef}
                     value={editingText}
@@ -1453,80 +1290,3 @@ function NotesTab({
   );
 }
 
-function SearchTab({ verseData }: { verseData: { verseKey: string; surahName: string; ayaNumber: number } }) {
-  const { surahName, ayaNumber, verseKey } = verseData;
-  const encodedAr = encodeURIComponent(`تفسير ${surahName} آية ${ayaNumber}`);
-  const encodedEn = encodeURIComponent(`${surahName} verse ${ayaNumber} tafsir`);
-
-  const links = [
-    {
-      label: "IslamQA — فتاوى متعلقة",
-      sub: "islamqa.info",
-      href: `https://islamqa.info/ar/search?q=${encodedAr}`,
-      color: "text-emerald-600",
-      bg: "bg-emerald-50 dark:bg-emerald-950/20 border-emerald-200 dark:border-emerald-800",
-    },
-    {
-      label: "إسلام ويب — بحث",
-      sub: "islamweb.net",
-      href: `https://www.islamweb.net/ar/search/?str=${encodedAr}`,
-      color: "text-blue-600",
-      bg: "bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800",
-    },
-    {
-      label: "الدرر السنية",
-      sub: "dorar.net",
-      href: `https://dorar.net/quran/search?q=${encodedAr}`,
-      color: "text-amber-600",
-      bg: "bg-amber-50 dark:bg-amber-950/20 border-amber-200 dark:border-amber-800",
-    },
-    {
-      label: "Quran.com — الآية",
-      sub: "quran.com",
-      href: `https://quran.com/${verseKey.replace(":", "/")}`,
-      color: "text-violet-600",
-      bg: "bg-violet-50 dark:bg-violet-950/20 border-violet-200 dark:border-violet-800",
-    },
-    {
-      label: "بحث Google بالعربية",
-      sub: "google.com",
-      href: `https://www.google.com/search?q=${encodedAr}`,
-      color: "text-red-600",
-      bg: "bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-800",
-    },
-    {
-      label: "Google — English tafsir",
-      sub: "google.com",
-      href: `https://www.google.com/search?q=${encodedEn}`,
-      color: "text-slate-600",
-      bg: "bg-slate-50 dark:bg-slate-950/20 border-slate-200 dark:border-slate-800",
-    },
-  ];
-
-  return (
-    <div className="space-y-3" dir="rtl">
-      <div className="flex items-center gap-2 mb-1">
-        <Search className="h-4 w-4 text-primary" />
-        <span className="text-sm font-semibold">{surahName} · الآية {ayaNumber}</span>
-      </div>
-      <p className="text-xs text-muted-foreground mb-3">افتح أحد المصادر العلمية الخارجية لمزيد من التفسير والفتاوى</p>
-      <div className="space-y-2">
-        {links.map((link) => (
-          <a
-            key={link.href}
-            href={link.href}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`flex items-center gap-3 p-3 rounded-lg border transition-all hover:shadow-sm ${link.bg}`}
-          >
-            <div className="flex-1 min-w-0">
-              <p className={`text-sm font-medium ${link.color}`}>{link.label}</p>
-              <p className="text-[10px] text-muted-foreground">{link.sub}</p>
-            </div>
-            <Search className={`h-3.5 w-3.5 shrink-0 ${link.color} opacity-60`} />
-          </a>
-        ))}
-      </div>
-    </div>
-  );
-}

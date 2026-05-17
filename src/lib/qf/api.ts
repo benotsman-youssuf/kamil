@@ -652,11 +652,12 @@ export async function fetchAllNotes(params?: { limit?: number; cursor?: string; 
 }
 
 export async function addNote(data: { verse_key: string; text: string }) {
+  const formattedRange = data.verse_key.includes("-") ? data.verse_key : `${data.verse_key}-${data.verse_key}`;
   return userApiFetch<any>("/notes", {
     method: "POST",
     body: JSON.stringify({
       body: data.text,
-      ranges: [data.verse_key],
+      ranges: [formattedRange],
     }),
   });
 }
