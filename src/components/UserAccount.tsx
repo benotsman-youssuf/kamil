@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { login, logout, getTokens } from "@/lib/qf/auth";
 import { fetchUserProfile } from "@/lib/qf/api";
 import type { UserProfile } from "@/lib/qf/api";
-import { User, LogOut, Settings, BookOpen, BarChart2 } from "lucide-react";
+import { User, LogOut, Settings, BookOpen, BarChart2, ExternalLink, UserCircle } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
@@ -90,6 +90,20 @@ export function UserAccount() {
             <div className="flex items-center gap-2">
               <Settings className="h-4 w-4" />
               <span>الإعدادات</span>
+            </div>
+          </DropdownMenuItem>
+          <DropdownMenuItem className="flex justify-between items-center cursor-pointer" onClick={() => navigate("/profile")}>
+            <div className="flex items-center gap-2">
+              <UserCircle className="h-4 w-4" />
+              <span>الملف الشخصي</span>
+            </div>
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel className="text-right font-amiri text-xs text-muted-foreground">استكشف</DropdownMenuLabel>
+          <DropdownMenuItem className="flex justify-between items-center cursor-pointer" onClick={() => window.open("https://quran.com", "_blank", "noopener,noreferrer")}>
+            <div className="flex items-center gap-2">
+              <ExternalLink className="h-4 w-4" />
+              <span>استكشف القرآن</span>
             </div>
           </DropdownMenuItem>
           <DropdownMenuSeparator />

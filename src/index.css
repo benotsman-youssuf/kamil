@@ -190,6 +190,14 @@
   background: transparent;
 }
 
+/* Mobile caret fix for RTL contenteditable */
+@media (max-width: 767px) {
+  [data-slate-editor] {
+    caret-color: auto;
+    -webkit-user-modify: read-write;
+  }
+}
+
 /* Editor text in light mode */
 .text-gray-800 {
   color: hsl(25 18% 22%) !important; /* #382D24 — warm dark brown */

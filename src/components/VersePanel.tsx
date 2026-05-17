@@ -306,41 +306,41 @@ export function VersePanelContent({
           onValueChange={setActiveTab}
           className="flex-1 flex flex-col overflow-hidden"
         >
-          <div className="px-3 py-2 border-b border-sidebar-border flex-shrink-0">
-            <TabsList className="w-full justify-start gap-0 bg-transparent p-0 h-auto">
+          <div className="px-3 py-2 border-b border-sidebar-border flex-shrink-0 overflow-x-auto scrollbar-hide">
+            <TabsList className="w-full justify-start gap-0 bg-transparent p-0 h-auto flex-nowrap">
               <TabsTrigger
                 value="verse"
-                className="rounded-md data-[state=active]:bg-muted/70 data-[state=active]:text-foreground text-xs px-2 py-1.5 h-auto"
+                className="rounded-md data-[state=active]:bg-muted/70 data-[state=active]:text-foreground text-xs max-md:text-[10px] px-2 max-md:px-1.5 py-1.5 h-auto"
               >
-                <BookOpen className="h-3.5 w-3.5 ml-1" />
+                <BookOpen className="h-3.5 w-3.5 ml-1 max-md:h-3 max-md:w-3" />
                 الآية
               </TabsTrigger>
               <TabsTrigger
                 value="tafsir"
-                className="rounded-md data-[state=active]:bg-muted/70 data-[state=active]:text-foreground text-xs px-2 py-1.5 h-auto"
+                className="rounded-md data-[state=active]:bg-muted/70 data-[state=active]:text-foreground text-xs max-md:text-[10px] px-2 max-md:px-1.5 py-1.5 h-auto"
               >
-                <MessageCircle className="h-3.5 w-3.5 ml-1" />
+                <MessageCircle className="h-3.5 w-3.5 ml-1 max-md:h-3 max-md:w-3" />
                 التفسير
               </TabsTrigger>
               <TabsTrigger
                 value="words"
-                className="rounded-md data-[state=active]:bg-muted/70 data-[state=active]:text-foreground text-xs px-2 py-1.5 h-auto"
+                className="rounded-md data-[state=active]:bg-muted/70 data-[state=active]:text-foreground text-xs max-md:text-[10px] px-2 max-md:px-1.5 py-1.5 h-auto"
               >
-                <List className="h-3.5 w-3.5 ml-1" />
+                <List className="h-3.5 w-3.5 ml-1 max-md:h-3 max-md:w-3" />
                 الكلمات
               </TabsTrigger>
               <TabsTrigger
                 value="info"
-                className="rounded-md data-[state=active]:bg-muted/70 data-[state=active]:text-foreground text-xs px-2 py-1.5 h-auto"
+                className="rounded-md data-[state=active]:bg-muted/70 data-[state=active]:text-foreground text-xs max-md:text-[10px] px-2 max-md:px-1.5 py-1.5 h-auto"
               >
-                <Info className="h-3.5 w-3.5 ml-1" />
+                <Info className="h-3.5 w-3.5 ml-1 max-md:h-3 max-md:w-3" />
                 المعلومات
               </TabsTrigger>
               <TabsTrigger
                 value="notes"
-                className="rounded-md data-[state=active]:bg-muted/70 data-[state=active]:text-foreground text-xs px-2 py-1.5 h-auto"
+                className="rounded-md data-[state=active]:bg-muted/70 data-[state=active]:text-foreground text-xs max-md:text-[10px] px-2 max-md:px-1.5 py-1.5 h-auto flex-shrink-0"
               >
-                <Pencil className="h-3.5 w-3.5 ml-1" />
+                <Pencil className="h-3.5 w-3.5 ml-1 max-md:h-3 max-md:w-3" />
                 الملاحظات
               </TabsTrigger>
             </TabsList>

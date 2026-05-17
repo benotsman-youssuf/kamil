@@ -22,6 +22,7 @@ export function EditorContent({
             fontSize: "1.25rem",
             direction: "rtl",
             textAlign: "right",
+            unicodeBidi: "plaintext",
           }}
         />
       </EditorContainer>
