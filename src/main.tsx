@@ -5,7 +5,6 @@ import SideBar from "./layout/Sidebar.tsx";
 import { Home } from "./pages/Home";
 import { AuthCallback } from "./pages/AuthCallback";
 import { UserLayout } from "./layout/UserLayout";
-import { Bookmarks } from "./pages/Bookmarks";
 import { Collections } from "./pages/Collections";
 import { Settings } from "./pages/Settings";
 import { Stats } from "./pages/Stats";
@@ -15,10 +14,6 @@ const router = createBrowserRouter([
   { path: "/", element: <Home /> },
   { path: "/pages/:id", element: <SideBar /> },
   { path: "/callback", element: <AuthCallback /> },
-  {
-    path: "/bookmarks",
-    element: <RequireAuth><UserLayout title="العلامات المرجعية"><Bookmarks /></UserLayout></RequireAuth>,
-  },
   {
     path: "/collections",
     element: <RequireAuth><UserLayout title="المجلدات"><Collections /></UserLayout></RequireAuth>,

@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Bookmark, FolderOpen, Plus, Loader2, Star } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { fetchCollections, getBookmarkCollections, addBookmarkToCollection, removeBookmarkFromCollection, getBookmark } from "@/lib/qf/api";
+import { fetchCollections, addBookmarkToCollection, removeBookmarkFromCollection, getBookmark } from "@/lib/qf/api";
 import type { CollectionItem } from "@/lib/qf/api";
 import { CreateCollectionDialog } from "./CreateCollectionDialog";
 import { toast } from "sonner";
@@ -19,7 +19,6 @@ export function CollectionPicker({ verseKey }: CollectionPickerProps) {
   const [open, setOpen] = useState(false);
   const [collections, setCollections] = useState<CollectionItem[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [bookmarkId, setBookmarkId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [toggling, setToggling] = useState<Set<string>>(new Set());
   const [showCreate, setShowCreate] = useState(false);
@@ -28,14 +27,17 @@ export function CollectionPicker({ verseKey }: CollectionPickerProps) {
     if (!open) return;
     setLoading(true);
     Promise.all([
-      fetchCollections({ first: 50, sortBy: "recentlyUpdated" }),
-      getBookmarkCollections(verseKey),
+      fetchCollections({ first: 20, sortBy: "recentlyUpdated" }),
       getBookmark(verseKey),
     ])
-      .then(([colRes, colIds, bm]) => {
+      .then(([colRes, bm]) => {
         setCollections(Array.isArray(colRes.data) ? colRes.data : []);
-        setSelectedIds(new Set(colIds));
-        setBookmarkId(bm?.data?.id ?? null);
+        if (bm?.data?.isInDefaultCollection) {
+          const defaultCol = colRes.data?.find((c: CollectionItem) => c.isDefault);
+          if (defaultCol) {
+            setSelectedIds(new Set([defaultCol.id]));
+          }
+        }
       })
       .catch(() => toast.error("فشل تحميل المجلدات"))
       .finally(() => setLoading(false));
@@ -53,8 +55,8 @@ export function CollectionPicker({ verseKey }: CollectionPickerProps) {
     try {
       if (isAdding) {
         await addBookmarkToCollection(collectionId, verseKey);
-      } else if (bookmarkId) {
-        await removeBookmarkFromCollection(collectionId, bookmarkId);
+      } else {
+        await removeBookmarkFromCollection(collectionId, verseKey);
       }
       setSelectedIds((prev) => {
         const next = new Set(prev);
@@ -62,10 +64,6 @@ export function CollectionPicker({ verseKey }: CollectionPickerProps) {
         else next.delete(collectionId);
         return next;
       });
-      if (isAdding && !bookmarkId) {
-        const bm = await getBookmark(verseKey);
-        if (bm?.data?.id) setBookmarkId(bm.data.id);
-      }
     } catch {
       toast.error(isAdding ? "فشل الإضافة إلى المجلد" : "فشل الإزالة من المجلد");
     } finally {

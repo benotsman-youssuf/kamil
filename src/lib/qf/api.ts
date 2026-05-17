@@ -664,18 +664,6 @@ export async function fetchCollectionItems(
 
 // ─── Collection Bookmark Management ──────────────────────────────
 
-export async function getBookmarkCollections(verseKey: string): Promise<string[]> {
-  const [chapterId, verseNumber] = verseKey.split(":").map(Number);
-  try {
-    const res = await userApiFetch<{ success: boolean; data: string[] }>(
-      `/bookmarks/collections?key=${chapterId}&verseNumber=${verseNumber}&type=ayah&includeDefault=true&mushafId=1`
-    );
-    return res.data ?? [];
-  } catch {
-    return [];
-  }
-}
-
 export async function addBookmarkToCollection(collectionId: string, verseKey: string): Promise<void> {
   const [chapterId, verseNumber] = verseKey.split(":").map(Number);
   await userApiFetch(`/collections/${collectionId}/bookmarks`, {
@@ -684,9 +672,11 @@ export async function addBookmarkToCollection(collectionId: string, verseKey: st
   });
 }
 
-export async function removeBookmarkFromCollection(collectionId: string, bookmarkId: string): Promise<void> {
-  await userApiFetch(`/collections/${collectionId}/bookmarks/${bookmarkId}`, {
+export async function removeBookmarkFromCollection(collectionId: string, verseKey: string): Promise<void> {
+  const [chapterId, verseNumber] = verseKey.split(":").map(Number);
+  await userApiFetch(`/collections/${collectionId}/bookmarks`, {
     method: "DELETE",
+    body: JSON.stringify({ key: chapterId, verseNumber, type: "ayah", mushafId: 1 }),
   });
 }
 
@@ -696,6 +686,20 @@ export async function createCollection(name: string): Promise<CollectionItem> {
     body: JSON.stringify({ name }),
   });
   return res.data;
+}
+
+export async function updateCollection(collectionId: string, name: string): Promise<CollectionItem> {
+  const res = await userApiFetch<{ success: boolean; data: CollectionItem }>(`/collections/${collectionId}`, {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+  return res.data;
+}
+
+export async function deleteCollection(collectionId: string): Promise<void> {
+  await userApiFetch(`/collections/${collectionId}`, {
+    method: "DELETE",
+  });
 }
 
 // ─── Notes ────────────────────────────────────────────────────────
