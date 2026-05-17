@@ -650,9 +650,52 @@ export async function fetchCollectionItems(
   if (params?.first) qp.set("first", String(params.first));
   if (params?.after) qp.set("after", params.after);
   const qs = qp.toString();
-  return userApiFetch<{ success: boolean; data: CollectionBookmarkItem[]; pagination: CursorPagination }>(
-    `/collections/${collectionId}${qs ? `?${qs}` : ""}`
-  );
+  const res = await userApiFetch<{
+    success: boolean;
+    data: { collection: any; bookmarks: CollectionBookmarkItem[] };
+    pagination: CursorPagination;
+  }>(`/collections/${collectionId}${qs ? `?${qs}` : ""}`);
+  return {
+    success: res.success,
+    data: res.data?.bookmarks ?? [],
+    pagination: res.pagination,
+  };
+}
+
+// ─── Collection Bookmark Management ──────────────────────────────
+
+export async function getBookmarkCollections(verseKey: string): Promise<string[]> {
+  const [chapterId, verseNumber] = verseKey.split(":").map(Number);
+  try {
+    const res = await userApiFetch<{ success: boolean; data: string[] }>(
+      `/bookmarks/collections?key=${chapterId}&verseNumber=${verseNumber}&type=ayah&includeDefault=true&mushafId=1`
+    );
+    return res.data ?? [];
+  } catch {
+    return [];
+  }
+}
+
+export async function addBookmarkToCollection(collectionId: string, verseKey: string): Promise<void> {
+  const [chapterId, verseNumber] = verseKey.split(":").map(Number);
+  await userApiFetch(`/collections/${collectionId}/bookmarks`, {
+    method: "POST",
+    body: JSON.stringify({ key: chapterId, verseNumber, type: "ayah", mushafId: 1 }),
+  });
+}
+
+export async function removeBookmarkFromCollection(collectionId: string, bookmarkId: string): Promise<void> {
+  await userApiFetch(`/collections/${collectionId}/bookmarks/${bookmarkId}`, {
+    method: "DELETE",
+  });
+}
+
+export async function createCollection(name: string): Promise<CollectionItem> {
+  const res = await userApiFetch<{ success: boolean; data: CollectionItem }>("/collections", {
+    method: "POST",
+    body: JSON.stringify({ name }),
+  });
+  return res.data;
 }
 
 // ─── Notes ────────────────────────────────────────────────────────

@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { fetchVerseDetails, getResourcesTafsirs, getResourcesTranslations, fetchTafsirsBulk, addBookmark, deleteBookmark, getBookmark, fetchNotesByVerse, addNote, updateNote, deleteNote } from "@/lib/qf/api";
+import { fetchVerseDetails, getResourcesTafsirs, getResourcesTranslations, fetchTafsirsBulk, fetchNotesByVerse, addNote, updateNote, deleteNote } from "@/lib/qf/api";
 import type { VerseDetails, Hadith, Word, Tafsir } from "@/lib/qf/api";
 import {
   Play,
@@ -26,7 +26,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Plus,
-  Bookmark,
   Pencil,
   Trash2,
   Send,
@@ -38,8 +37,7 @@ import { db } from "@/lib/db";
 import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
-
-const AUDIO_BASE = "https://verses.quran.com/";
+import { CollectionPicker } from "./CollectionPicker";
 
 export function VersePanelContent({ 
   verseData, 
@@ -52,9 +50,6 @@ export function VersePanelContent({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [translationName, setTranslationName] = useState("");
-  const [isBookmarked, setIsBookmarked] = useState(false);
-  const [bookmarkId, setBookmarkId] = useState<string | null>(null);
-  const [bookmarkLoading, setBookmarkLoading] = useState(false);
   const [notes, setNotes] = useState<any[]>([]);
   const [noteText, setNoteText] = useState("");
   const [savingNote, setSavingNote] = useState(false);
@@ -129,8 +124,6 @@ export function VersePanelContent({
     setDetails(null);
     setError(null);
     setLoading(true);
-    setIsBookmarked(false);
-    setBookmarkId(null);
     setNotes([]);
     setNoteText("");
 
@@ -152,13 +145,6 @@ export function VersePanelContent({
       }
     });
 
-    getBookmark(verseData.verseKey).then((res) => {
-      if (res?.data) {
-        setIsBookmarked(true);
-        setBookmarkId(res.data.id);
-      }
-    });
-
     fetchNotesByVerse(verseData.verseKey).then((res) => {
       if (res?.data) {
         setNotes(Array.isArray(res.data) ? res.data : []);
@@ -171,27 +157,6 @@ export function VersePanelContent({
       }
     };
   }, [verseData]);
-
-  const toggleBookmark = useCallback(async () => {
-    if (bookmarkLoading) return;
-    setBookmarkLoading(true);
-    try {
-      if (isBookmarked && bookmarkId) {
-        await deleteBookmark(bookmarkId);
-        setIsBookmarked(false);
-        setBookmarkId(null);
-      } else {
-        const res = await addBookmark(verseData.verseKey);
-        if (res?.data) {
-          setIsBookmarked(true);
-          setBookmarkId(res.data.id);
-        }
-      }
-    } catch {
-    } finally {
-      setBookmarkLoading(false);
-    }
-  }, [isBookmarked, bookmarkId, bookmarkLoading, verseData.verseKey]);
 
   const handleAddNote = useCallback(async () => {
     const text = noteText.trim();
@@ -325,21 +290,7 @@ export function VersePanelContent({
             >
               <X className="h-4 w-4" />
             </Button>
-            <Button
-              size="icon"
-              variant="ghost"
-              className={cn(
-                "h-7 w-7 rounded-md hover:bg-sidebar-accent",
-                isBookmarked
-                  ? "text-amber-500 hover:text-amber-600"
-                  : "text-muted-foreground hover:text-foreground"
-              )}
-              onClick={toggleBookmark}
-              disabled={bookmarkLoading}
-              aria-label={isBookmarked ? "إزالة من العلامات المرجعية" : "إضافة إلى العلامات المرجعية"}
-            >
-              <Bookmark className={cn("h-4 w-4", isBookmarked && "fill-amber-500")} />
-            </Button>
+            <CollectionPicker verseKey={verseData.verseKey} />
           </div>
           <h2 className="text-sm font-semibold truncate" dir="rtl">
             {verseData
