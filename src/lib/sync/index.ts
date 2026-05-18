@@ -64,7 +64,7 @@ export async function pullFromRemote(): Promise<{ synced: number }> {
     // Get last sync timestamp
     const lastSync = localStorage.getItem("kamil_last_sync");
 
-    const url = new URL("/api/sync/pull", window.location.origin);
+    const url = new URL("/api/sync", window.location.origin);
     if (lastSync) url.searchParams.set("since", lastSync);
 
     const data = await apiFetch(url.pathname + url.search);
@@ -151,7 +151,7 @@ export async function pushToRemote(): Promise<{ synced: number }> {
       updated_at: page.updatedAt,
     }));
 
-    const data = await apiFetch("/api/sync/push", {
+    const data = await apiFetch("/api/sync", {
       method: "POST",
       body: JSON.stringify({ pages }),
     });
@@ -211,7 +211,7 @@ export async function syncSinglePage(page: Page): Promise<void> {
       updated_at: page.updatedAt,
     }];
 
-    const data = await apiFetch("/api/sync/push", {
+    const data = await apiFetch("/api/sync", {
       method: "POST",
       body: JSON.stringify({ pages }),
     });
