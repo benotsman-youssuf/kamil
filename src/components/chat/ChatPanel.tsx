@@ -13,10 +13,10 @@ function extractEvidence(
   for (const part of parts) {
     if (part.type === "tool-invocation" && part.toolInvocation?.state === "result") {
       const { toolName, result } = part.toolInvocation;
-      if (toolName === "search_quran_mcp" && result?.verses) {
+      if (toolName === "search_quran" && result?.verses) {
         verses.push(...result.verses);
       }
-      if (toolName === "search_hadith_mcp" && result?.hadiths) {
+      if (toolName === "search_hadith" && result?.hadiths) {
         hadiths.push(...result.hadiths);
       }
     }
