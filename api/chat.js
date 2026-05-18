@@ -2,8 +2,8 @@ import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { streamText } from 'ai';
 import { createMCPClient } from '@ai-sdk/mcp';
 
-export const runtime = 'edge';
 export const maxDuration = 60;
+// NO runtime = 'edge' here
 
 const openrouter = createOpenRouter({
   apiKey: process.env.OPENROUTER_API_KEY,
@@ -21,11 +21,11 @@ async function getMCPTools(url) {
   }
 }
 
-export default async function handler(req) {
-  if (req.method !== 'POST') return new Response('Method not allowed', { status: 405 });
+export default async function handler(req, res) {
+  if (req.method !== 'POST') return res.status(405).end();
 
   try {
-    const { messages } = await req.json();
+    const { messages } = req.body;
 
     const [quranTools, hadithTools] = await Promise.all([
       getMCPTools(process.env.QURAN_MCP_URL || 'https://mcp.quran.ai'),
@@ -33,9 +33,10 @@ export default async function handler(req) {
     ]);
 
     const tools = { ...quranTools, ...hadithTools };
+    console.log('Tools loaded:', Object.keys(tools));
 
     const result = streamText({
-      model: openrouter(process.env.OPENROUTER_MODEL || 'anthropic/claude-3.5-sonnet'),
+      model: openrouter(process.env.OPENROUTER_MODEL || 'openrouter/owl-alpha'),
       system: `You are a research assistant for Islamic scholars and writers using the Kamil editor.
 Your job: find Quran verses and hadith relevant to what the scholar is writing about.
 RULES:
@@ -51,13 +52,10 @@ RULES:
       maxSteps: 5,
     });
 
-    return result.toUIMessageStreamResponse();
+    result.pipeDataStreamToResponse(res); // Node.js only
 
   } catch (e) {
     console.error('Handler error:', e);
-    return new Response(JSON.stringify({ error: e.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    if (!res.headersSent) res.status(500).json({ error: e.message });
   }
 }
