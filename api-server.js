@@ -103,13 +103,14 @@ RULES:
           maxSteps: 5,
         });
 
-        const response = result.toDataStreamResponse();
-        res.writeHead(response.status || 200, {
-          ...Object.fromEntries(response.headers.entries()),
+        res.writeHead(200, {
+          'Content-Type': 'text/plain; charset=utf-8',
+          'X-Vercel-AI-Data-Stream': 'v1',
+          'Transfer-Encoding': 'chunked',
           'Access-Control-Allow-Origin': '*',
         });
 
-        const reader = response.body.getReader();
+        const reader = result.toDataStream().getReader();
         while (true) {
           const { done, value } = await reader.read();
           if (done) { res.end(); break; }

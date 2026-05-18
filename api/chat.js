@@ -52,11 +52,11 @@ RULES:
       maxSteps: 5,
     });
 
-    const response = result.toDataStreamResponse();
-    res.status(response.status || 200);
-    response.headers.forEach((value, key) => res.setHeader(key, value));
+    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+    res.setHeader('X-Vercel-AI-Data-Stream', 'v1');
+    res.setHeader('Transfer-Encoding', 'chunked');
 
-    const reader = response.body.getReader();
+    const reader = result.toDataStream().getReader();
     while (true) {
       const { done, value } = await reader.read();
       if (done) { res.end(); break; }
