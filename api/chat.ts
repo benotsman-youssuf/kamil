@@ -19,11 +19,22 @@ export default async function handler(
   }
   const body = JSON.parse(Buffer.concat(chunks).toString());
 
-  const result = streamText({
-    model: openrouter(DEFAULT_OPENROUTER_MODEL),
-    system: "You are a helpful assistant.",
-    messages: convertToCoreMessages(body.messages || []),
-  });
+  try {
+    const result = streamText({
+      model: openrouter(DEFAULT_OPENROUTER_MODEL),
+      system: "You are a helpful assistant.",
+      messages: convertToCoreMessages(body.messages || []),
+    });
 
-  result.pipeDataStreamToResponse(res);
+    result.pipeDataStreamToResponse(res, {
+      getErrorMessage: (error: unknown) => {
+        console.error("Stream error:", error);
+        return error instanceof Error ? error.message : String(error);
+      },
+    });
+  } catch (e: unknown) {
+    console.error("Init error:", e);
+    res.writeHead(500, { "Content-Type": "application/json" });
+    res.end(JSON.stringify({ error: e instanceof Error ? e.message : String(e) }));
+  }
 }
