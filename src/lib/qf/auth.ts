@@ -1,11 +1,13 @@
 import { QF_CONFIG } from "./config";
+import { createRemoteJWKSet, jwtVerify } from "jose";
 
 const AUTH_BASE_URL = QF_CONFIG.authBaseUrl;
 const TOKEN_BASE_URL = QF_CONFIG.tokenBaseUrl;
 const PROXY_BASE_URL = QF_CONFIG.proxyBaseUrl;
 const CLIENT_ID = QF_CONFIG.clientId;
-const CLIENT_SECRET = QF_CONFIG.clientSecret;
 const REDIRECT_URI = QF_CONFIG.redirectUri;
+
+const JWKS = createRemoteJWKSet(new URL(`${AUTH_BASE_URL}/.well-known/jwks.json`));
 
 function base64URLEncode(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
@@ -48,7 +50,7 @@ export async function login(scope?: string) {
   localStorage.setItem("qf_nonce", nonce);
   localStorage.setItem("qf_code_verifier", codeVerifier);
 
-  const requestedScope = scope || "openid offline_access user collection bookmark note preferences reading_sessions goals streaks activity_days";
+  const requestedScope = scope || "openid offline_access";
 
   const params = new URLSearchParams({
     client_id: CLIENT_ID,
@@ -74,36 +76,51 @@ interface TokenSet {
   expires_at?: number;
 }
 
+interface DecodedIdToken {
+  sub: string;
+  email?: string;
+  first_name?: string;
+  last_name?: string;
+  nonce?: string;
+  iss: string;
+  aud: string[];
+  exp: number;
+  iat: number;
+}
+
+async function verifyIdToken(idToken: string, expectedNonce: string | null): Promise<DecodedIdToken> {
+  const { payload } = await jwtVerify(idToken, JWKS, {
+    issuer: `${AUTH_BASE_URL}/`,
+    audience: CLIENT_ID,
+  });
+
+  const decoded = payload as unknown as DecodedIdToken;
+
+  if (expectedNonce && decoded.nonce !== expectedNonce) {
+    throw new Error("Nonce mismatch - possible replay attack");
+  }
+
+  return decoded;
+}
+
 export async function handleCallback(code: string, state: string): Promise<TokenSet> {
   const savedState = localStorage.getItem("qf_auth_state");
+  const savedNonce = localStorage.getItem("qf_nonce");
   const codeVerifier = localStorage.getItem("qf_code_verifier");
 
   if (state !== savedState) {
     throw new Error("State mismatch - possible CSRF attack");
   }
 
-  const headers: Record<string, string> = {
-    "Content-Type": "application/x-www-form-urlencoded",
-  };
-
-  const body = new URLSearchParams({
-    grant_type: "authorization_code",
-    code,
-    redirect_uri: REDIRECT_URI,
-    code_verifier: codeVerifier!,
-  });
-
-  if (CLIENT_SECRET) {
-    const basicAuth = btoa(`${CLIENT_ID}:${CLIENT_SECRET}`);
-    headers["Authorization"] = `Basic ${basicAuth}`;
-  } else {
-    body.set("client_id", CLIENT_ID);
-  }
-
-  const response = await fetch(`${TOKEN_BASE_URL}/oauth2/token`, {
+  const response = await fetch(`${TOKEN_BASE_URL}/token`, {
     method: "POST",
-    headers,
-    body,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      grant_type: "authorization_code",
+      code,
+      redirect_uri: REDIRECT_URI,
+      code_verifier: codeVerifier,
+    }),
   });
 
   const data = await response.json();
@@ -111,6 +128,10 @@ export async function handleCallback(code: string, state: string): Promise<Token
   if (!response.ok) {
     const hint = data.error_hint || data.error_description || data.error || "Unknown error";
     throw new Error(`Token exchange failed: ${hint}`);
+  }
+
+  if (data.id_token) {
+    await verifyIdToken(data.id_token, savedNonce);
   }
 
   data.expires_at = Date.now() + (data.expires_in * 1000);
@@ -131,28 +152,15 @@ export async function refreshTokens(): Promise<TokenSet | null> {
   const tokens = getTokensRaw();
   if (!tokens?.refresh_token) return null;
 
-  const headers: Record<string, string> = {
-    "Content-Type": "application/x-www-form-urlencoded",
-  };
-
-  const body = new URLSearchParams({
-    grant_type: "refresh_token",
-    refresh_token: tokens.refresh_token,
-  });
-
-  if (CLIENT_SECRET) {
-    const basicAuth = btoa(`${CLIENT_ID}:${CLIENT_SECRET}`);
-    headers["Authorization"] = `Basic ${basicAuth}`;
-  } else {
-    body.set("client_id", CLIENT_ID);
-  }
-
   refreshPromise = (async () => {
     try {
-      const response = await fetch(`${TOKEN_BASE_URL}/oauth2/token`, {
+      const response = await fetch(`${TOKEN_BASE_URL}/refresh`, {
         method: "POST",
-        headers,
-        body,
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          grant_type: "refresh_token",
+          refresh_token: tokens.refresh_token,
+        }),
       });
 
       if (!response.ok) {
@@ -203,12 +211,24 @@ export async function getValidAccessToken(): Promise<string | null> {
 }
 
 export function logout() {
+  const tokens = getTokensRaw();
+  const idToken = tokens?.id_token;
+
   localStorage.removeItem("qf_tokens");
   localStorage.removeItem("qf_auth_state");
   localStorage.removeItem("qf_code_verifier");
   localStorage.removeItem("qf_nonce");
 
-  window.location.href = "/";
+  if (idToken) {
+    const postLogoutUri = REDIRECT_URI.replace(/\/callback$/, "") || window.location.origin;
+    const params = new URLSearchParams({
+      id_token_hint: idToken,
+      post_logout_redirect_uri: postLogoutUri,
+    });
+    window.location.href = `${AUTH_BASE_URL}/oauth2/sessions/logout?${params.toString()}`;
+  } else {
+    window.location.href = "/";
+  }
 }
 
 export async function fetchUserInfo(): Promise<{
@@ -231,29 +251,29 @@ export async function fetchUserInfo(): Promise<{
   }
 }
 
+export function getUserId(): string | null {
+  const tokens = getTokensRaw();
+  if (!tokens?.id_token) return null;
+
+  try {
+    const parts = tokens.id_token.split(".");
+    const payload = JSON.parse(atob(parts[1]));
+    return payload.sub || null;
+  } catch {
+    return null;
+  }
+}
+
 let cachedContentToken: string | null = null;
 let cachedContentTokenExpiry = 0;
 
 export async function fetchContentToken(): Promise<string | null> {
   if (cachedContentToken && Date.now() < cachedContentTokenExpiry - 60000) return cachedContentToken;
 
-  const headers: Record<string, string> = {
-    "Content-Type": "application/x-www-form-urlencoded",
-  };
-
-  if (CLIENT_SECRET) {
-    const basicAuth = btoa(`${CLIENT_ID}:${CLIENT_SECRET}`);
-    headers["Authorization"] = `Basic ${basicAuth}`;
-  }
-
   try {
-    const response = await fetch(`${TOKEN_BASE_URL}/oauth2/token`, {
+    const response = await fetch(`${TOKEN_BASE_URL}/content-token`, {
       method: "POST",
-      headers,
-      body: new URLSearchParams({
-        grant_type: "client_credentials",
-        scope: "content",
-      }),
+      headers: { "Content-Type": "application/json" },
     });
 
     if (!response.ok) return null;
