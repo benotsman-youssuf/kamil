@@ -103,7 +103,18 @@ RULES:
           maxSteps: 5,
         });
 
-        result.pipeDataStreamToResponse(res);
+        const response = result.toDataStreamResponse();
+        res.writeHead(response.status || 200, {
+          ...Object.fromEntries(response.headers.entries()),
+          'Access-Control-Allow-Origin': '*',
+        });
+
+        const reader = response.body.getReader();
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) { res.end(); break; }
+          res.write(Buffer.from(value));
+        }
       } else if (url.pathname === '/api/verse') {
         const surah = url.searchParams.get('surah');
         const ayah = url.searchParams.get('ayah');

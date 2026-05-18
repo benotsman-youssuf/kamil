@@ -52,7 +52,16 @@ RULES:
       maxSteps: 5,
     });
 
-    result.pipeDataStreamToResponse(res); // Node.js only
+    const response = result.toDataStreamResponse();
+    res.status(response.status || 200);
+    response.headers.forEach((value, key) => res.setHeader(key, value));
+
+    const reader = response.body.getReader();
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) { res.end(); break; }
+      res.write(Buffer.from(value));
+    }
 
   } catch (e) {
     console.error('Handler error:', e);
