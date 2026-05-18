@@ -105,8 +105,6 @@ export const Editor = React.forwardRef<HTMLDivElement, EditorProps>(
         )}
         disabled={disabled}
         disableDefaultStyles
-        autoComplete="off"
-        autoCorrect="off"
         {...props}
       />
     );
