@@ -92,20 +92,7 @@ export function UserAccount() {
               <span>الإعدادات</span>
             </div>
           </DropdownMenuItem>
-          <DropdownMenuItem className="flex justify-between items-center cursor-pointer" onClick={() => navigate("/profile")}>
-            <div className="flex items-center gap-2">
-              <UserCircle className="h-4 w-4" />
-              <span>الملف الشخصي</span>
-            </div>
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuLabel className="text-right font-amiri text-xs text-muted-foreground">استكشف</DropdownMenuLabel>
-          <DropdownMenuItem className="flex justify-between items-center cursor-pointer" onClick={() => window.open("https://quran.com", "_blank", "noopener,noreferrer")}>
-            <div className="flex items-center gap-2">
-              <ExternalLink className="h-4 w-4" />
-              <span>استكشف القرآن</span>
-            </div>
-          </DropdownMenuItem>
+
           <DropdownMenuSeparator />
           <DropdownMenuItem
             className="flex justify-between items-center cursor-pointer text-red-500 focus:text-red-500"
