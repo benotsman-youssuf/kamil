@@ -12,6 +12,7 @@ import {
   Check,
   RotateCcw,
   Square,
+  ArrowUp,
 } from "lucide-react";
 import {
   useEffect,
@@ -25,7 +26,6 @@ import {
   Conversation,
   ConversationContent,
   ConversationScrollButton,
-  ConversationEmptyState,
 } from "@/components/ai-elements/conversation";
 import {
   Message,
@@ -42,7 +42,6 @@ import {
 import {
   PromptInput,
   PromptInputTextarea,
-  PromptInputSubmit,
 } from "@/components/ai-elements/prompt-input";
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { Suggestion, Suggestions } from "@/components/ai-elements/suggestion";
@@ -65,14 +64,7 @@ import { toast } from "sonner";
 
 const chatTransport = new DefaultChatTransport({ api: "/api/chat" });
 
-const SUGGESTIONS = [
-  "What does the Quran say about patience?",
-  "Find hadiths on seeking knowledge",
-  "Explain Ayat al-Kursi",
-  "Verses about mercy and forgiveness",
-  "Hadiths on honesty",
-  "What does Islam say about family?",
-] as const;
+const SUGGESTIONS = [] as const;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -188,7 +180,7 @@ const MessageEvidenceBlock = memo(function MessageEvidenceBlock({
     .join(" · ");
 
   return (
-    <div className="mt-3 ml-2">
+    <div className="mt-3 ms-2">
       <Sources>
         <SourcesTrigger count={cards.length}>{triggerLabel}</SourcesTrigger>
         <SourcesContent>
@@ -409,7 +401,7 @@ export function AiChat({ close }: { close: () => void }) {
       <div className="px-4 py-3 border-b flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2">
           <Bot className="h-4 w-4" />
-          <h3 className="text-sm font-semibold">Kamil AI</h3>
+
           {messages.length > 0 && (
             <span className="text-xs text-muted-foreground tabular-nums">
               {messages.length} msg{messages.length !== 1 ? "s" : ""}
@@ -440,11 +432,7 @@ export function AiChat({ close }: { close: () => void }) {
             {messages.length === 0 ? (
               /* ── Empty state with suggestion chips ── */
               <div className="flex flex-col items-center gap-6">
-                <ConversationEmptyState
-                  icon={<Bot className="size-12" />}
-                  title="Kamil AI"
-                  description="Ask about any verse or hadith to research and insert into your writing."
-                />
+                <Bot className="size-12 text-muted-foreground opacity-50" />
                 <Suggestions>
                   {SUGGESTIONS.map((s) => (
                     <Suggestion
@@ -479,7 +467,7 @@ export function AiChat({ close }: { close: () => void }) {
 
                           {/* Copy button — visible on hover for assistant messages */}
                           {message.role === "assistant" && (
-                            <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -bottom-2 right-0">
+                            <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute -bottom-2 end-0">
                               <Button
                                 size="icon"
                                 variant="ghost"
@@ -564,30 +552,35 @@ export function AiChat({ close }: { close: () => void }) {
         </Conversation>
 
         {/* ── Prompt input ── */}
-        <PromptInput onSubmit={handleSubmit} className="mt-2 mb-2">
-          <PromptInputTextarea
-            value={input}
-            onChange={(e) => setInput(e.currentTarget.value)}
-            placeholder="Ask about a verse or hadith…"
-          />
+        <PromptInput
+          value={input}
+          onValueChange={setInput}
+          onSubmit={() => handleSubmit({ text: input })}
+          className="mt-2 mb-2 relative"
+        >
+          <PromptInputTextarea className="pe-10" />
 
           {isStreaming ? (
             /* Stop button during streaming */
             <Button
               size="icon"
               variant="outline"
-              className="absolute bottom-1.5 right-1.5 h-8 w-8"
+              className="absolute bottom-1.5 end-1.5 h-8 w-8"
               onClick={stop}
               title="Stop generation"
             >
               <Square className="h-3.5 w-3.5" />
             </Button>
           ) : (
-            <PromptInputSubmit
-              status="ready"
+            <Button
+              size="icon"
+              className="absolute bottom-1.5 end-1.5 h-8 w-8"
+              onClick={() => handleSubmit({ text: input })}
               disabled={!input.trim()}
-              className="absolute bottom-1.5 right-1.5"
-            />
+              title="Send message"
+            >
+              <ArrowUp className="h-4 w-4" />
+            </Button>
           )}
         </PromptInput>
       </div>
