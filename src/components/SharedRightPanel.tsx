@@ -4,10 +4,11 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { VersePanelContent } from "./VersePanel";
 import { HadithPanelContent } from "./HadithPanel";
+import { ChatPanel } from "./chat/ChatPanel";
 
 export function SharedRightPanel() {
   const [open, setOpen] = useState(false);
-  const [activeType, setActiveType] = useState<"verse" | "hadith" | null>(null);
+  const [activeType, setActiveType] = useState<"verse" | "hadith" | "ai" | null>(null);
   const [activeData, setActiveData] = useState<any>(null);
 
   const MIN_WIDTH = 280;
@@ -73,11 +74,19 @@ export function SharedRightPanel() {
       setOpen(true);
     };
 
+    const handleOpenAi = () => {
+      setActiveData(null);
+      setActiveType("ai");
+      setOpen(true);
+    };
+
     window.addEventListener("open-verse-panel", handleOpenVerse);
     window.addEventListener("open-hadith-panel", handleOpenHadith);
+    window.addEventListener("open-ai-chat", handleOpenAi);
     return () => {
       window.removeEventListener("open-verse-panel", handleOpenVerse);
       window.removeEventListener("open-hadith-panel", handleOpenHadith);
+      window.removeEventListener("open-ai-chat", handleOpenAi);
     };
   }, []);
 
@@ -126,6 +135,9 @@ export function SharedRightPanel() {
       )}
       {activeType === "hadith" && activeData && (
         <HadithPanelContent hadithData={activeData} close={close} />
+      )}
+      {activeType === "ai" && (
+        <ChatPanel close={close} />
       )}
     </div>
   );

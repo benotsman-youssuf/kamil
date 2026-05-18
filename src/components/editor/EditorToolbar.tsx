@@ -1,6 +1,6 @@
 import { MarkToolbarButton } from "@/components/ui/mark-toolbar-button";
 import { AlignToolbarButton } from "@/components/ui/align-toolbar-button";
-import { Bold, Italic, Underline } from "lucide-react";
+import { Bold, Italic, Underline, Bot } from "lucide-react";
 import { FontSizeToolbarButton } from "@/components/ui/font-size-toolbar-button";
 import { ExportDropdown } from "./ExportDropdown";
 
@@ -39,6 +39,18 @@ export function EditorToolbar({ className = "", editor }: EditorToolbarProps) {
 
       <AlignToolbarButton />
       <FontSizeToolbarButton />
+
+
+      <div className="ml-1 border-l border-primary-foreground/10 pl-2">
+        <button
+          type="button"
+          onClick={() => window.dispatchEvent(new CustomEvent("open-ai-chat"))}
+          className="p-1.5 h-9 w-9 inline-flex items-center justify-center rounded-md text-primary-foreground/70 hover:text-primary-foreground hover:bg-primary-foreground/10"
+          title="AI Chat"
+        >
+          <Bot className="w-5 h-5" />
+        </button>
+      </div>
 
       {/* Export */}
       <div className="ml-1 border-l border-primary-foreground/10 pl-2">
