@@ -113,7 +113,7 @@ export function ShareDialog({ pageId }: ShareDialogProps) {
       const tokens = getTokens();
       if (!tokens?.access_token) return;
 
-      const res = await fetch(`/api/pages/${remoteId}/public`, {
+      const res = await fetch(`/api/pages/${remoteId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",

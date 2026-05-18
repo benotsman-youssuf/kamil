@@ -56,7 +56,7 @@ export function ReadPage() {
       }
 
       const tokens = JSON.parse(token);
-      const res = await fetch(`/api/pages/${id}/fork`, {
+      const res = await fetch(`/api/pages/${id}`, {
         method: "POST",
         headers: { "x-auth-token": tokens.access_token },
       });
