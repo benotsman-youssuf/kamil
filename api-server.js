@@ -62,7 +62,7 @@ const server = http.createServer(async (req, res) => {
         const mcpClients = [quranResult.client, hadithResult.client].filter(Boolean);
 
         const result = streamText({
-          model: google('gemini-1.5-flash'),
+          model: google('gemini-3.1-flash-lite'),
           system: `You are a research assistant for Islamic scholars and writers using the Kamil editor.
 Your job: find Quran verses and hadith relevant to what the scholar is writing about.
 
