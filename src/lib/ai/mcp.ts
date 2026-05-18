@@ -1,4 +1,4 @@
-import type { HadithEvidence, VerseEvidence } from "@/types/ai-evidence";
+import type { HadithEvidence, VerseEvidence } from "../../types/ai-evidence.js";
 
 const QURAN_MCP_URL = process.env.QURAN_MCP_URL || "https://mcp.quran.ai";
 const HADITH_MCP_URL = process.env.HADITH_MCP_URL || "https://hadith-mcp.org";

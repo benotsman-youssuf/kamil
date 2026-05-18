@@ -1,6 +1,6 @@
 import { tool } from "ai";
 import { z } from "zod";
-import { searchHadithMcp, searchQuranMcp } from "./mcp";
+import { searchHadithMcp, searchQuranMcp } from "./mcp.js";
 
 export const quranSearchTool = tool({
   description: "Search the Quran MCP source and return grounded verses",
