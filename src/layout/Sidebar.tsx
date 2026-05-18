@@ -5,7 +5,7 @@ import { Toaster, toast } from "sonner";
 import { EditorLayout } from "@/components/editor/EditorLayout";
 import { usePlateEditor } from "@platejs/core/react";
 import { editorPlugins } from "@/constants/editor";
-import { db } from "@/lib/db";
+import { getDb } from "@/lib/rxdb";
 import { useParams } from "react-router-dom";
 import { useEffect, useState, useCallback, useRef } from "react";
 import type { SaveState } from "@/components/SaveStatus";
@@ -15,7 +15,6 @@ import { SharedRightPanel } from "@/components/SharedRightPanel";
 import { fetchVerseDetails } from "@/lib/qf/api";
 import { useSidebarState } from "@/hooks/use-sidebar-state";
 import { getTokens } from "@/lib/qf/auth";
-import { syncSinglePage } from "@/lib/sync";
 
 export default function SideBar() {
   const [pageContent, setPageContent] = useState<string>();
@@ -41,12 +40,12 @@ export default function SideBar() {
     value: [],
   });
 
-  // ── Auto-pull from cloud on mount ─────────────────────────────────────────
+  // ── Start RxDB sync on mount if authenticated ────────────────────────
   useEffect(() => {
     const tokens = getTokens();
     if (tokens?.access_token) {
-      import("@/lib/sync").then(({ pullFromRemote }) => {
-        pullFromRemote().catch(() => {}); // silent fail
+      import("@/lib/rxdb").then(({ startSync }) => {
+        startSync().catch(() => {});
       });
     }
   }, []);
@@ -57,7 +56,11 @@ export default function SideBar() {
       setSaveState("saving");
       const updatedAt = new Date().toISOString();
       const content = JSON.stringify(editor.children);
-      await db.pages.update(Number(id), { content, updatedAt });
+      const db = await getDb();
+      const existing = await db.pages.findOne(id!).exec();
+      if (existing) {
+        await existing.patch({ content, updated_at: updatedAt });
+      }
       setPageContent((prev) => {
         if (!prev) return prev;
         const page = JSON.parse(prev);
@@ -65,15 +68,6 @@ export default function SideBar() {
       });
       setSaveState("saved");
       setTimeout(() => setSaveState("idle"), 1500);
-
-      // Auto-push to cloud (debounced, silent fail)
-      const tokens = getTokens();
-      if (tokens?.access_token) {
-        const page = await db.pages.get(Number(id));
-        if (page) {
-          syncSinglePage(page).catch(() => {});
-        }
-      }
     } catch (error) {
       console.error("Error saving:", error);
       setSaveState("error");
@@ -86,9 +80,10 @@ export default function SideBar() {
 
   const fetchPage = async () => {
     try {
-      const page = await db.pages.get(Number(id));
+      const db = await getDb();
+      const page = await db.pages.findOne(id!).exec();
       editor.tf.setValue(page?.content ? JSON.parse(page.content) : []);
-      setPageContent(JSON.stringify(page));
+      setPageContent(JSON.stringify(page?.toJSON() || null));
     } catch (error) {
       console.error("Error fetching page:", error);
     }

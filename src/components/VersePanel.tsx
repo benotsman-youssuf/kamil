@@ -33,7 +33,7 @@ import {
   Sparkles
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { db } from "@/lib/db";
+import { getDb } from "@/lib/rxdb";
 import { toast } from "sonner";
 
 import { cn } from "@/lib/utils";
@@ -96,16 +96,24 @@ export function VersePanelContent({
         }))
       ];
 
-      const addedId = await db.pages.add({
+      const db = await getDb();
+      const id = crypto.randomUUID();
+      const now = new Date().toISOString();
+      await db.pages.insert({
+        id,
         name: `تأملات الآية ${verseData.verseKey}`,
+        title: `تأملات الآية ${verseData.verseKey}`,
         description: `سورة ${verseData.surahName}، آية ${verseData.ayaNumber}`,
         content: JSON.stringify(slateContent),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        isPinned: false
+        created_at: now,
+        updated_at: now,
+        is_public: false,
+        is_fork: false,
+        fork_count: 0,
+        forked_from: "",
       });
 
-      navigate(`/pages/${addedId}`);
+      navigate(`/pages/${id}`);
       close();
       toast.success("تم فتح الملاحظة في المحرر المتقدم!");
     } catch (err) {

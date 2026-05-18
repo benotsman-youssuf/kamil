@@ -4,16 +4,16 @@ import type { UserProfile } from "@/lib/qf/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Mail, Globe, Award, FileText, Heart, Users, AlertCircle, Download, Upload, CloudLightning, ShieldCheck, RefreshCw, CheckCircle, XCircle } from "lucide-react";
-import { db } from "@/lib/db";
+import { Mail, Globe, Award, FileText, Heart, Users, AlertCircle, Download, Upload, CloudLightning, ShieldCheck, RefreshCw } from "lucide-react";
+import { getDb } from "@/lib/rxdb";
 import { toast } from "sonner";
-import { useSync } from "@/hooks/use-sync";
 
 export function Settings() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { status, sync: doSync, isSyncing } = useSync();
+  const [syncing, setSyncing] = useState(false);
+  const [lastSync, setLastSync] = useState<string | null>(localStorage.getItem("kamil_last_sync"));
 
   useEffect(() => {
     setLoading(true);
@@ -29,12 +29,14 @@ export function Settings() {
   const handleExportBackup = async () => {
     try {
       setExporting(true);
-      const pages = await db.pages.toArray();
+      const db = await getDb();
+      const pages = await db.pages.find().exec();
+      const pagesJson = pages.map((p: any) => p.toJSON());
       const backupData = {
         version: 1,
         appName: "kamil",
         exportedAt: new Date().toISOString(),
-        pages
+        pages: pagesJson,
       };
       const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: "application/json" });
       const url = URL.createObjectURL(blob);
@@ -70,15 +72,28 @@ export function Settings() {
           }
 
           let importedCount = 0;
+          const db = await getDb();
           for (const page of backupData.pages) {
-            const existing = await db.pages.get(page.id);
+            const now = new Date().toISOString();
+            const doc = {
+              id: page.id?.toString() || crypto.randomUUID(),
+              name: page.name || page.title || "Untitled",
+              title: page.title || page.name || "Untitled",
+              content: typeof page.content === "string" ? page.content : JSON.stringify(page.content || []),
+              description: page.description || "",
+              is_public: page.is_public ?? false,
+              is_fork: page.is_fork ?? false,
+              fork_count: page.fork_count ?? 0,
+              forked_from: page.forked_from || "",
+              created_at: page.createdAt || page.created_at || now,
+              updated_at: page.updatedAt || page.updated_at || now,
+              isPinned: page.isPinned ?? false,
+            };
+            const existing = await db.pages.findOne(doc.id).exec();
             if (existing) {
-              await db.pages.put({
-                ...page,
-                id: undefined,
-              });
+              await existing.patch(doc);
             } else {
-              await db.pages.put(page);
+              await db.pages.insert(doc);
             }
             importedCount++;
           }
@@ -236,30 +251,33 @@ export function Settings() {
             <div className="flex items-center gap-3">
               <button
                 onClick={async () => {
+                  setSyncing(true);
                   try {
-                    await doSync();
+                    const { startSync } = await import("@/lib/rxdb");
+                    await startSync();
+                    const now = new Date().toISOString();
+                    localStorage.setItem("kamil_last_sync", now);
+                    setLastSync(now);
                     toast.success("تمت المزامنة بنجاح", { duration: 2000 });
                   } catch {
                     toast.error("فشل المزامنة", { duration: 2000 });
+                  } finally {
+                    setSyncing(false);
                   }
                 }}
-                disabled={isSyncing}
+                disabled={syncing}
                 className="flex-1 py-2 px-4 rounded bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity active:scale-[0.98] transition-transform duration-100 flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                {isSyncing ? (
+                {syncing ? (
                   <RefreshCw className="h-4 w-4 animate-spin" />
-                ) : status.state === "success" ? (
-                  <CheckCircle className="h-4 w-4" />
-                ) : status.state === "error" ? (
-                  <XCircle className="h-4 w-4" />
                 ) : (
                   <RefreshCw className="h-4 w-4" />
                 )}
-                {isSyncing ? "جاري المزامنة..." : status.message || "مزامنة الآن"}
+                {syncing ? "جاري المزامنة..." : "مزامنة الآن"}
               </button>
-              {status.lastSync && (
+              {lastSync && (
                 <span className="text-xs text-muted-foreground whitespace-nowrap">
-                  آخر مزامنة: {new Date(status.lastSync).toLocaleDateString("ar-SA", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                  آخر مزامنة: {new Date(lastSync).toLocaleDateString("ar-SA", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                 </span>
               )}
             </div>

@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { db } from "@/lib/db";
+import { getDb } from "@/lib/rxdb";
 import { Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
@@ -30,16 +30,25 @@ export function AddPageDialog({ compact = false }: { compact?: boolean }) {
 
     try {
       if (typeof name === "string") {
-        const page = await db.pages.add({
+        const db = await getDb();
+        const id = crypto.randomUUID();
+        const now = new Date().toISOString();
+        await db.pages.insert({
+          id,
           name,
+          title: name,
           description: "",
-          content: "",
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          content: JSON.stringify([]),
+          created_at: now,
+          updated_at: now,
+          is_public: false,
+          is_fork: false,
+          fork_count: 0,
+          forked_from: "",
         });
         toast.success("تمت إضافة الصفحة بنجاح", { duration: 1000 });
         setOpen(false);
-        navigate(`/pages/${page}`);
+        navigate(`/pages/${id}`);
       }
     } catch (error) {
       toast.error("فشل إضافة الصفحة", { duration: 1000 });

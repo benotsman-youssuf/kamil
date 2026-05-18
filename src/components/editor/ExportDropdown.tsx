@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { exportToJSON, exportToHTMLAsync, exportToMarkdownAsync, exportToPDF } from "@/lib/utils/export";
 import { toast } from "sonner";
-import { db } from "@/lib/db";
+import { getDb } from "@/lib/rxdb";
 import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 interface ExportDropdownProps {
@@ -28,13 +28,15 @@ export function ExportDropdown({
     const [pageName, setPageName] = useState<string>("document");
 
     useEffect(() => {
-        if (id) {
-            db.pages.get(Number(id)).then(page => {
-                if (page?.name) {
-                    setPageName(page.name);
-                }
-            });
-        }
+      if (id) {
+        getDb().then((db) => {
+          db.pages.findOne(id!).exec().then((page: any) => {
+            if (page?.name || page?.title) {
+              setPageName(page.name || page.title);
+            }
+          });
+        });
+      }
     }, [id]);
 
     const handleExport = async (type: "pdf" | "json" | "html" | "markdown") => {

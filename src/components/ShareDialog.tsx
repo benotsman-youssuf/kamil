@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { db } from "@/lib/db";
+import { getDb } from "@/lib/rxdb";
 import { getTokens } from "@/lib/qf/auth";
 import { Share2, Globe, Lock, Copy, Check, Loader2 } from "lucide-react";
 import {
@@ -24,14 +24,15 @@ export function ShareDialog({ pageId }: ShareDialogProps) {
   useEffect(() => {
     if (!open) return;
 
-    db.pages.get(Number(pageId)).then((page) => {
-      if (page) {
-        setRemoteId(page.remoteId || null);
-        // Check if page is public via remote
-        if (page.remoteId && getTokens()?.access_token) {
-          fetchPageStatus(page.remoteId);
+    getDb().then((db) => {
+      db.pages.findOne(pageId).exec().then((page: any) => {
+        if (page) {
+          setRemoteId(page.id);
+          if (getTokens()?.access_token) {
+            fetchPageStatus(page.id);
+          }
         }
-      }
+      });
     });
   }, [open, pageId]);
 
@@ -61,9 +62,11 @@ export function ShareDialog({ pageId }: ShareDialogProps) {
         return;
       }
 
-      const page = await db.pages.get(Number(pageId));
+      const db = await getDb();
+      const page = await db.pages.findOne(pageId).exec();
       if (!page) return;
 
+      const pageData = page.toJSON();
       const res = await fetch("/api/sync", {
         method: "POST",
         headers: {
@@ -72,12 +75,12 @@ export function ShareDialog({ pageId }: ShareDialogProps) {
         },
         body: JSON.stringify({
           pages: [{
-            id: page.remoteId || crypto.randomUUID(),
-            title: page.name,
-            content: JSON.parse(page.content),
+            id: pageData.id,
+            title: pageData.title || pageData.name,
+            content: pageData.content,
             is_public: false,
-            created_at: page.createdAt,
-            updated_at: page.updatedAt,
+            created_at: pageData.created_at,
+            updated_at: pageData.updated_at,
           }],
         }),
       });
@@ -87,11 +90,6 @@ export function ShareDialog({ pageId }: ShareDialogProps) {
       const data = await res.json();
       const result = data.synced?.[0];
       if (result?.id) {
-        await db.pages.update(page.id, {
-          remoteId: result.id,
-          synced: true,
-          syncedAt: new Date().toISOString(),
-        });
         setRemoteId(result.id);
         toast.success("تمت المزامنة");
       }

@@ -10,7 +10,7 @@ import { Highlighter } from "@/components/magicui/highlighter";
 import { ShimmerButton } from "@/components/magicui/shimmer-button";
 import { AnimatedGridPattern } from "@/components/magicui/animated-grid-pattern";
 
-import { db } from "@/lib/db";
+import { getDb } from "@/lib/rxdb";
 import { cn } from "@/lib/utils";
 
 export function Home() {
@@ -27,20 +27,32 @@ export function Home() {
   const handleStart = async () => {
     setLoading(true);
     try {
-      const page = await db.pages.get(1);
+      const db = await getDb();
+      const pages = await db.pages.find().exec();
+      let targetId: string;
 
-      if (!page) {
-        await db.pages.add({
-          id: 1,
+      if (pages.length === 0) {
+        const id = crypto.randomUUID();
+        const now = new Date().toISOString();
+        await db.pages.insert({
+          id,
           name: "مرحباً بك",
+          title: "مرحباً بك",
           content: JSON.stringify([]),
           description: "دليل البداية السريعة",
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
+          created_at: now,
+          updated_at: now,
+          is_public: false,
+          is_fork: false,
+          fork_count: 0,
+          forked_from: "",
         });
+        targetId = id;
+      } else {
+        targetId = pages[0].id;
       }
 
-      navigate(`/pages/1`);
+      navigate(`/pages/${targetId}`);
     } catch (error) {
       console.error("Error creating page:", error);
       alert("حدث خطأ أثناء تحميل الصفحة، حاول مرة أخرى.");

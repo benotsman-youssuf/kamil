@@ -9,30 +9,30 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
-import {Trash} from "lucide-react";
-import { db } from "@/lib/db";
+import { Trash } from "lucide-react";
+import { getDb } from "@/lib/rxdb";
+import { getTokens } from "@/lib/qf/auth";
 import { toast } from "sonner";
-import { useNavigate } from "react-router-dom";
 
-export const DeletePage = ({pageId}: {pageId: number}) => {
-
-
-  const navigate = useNavigate();
+export const DeletePage = ({ pageId }: { pageId: string }) => {
   const handleDelete = async () => {
     if (!pageId) return;
     try {
-      if (pageId === 1) {
-        navigate(`/pages/1`);
-        toast.success(`لا يمكن حذف الصفحة الرئيسية`);
-      } else {
-        await db.pages.delete(pageId);
-        toast.success(`تم حذف الصفحة بنجاح ${pageId}`);
-      }
+      const db = await getDb();
+      await db.pages.bulkRemove([pageId]);
+      toast.success(`تم حذف الصفحة بنجاح`);
 
+      // Also delete from Supabase via API
+      const tokens = getTokens();
+      if (tokens?.access_token) {
+        fetch(`/api/pages/${pageId}`, {
+          method: "DELETE",
+          headers: { "x-auth-token": tokens.access_token },
+        }).catch(() => {});
+      }
     } catch (error) {
-      toast.error(`حدث خطأ أثناء حذف الصفحة ${pageId}`);
+      toast.error(`حدث خطأ أثناء حذف الصفحة`);
     }
-    
   };
 
   return (

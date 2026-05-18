@@ -27,13 +27,14 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Pin, Trash, Pencil, PinOff } from "lucide-react";
 import { useState } from "react";
-import { db, type Page } from "@/lib/db";
+import { getDb } from "@/lib/rxdb";
+import { getTokens } from "@/lib/qf/auth";
 import { toast } from "sonner";
 import { useNavigate, useParams } from "react-router-dom";
 
 interface PageActionsProps {
-    page: Page;
-    isActive?: boolean;
+  page: { id: string; name: string; isPinned?: boolean; is_public?: boolean };
+  isActive?: boolean;
 }
 
 export function PageActions({ page, isActive }: PageActionsProps) {
@@ -45,9 +46,11 @@ export function PageActions({ page, isActive }: PageActionsProps) {
 
     const handleTogglePin = async () => {
         try {
-            await db.pages.update(page.id, {
-                isPinned: !page.isPinned,
-            });
+            const db = await getDb();
+            const doc = await db.pages.findOne(page.id).exec();
+            if (doc) {
+                await doc.patch({ isPinned: !page.isPinned });
+            }
             toast.success(page.isPinned ? "تم إلغاء تثبيت الصفحة" : "تم تثبيت الصفحة");
         } catch (error) {
             toast.error("حدث خطأ أثناء تحديث الصفحة");
@@ -56,15 +59,20 @@ export function PageActions({ page, isActive }: PageActionsProps) {
 
     const handleDelete = async () => {
         try {
-            if (page.id === 1) {
-                toast.error("لا يمكن حذف الصفحة الرئيسية");
-                return;
-            }
-            await db.pages.delete(page.id);
+            const db = await getDb();
+            await db.pages.bulkRemove([page.id]);
             toast.success("تم حذف الصفحة بنجاح");
 
-            // Only navigate if we're on the page being deleted
-            if (Number(id) === page.id) {
+            // Also delete from Supabase
+            const tokens = getTokens();
+            if (tokens?.access_token) {
+                fetch(`/api/pages/${page.id}`, {
+                    method: "DELETE",
+                    headers: { "x-auth-token": tokens.access_token },
+                }).catch(() => {});
+            }
+
+            if (Number(id) === Number(page.id)) {
                 navigate("/pages/1");
             }
         } catch (error) {
@@ -77,10 +85,15 @@ export function PageActions({ page, isActive }: PageActionsProps) {
     const handleRename = async () => {
         if (!newName.trim()) return;
         try {
-            await db.pages.update(page.id, {
-                name: newName,
-                updatedAt: new Date().toISOString(),
-            });
+            const db = await getDb();
+            const doc = await db.pages.findOne(page.id).exec();
+            if (doc) {
+                await doc.patch({
+                    name: newName,
+                    title: newName,
+                    updated_at: new Date().toISOString(),
+                });
+            }
             toast.success("تم تغيير اسم الصفحة");
             setShowRenameDialog(false);
         } catch (error) {
