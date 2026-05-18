@@ -11,10 +11,17 @@ import { Settings } from "./pages/Settings";
 import { Stats } from "./pages/Stats";
 import { RequireAuth } from "./components/RequireAuth";
 import { useEffect } from "react";
-import { logout } from "@/lib/qf/auth";
+import { useNavigate } from "react-router-dom";
 
 function LogoutPage() {
-  useEffect(() => { logout(); }, []);
+  const navigate = useNavigate();
+  useEffect(() => {
+    localStorage.removeItem("qf_tokens");
+    localStorage.removeItem("qf_auth_state");
+    localStorage.removeItem("qf_code_verifier");
+    localStorage.removeItem("qf_nonce");
+    navigate("/", { replace: true });
+  }, [navigate]);
   return null;
 }
 

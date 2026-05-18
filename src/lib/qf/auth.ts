@@ -223,7 +223,7 @@ export function logout() {
   localStorage.removeItem("qf_nonce");
 
   if (idToken) {
-    const postLogoutUri = REDIRECT_URI.replace(/\/callback$/, "") || window.location.origin;
+    const postLogoutUri = `${window.location.origin}/logout`;
     const params = new URLSearchParams({
       id_token_hint: idToken,
       post_logout_redirect_uri: postLogoutUri,
