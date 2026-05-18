@@ -1,4 +1,4 @@
-import { getValidAccessToken, fetchContentToken } from "./auth";
+import { getValidAccessToken, fetchContentToken, refreshTokens } from "./auth";
 import { QF_CONFIG } from "./config";
 
 const API_BASE_URL = QF_CONFIG.apiBaseUrl;
@@ -573,7 +573,7 @@ function emptySearchResponse(): SearchResponse {
 
 // ─── User APIs (authenticated) ────────────────────────────────────
 
-async function userApiFetch<T>(path: string, options?: RequestInit): Promise<T> {
+async function userApiFetch<T>(path: string, options?: RequestInit, retried = false): Promise<T> {
   const token = await getValidAccessToken();
   if (!token) throw new Error("Not authenticated");
 
@@ -589,8 +589,9 @@ async function userApiFetch<T>(path: string, options?: RequestInit): Promise<T> 
   const response = await fetch(url, { ...options, headers });
 
   if (!response.ok) {
-    if (response.status === 401 || response.status === 403) {
-      localStorage.removeItem("qf_tokens");
+    if ((response.status === 401 || response.status === 403) && !retried) {
+      await refreshTokens();
+      return userApiFetch<T>(path, options, true);
     }
     const err = await response.json().catch(() => ({}));
     throw new Error(err.message || err.error?.message || `User API error: ${response.status}`);

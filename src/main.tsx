@@ -10,11 +10,19 @@ import { Collections } from "./pages/Collections";
 import { Settings } from "./pages/Settings";
 import { Stats } from "./pages/Stats";
 import { RequireAuth } from "./components/RequireAuth";
+import { useEffect } from "react";
+import { logout } from "@/lib/qf/auth";
+
+function LogoutPage() {
+  useEffect(() => { logout(); }, []);
+  return null;
+}
 
 const router = createBrowserRouter([
   { path: "/", element: <Home /> },
   { path: "/pages/:id", element: <SideBar /> },
   { path: "/callback", element: <AuthCallback /> },
+  { path: "/logout", element: <LogoutPage /> },
   {
     path: "/collections",
     element: <RequireAuth><UserLayout title="المجلدات"><Collections /></UserLayout></RequireAuth>,

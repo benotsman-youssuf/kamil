@@ -123,7 +123,11 @@ export async function handleCallback(code: string, state: string): Promise<Token
   return data;
 }
 
+let refreshPromise: Promise<TokenSet | null> | null = null;
+
 export async function refreshTokens(): Promise<TokenSet | null> {
+  if (refreshPromise) return refreshPromise;
+
   const tokens = getTokensRaw();
   if (!tokens?.refresh_token) return null;
 
@@ -143,26 +147,32 @@ export async function refreshTokens(): Promise<TokenSet | null> {
     body.set("client_id", CLIENT_ID);
   }
 
-  try {
-    const response = await fetch(`${TOKEN_BASE_URL}/oauth2/token`, {
-      method: "POST",
-      headers,
-      body,
-    });
+  refreshPromise = (async () => {
+    try {
+      const response = await fetch(`${TOKEN_BASE_URL}/oauth2/token`, {
+        method: "POST",
+        headers,
+        body,
+      });
 
-    if (!response.ok) {
+      if (!response.ok) {
+        logout();
+        return null;
+      }
+
+      const data: TokenSet = await response.json();
+      data.expires_at = Date.now() + (data.expires_in * 1000);
+      localStorage.setItem("qf_tokens", JSON.stringify(data));
+      return data;
+    } catch {
       logout();
       return null;
     }
+  })().finally(() => {
+    refreshPromise = null;
+  });
 
-    const data: TokenSet = await response.json();
-    data.expires_at = Date.now() + (data.expires_in * 1000);
-    localStorage.setItem("qf_tokens", JSON.stringify(data));
-    return data;
-  } catch {
-    logout();
-    return null;
-  }
+  return refreshPromise;
 }
 
 export function getTokens(): TokenSet | null {
@@ -193,23 +203,12 @@ export async function getValidAccessToken(): Promise<string | null> {
 }
 
 export function logout() {
-  const tokens = getTokensRaw();
-  const idToken = tokens?.id_token;
-
   localStorage.removeItem("qf_tokens");
   localStorage.removeItem("qf_auth_state");
   localStorage.removeItem("qf_code_verifier");
   localStorage.removeItem("qf_nonce");
 
-  if (idToken) {
-    const params = new URLSearchParams({
-      id_token_hint: idToken,
-      post_logout_redirect_uri: window.location.origin,
-    });
-    window.location.href = `${AUTH_BASE_URL}/oauth2/sessions/logout?${params.toString()}`;
-  } else {
-    window.location.href = "/";
-  }
+  window.location.href = "/";
 }
 
 export async function fetchUserInfo(): Promise<{
