@@ -27,9 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Pin, Trash, Pencil, PinOff } from "lucide-react";
 import { useState } from "react";
-import { getDb } from "@/lib/rxdb";
-import { getValidAccessToken } from "@/lib/qf/auth";
-import { QF_CONFIG } from "@/lib/qf/config";
+import { getDb, apiRequest } from "@/lib/rxdb";
 import { toast } from "sonner";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -64,14 +62,7 @@ export function PageActions({ page, isActive }: PageActionsProps) {
             await db.pages.bulkRemove([page.id]);
             toast.success("تم حذف الصفحة بنجاح");
 
-            // Also delete from Supabase
-            const token = await getValidAccessToken();
-            if (token) {
-                fetch(`${QF_CONFIG.apiBaseUrl}/pages/${page.id}`, {
-                    method: "DELETE",
-                    headers: { "x-auth-token": token },
-                }).catch(() => {});
-            }
+            apiRequest(`/pages/${page.id}`, { method: "DELETE" }).catch(() => {});
 
             if (id === page.id) {
                 const remaining = await db.pages.find().exec();

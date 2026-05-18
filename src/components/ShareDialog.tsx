@@ -1,7 +1,6 @@
 import { useState, useEffect } from "react";
-import { getDb, pushPageToServer } from "@/lib/rxdb";
-import { getTokens, getValidAccessToken } from "@/lib/qf/auth";
-import { QF_CONFIG } from "@/lib/qf/config";
+import { getDb, pushPageToServer, apiRequest } from "@/lib/rxdb";
+import { getTokens } from "@/lib/qf/auth";
 import { Share2, Globe, Lock, Copy, Check, Loader2 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
@@ -25,29 +24,23 @@ export function ShareDialog({ pageId }: ShareDialogProps) {
   useEffect(() => {
     if (!open) return;
 
-    getDb().then((db) => {
-      db.pages.findOne(pageId).exec().then((page: any) => {
-        if (page) {
-          setRemoteId(page.id);
-          if (getTokens()?.access_token) {
-            fetchPageStatus(page.id);
-          }
-        }
-      });
-    });
+    setRemoteId(null);
+    setIsPublic(false);
+
+    const token = getTokens()?.access_token;
+    if (token) {
+      fetchPageStatus(pageId);
+    }
   }, [open, pageId]);
 
   const fetchPageStatus = async (id: string) => {
     try {
-      const token = await getValidAccessToken();
-      if (!token) return;
-
-      const res = await fetch(`${QF_CONFIG.apiBaseUrl}/pages/${id}`, {
-        headers: { "x-auth-token": token },
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setIsPublic(data.page?.is_public || false);
+      const data: any = await apiRequest(`/sync?since=&limit=1`);
+      const serverPages = data.pages || [];
+      const match = serverPages.find((p: any) => p.id === id);
+      if (match) {
+        setRemoteId(match.id);
+        setIsPublic(match.is_public ?? false);
       }
     } catch {
       // silent
@@ -92,26 +85,27 @@ export function ShareDialog({ pageId }: ShareDialogProps) {
   const handleTogglePublic = async () => {
     if (!remoteId) {
       await handleSync();
-      return;
+      if (!remoteId) {
+        toast.error("فشلت المزامنة، تعذر نشر الصفحة");
+        return;
+      }
     }
 
     setLoading(true);
     try {
-      const token = await getValidAccessToken();
-      if (!token) return;
-
-      const res = await fetch(`${QF_CONFIG.apiBaseUrl}/pages/${remoteId}`, {
+      await apiRequest(`/pages/${remoteId}`, {
         method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-          "x-auth-token": token,
-        },
-        body: JSON.stringify({ is_public: !isPublic }),
+        body: { is_public: !isPublic },
       });
 
-      if (!res.ok) throw new Error("Toggle failed");
-
       setIsPublic(!isPublic);
+
+      const db = await getDb();
+      const doc = await db.pages.findOne(pageId).exec();
+      if (doc) {
+        await doc.patch({ is_public: !isPublic });
+      }
+
       toast.success(isPublic ? "تم إخفاء المقالة" : "تم نشر المقالة");
     } catch {
       toast.error("فشل التحديث");

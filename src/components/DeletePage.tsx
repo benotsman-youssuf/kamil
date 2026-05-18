@@ -10,9 +10,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Trash } from "lucide-react";
-import { getDb } from "@/lib/rxdb";
-import { getValidAccessToken } from "@/lib/qf/auth";
-import { QF_CONFIG } from "@/lib/qf/config";
+import { getDb, apiRequest } from "@/lib/rxdb";
 import { toast } from "sonner";
 
 export const DeletePage = ({ pageId }: { pageId: string }) => {
@@ -23,14 +21,7 @@ export const DeletePage = ({ pageId }: { pageId: string }) => {
       await db.pages.bulkRemove([pageId]);
       toast.success(`تم حذف الصفحة بنجاح`);
 
-      // Also delete from Supabase via API
-      const token = await getValidAccessToken();
-      if (token) {
-        fetch(`${QF_CONFIG.apiBaseUrl}/pages/${pageId}`, {
-          method: "DELETE",
-          headers: { "x-auth-token": token },
-        }).catch(() => {});
-      }
+      apiRequest(`/pages/${pageId}`, { method: "DELETE" }).catch(() => {});
     } catch (error) {
       toast.error(`حدث خطأ أثناء حذف الصفحة`);
     }

@@ -155,29 +155,38 @@ export async function refreshTokens(): Promise<TokenSet | null> {
   const tokens = getTokensRaw();
   if (!tokens?.refresh_token) return null;
 
+  const doRefresh = async (): Promise<TokenSet | null> => {
+    const currentTokens = getTokensRaw();
+    if (!currentTokens?.refresh_token) return null;
+
+    const response = await fetch(`${TOKEN_BASE_URL}/refresh`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        grant_type: "refresh_token",
+        refresh_token: currentTokens.refresh_token,
+      }),
+    });
+
+    if (!response.ok) throw new Error(`Refresh failed: ${response.status}`);
+
+    const data: TokenSet = await response.json();
+    data.expires_at = Date.now() + (data.expires_in * 1000);
+    localStorage.setItem("qf_tokens", JSON.stringify(data));
+    return data;
+  };
+
   refreshPromise = (async () => {
     try {
-      const response = await fetch(`${TOKEN_BASE_URL}/refresh`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          grant_type: "refresh_token",
-          refresh_token: tokens.refresh_token,
-        }),
-      });
-
-      if (!response.ok) {
+      return await doRefresh();
+    } catch (firstErr) {
+      console.warn("[auth] first refresh attempt failed, retrying...", firstErr);
+      try {
+        return await doRefresh();
+      } catch {
         logout();
         return null;
       }
-
-      const data: TokenSet = await response.json();
-      data.expires_at = Date.now() + (data.expires_in * 1000);
-      localStorage.setItem("qf_tokens", JSON.stringify(data));
-      return data;
-    } catch {
-      logout();
-      return null;
     }
   })().finally(() => {
     refreshPromise = null;

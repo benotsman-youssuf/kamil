@@ -87,13 +87,12 @@ export async function startSync() {
         if (!token) return { documents: [], checkpoint };
 
         const since = checkpoint || "";
-        const url = `${QF_CONFIG.apiBaseUrl}/sync?since=${encodeURIComponent(since)}&limit=${batchSize}`;
-        const res = await fetch(url, {
-          headers: { "x-auth-token": token },
+        const data: any = await apiRequest(
+          `/sync?since=${encodeURIComponent(since)}&limit=${batchSize}`
+        ).catch((err) => {
+          console.error("[rxdb] pull failed", err);
+          return { pages: [] };
         });
-        if (!res.ok) throw new Error(`Pull failed: ${res.status}`);
-
-        const data = await res.json();
         const pages = (data.pages || []).map((p: any) => ({
           id: p.id,
           name: p.name || p.title,
@@ -140,16 +139,9 @@ export async function startSync() {
           isPinned: row.newDocumentState.isPinned ?? false,
         }));
 
-        const url = `${QF_CONFIG.apiBaseUrl}/sync`;
-        const res = await fetch(url, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-auth-token": token,
-          },
-          body: JSON.stringify({ pages }),
-        });
-        if (!res.ok) throw new Error(`Push failed: ${res.status}`);
+        await apiRequest("/sync", { method: "POST", body: { pages } }).catch(
+          (err) => console.error("[rxdb] push failed", err)
+        );
 
         return rows.map((r: any) => r.newDocumentState);
       },
@@ -187,19 +179,52 @@ export async function startSyncIfAuthenticated() {
   }
 }
 
-export async function pushPageToServer(pages: any[]) {
-  const token = await getAuthToken();
-  if (!token) return null;
+export async function apiRequest<T = any>(
+  path: string,
+  options?: { method?: string; body?: any }
+): Promise<T> {
+  const token = await getValidAccessToken();
+  if (!token) throw new Error("Not authenticated");
 
-  const url = `${QF_CONFIG.apiBaseUrl}/sync`;
+  const url = `${QF_CONFIG.apiBaseUrl}${path}`;
+  const headers: Record<string, string> = {
+    "Authorization": `Bearer ${token}`,
+    "x-auth-token": token,
+  };
+  if (options?.body || options?.method === "POST" || options?.method === "PATCH") {
+    headers["Content-Type"] = "application/json";
+  }
+
   const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "x-auth-token": token,
-    },
-    body: JSON.stringify({ pages }),
+    method: options?.method || "GET",
+    headers,
+    body: options?.body ? JSON.stringify(options.body) : undefined,
   });
-  if (!res.ok) throw new Error(`Push failed: ${res.status}`);
+
+  if (res.status === 401) {
+    const refreshed = await getValidAccessToken();
+    if (refreshed) {
+      headers["Authorization"] = `Bearer ${refreshed}`;
+      headers["x-auth-token"] = refreshed;
+      const retryRes = await fetch(url, {
+        method: options?.method || "GET",
+        headers,
+        body: options?.body ? JSON.stringify(options.body) : undefined,
+      });
+      if (!retryRes.ok) throw new Error(`API request failed: ${retryRes.status}`);
+      return retryRes.json();
+    }
+    throw new Error("Not authenticated");
+  }
+
+  if (!res.ok) throw new Error(`API request failed: ${res.status}`);
   return res.json();
+}
+
+export async function pushPageToServer(pages: any[]) {
+  try {
+    return await apiRequest("/sync", { method: "POST", body: { pages } });
+  } catch {
+    return null;
+  }
 }
