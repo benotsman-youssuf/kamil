@@ -7,7 +7,11 @@ const PROXY_BASE_URL = QF_CONFIG.proxyBaseUrl;
 const CLIENT_ID = QF_CONFIG.clientId;
 const REDIRECT_URI = QF_CONFIG.redirectUri;
 
-const JWKS = createRemoteJWKSet(new URL(`${TOKEN_BASE_URL}/jwks`));
+const JWKS_URL = TOKEN_BASE_URL.startsWith("http")
+  ? `${TOKEN_BASE_URL}/jwks`
+  : `${window.location.origin}${TOKEN_BASE_URL}/jwks`;
+
+const JWKS = createRemoteJWKSet(new URL(JWKS_URL));
 
 function base64URLEncode(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
