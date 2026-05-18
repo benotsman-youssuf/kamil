@@ -214,24 +214,11 @@ export async function getValidAccessToken(): Promise<string | null> {
 }
 
 export function logout() {
-  const tokens = getTokensRaw();
-  const idToken = tokens?.id_token;
-
   localStorage.removeItem("qf_tokens");
   localStorage.removeItem("qf_auth_state");
   localStorage.removeItem("qf_code_verifier");
   localStorage.removeItem("qf_nonce");
-
-  if (idToken) {
-    const postLogoutUri = `${window.location.origin}/logout`;
-    const params = new URLSearchParams({
-      id_token_hint: idToken,
-      post_logout_redirect_uri: postLogoutUri,
-    });
-    window.location.href = `${AUTH_BASE_URL}/oauth2/sessions/logout?${params.toString()}`;
-  } else {
-    window.location.href = "/";
-  }
+  window.location.href = "/";
 }
 
 export async function fetchUserInfo(): Promise<{
