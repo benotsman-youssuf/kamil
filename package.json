@@ -11,6 +11,7 @@
     "start": "serve -s dist"
   },
   "dependencies": {
+    "@ai-sdk/google": "^3.0.75",
     "@ai-sdk/mcp": "^1.0.42",
     "@ai-sdk/react": "^3.0.186",
     "@ariakit/react": "^0.4.17",

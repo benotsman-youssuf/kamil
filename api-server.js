@@ -1,7 +1,7 @@
 import http from 'http';
 
 const PORT = process.env.API_PORT || 3001;
-const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || '';
+const GOOGLE_API_KEY = process.env.GOOGLE_GENERATIVE_AI_API_KEY || '';
 
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost:${PORT}`);
@@ -32,12 +32,12 @@ const server = http.createServer(async (req, res) => {
       const parsedBody = bodyStr ? JSON.parse(bodyStr) : {};
 
       if (url.pathname === '/api/chat') {
-        const { createOpenRouter } = await import('@openrouter/ai-sdk-provider');
+        const { createGoogleGenerativeAI } = await import('@ai-sdk/google');
         const { convertToModelMessages, streamText } = await import('ai');
         const { createMCPClient } = await import('@ai-sdk/mcp');
 
-        const openrouter = createOpenRouter({
-          apiKey: OPENROUTER_API_KEY,
+        const google = createGoogleGenerativeAI({
+          apiKey: GOOGLE_API_KEY,
         });
 
         async function getMCPTools(url) {
@@ -62,7 +62,7 @@ const server = http.createServer(async (req, res) => {
         const mcpClients = [quranResult.client, hadithResult.client].filter(Boolean);
 
         const result = streamText({
-          model: openrouter(process.env.OPENROUTER_MODEL || 'openrouter/owl-alpha'),
+          model: google('gemini-1.5-flash'),
           system: `You are a research assistant for Islamic scholars and writers using the Kamil editor.
 Your job: find Quran verses and hadith relevant to what the scholar is writing about.
 
@@ -78,6 +78,16 @@ RULES:
           messages: await convertToModelMessages(parsedBody.messages || []),
           tools: Object.keys(tools).length > 0 ? tools : undefined,
           stopWhen: (options) => options.stepCount >= 5,
+          providerOptions: {
+            google: {
+              safetySettings: [
+                { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
+                { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
+                { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+                { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+              ],
+            },
+          },
           onError: (error) => {
             console.error('streamText error:', error.error);
           },
@@ -114,5 +124,5 @@ RULES:
 
 server.listen(PORT, () => {
   console.log(`Local API server running on http://localhost:${PORT}`);
-  console.log(`OPENROUTER_API_KEY: ${OPENROUTER_API_KEY ? 'set' : 'not set'}`);
+  console.log(`GOOGLE_API_KEY: ${GOOGLE_API_KEY ? 'set' : 'not set'}`);
 });

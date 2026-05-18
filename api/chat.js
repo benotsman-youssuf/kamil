@@ -1,11 +1,11 @@
-import { createOpenRouter } from '@openrouter/ai-sdk-provider';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { convertToModelMessages, streamText } from 'ai';
 import { createMCPClient } from '@ai-sdk/mcp';
 
 export const maxDuration = 60;
 
-const openrouter = createOpenRouter({
-  apiKey: process.env.OPENROUTER_API_KEY,
+const google = createGoogleGenerativeAI({
+  apiKey: process.env.GOOGLE_GENERATIVE_AI_API_KEY,
 });
 
 async function getMCPTools(url) {
@@ -37,7 +37,7 @@ export default async function handler(req, res) {
     console.log('Tools loaded:', Object.keys(tools));
 
     const result = streamText({
-      model: openrouter(process.env.OPENROUTER_MODEL || 'openrouter/owl-alpha'),
+      model: google('gemini-1.5-flash'),
       system: `You are a research assistant for Islamic scholars and writers using the Kamil editor.
 Your job: find Quran verses and hadith relevant to what the scholar is writing about.
 RULES:
@@ -51,6 +51,16 @@ RULES:
       messages: await convertToModelMessages(messages),
       tools: Object.keys(tools).length > 0 ? tools : undefined,
       stopWhen: (options) => options.stepCount >= 5,
+      providerOptions: {
+        google: {
+          safetySettings: [
+            { category: 'HARM_CATEGORY_HARASSMENT', threshold: 'BLOCK_ONLY_HIGH' },
+            { category: 'HARM_CATEGORY_HATE_SPEECH', threshold: 'BLOCK_ONLY_HIGH' },
+            { category: 'HARM_CATEGORY_SEXUALLY_EXPLICIT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+            { category: 'HARM_CATEGORY_DANGEROUS_CONTENT', threshold: 'BLOCK_MEDIUM_AND_ABOVE' },
+          ],
+        },
+      },
       onError: (error) => {
         console.error('streamText error:', error.error);
       },

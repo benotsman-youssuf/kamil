@@ -5,6 +5,7 @@
     "": {
       "name": "kamil",
       "dependencies": {
+        "@ai-sdk/google": "^3.0.75",
         "@ai-sdk/mcp": "^1.0.42",
         "@ai-sdk/react": "^3.0.186",
         "@ariakit/react": "^0.4.17",
@@ -88,9 +89,9 @@
         "platejs": "^49.1.13",
         "print-js": "^1.6.0",
         "radix-ui": "^1.4.3",
-        "react": "^19.1.0",
+        "react": "19.2.6",
         "react-day-picker": "^9.8.1",
-        "react-dom": "^19.1.0",
+        "react-dom": "19.2.6",
         "react-lite-youtube-embed": "^2.5.1",
         "react-markdown": "^10.1.0",
         "react-player": "^3.3.1",
@@ -138,6 +139,8 @@
   },
   "packages": {
     "@ai-sdk/gateway": ["@ai-sdk/gateway@3.0.115", "", { "dependencies": { "@ai-sdk/provider": "3.0.10", "@ai-sdk/provider-utils": "4.0.27", "@vercel/oidc": "3.2.0" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-xonmGfN9pt54WdKqMzWe68BRYS3rsYvraBzioyA0gfNcecHs8Ir5qk/X8grJSyZ95hghjWiOphrK6bAc11E6SA=="],
+
+    "@ai-sdk/google": ["@ai-sdk/google@3.0.75", "", { "dependencies": { "@ai-sdk/provider": "3.0.10", "@ai-sdk/provider-utils": "4.0.27" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-XAm31ftiOrzlb8NjDzT7kw0xw+4lmgFdGFn1QKM73nXFFKyN1kWLESBV75UGNfjXP8X1YJ0YydnMVqO0jaPghw=="],
 
     "@ai-sdk/mcp": ["@ai-sdk/mcp@1.0.42", "", { "dependencies": { "@ai-sdk/provider": "3.0.10", "@ai-sdk/provider-utils": "4.0.27", "pkce-challenge": "^5.0.0" }, "peerDependencies": { "zod": "^3.25.76 || ^4.1.8" } }, "sha512-ctRhX9vNLXvjGSFf+RlM+ZutIhlzIgMPWzo2BoJKfIW9JzLneA/57bZkkaUvWSdbYFu1FCyxMarNV/4D/pOUzA=="],
 
