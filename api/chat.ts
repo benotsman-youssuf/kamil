@@ -21,44 +21,23 @@ async function buildTools(): Promise<Record<string, ReturnType<typeof tool>>> {
 
     const rawSearchQuran = mcpTools.search_quran as any;
     const rawFetchQuran = mcpTools.fetch_quran as any;
+    const rawFetchGrounding = mcpTools.fetch_grounding_rules as any;
+    const rawFetchSkillGuide = mcpTools.fetch_skill_guide as any;
 
     if (rawSearchQuran?.execute) {
-      tools.search_quran = tool({
-        description: "Search the Quran for verses matching a query",
-        parameters: z.object({
-          query: z.string().describe("Search query"),
-        }),
-        execute: async ({ query }) => {
-          const mcpResult = await rawSearchQuran.execute({ query });
-          return normalizeQuranResult(mcpResult);
-        },
-      });
+      tools.search_quran = rawSearchQuran;
     }
 
     if (rawFetchQuran?.execute) {
-      tools.fetch_quran = tool({
-        description: "Fetch a specific Quran verse by surah and ayah number",
-        parameters: z.object({
-          surah: z.number().describe("Surah number"),
-          ayah: z.number().describe("Ayah number"),
-        }),
-        execute: async ({ surah, ayah }) => {
-          const mcpResult = await rawFetchQuran.execute({ surah, ayah });
-          return normalizeQuranResult(mcpResult);
-        },
-      });
+      tools.fetch_quran = rawFetchQuran;
     }
 
-    const rawFetchGrounding = mcpTools.fetch_grounding_rules as any;
     if (rawFetchGrounding?.execute) {
-      tools.fetch_grounding_rules = tool({
-        description: "Fetch grounding rules for Quran citation",
-        parameters: z.object({}),
-        execute: async () => {
-          const mcpResult = await rawFetchGrounding.execute({});
-          return normalizeQuranResult(mcpResult);
-        },
-      });
+      tools.fetch_grounding_rules = rawFetchGrounding;
+    }
+
+    if (rawFetchSkillGuide?.execute) {
+      tools.fetch_skill_guide = rawFetchSkillGuide;
     }
   } catch (e: unknown) {
     console.error("Quran MCP error:", e instanceof Error ? e.message : e);
@@ -80,9 +59,13 @@ async function buildTools(): Promise<Record<string, ReturnType<typeof tool>>> {
         description: "Search hadith collections for a query",
         parameters: z.object({
           query: z.string().describe("Search query"),
+          limit: z.number().optional().describe("Max results (default 20)"),
+          collection: z.string().optional().describe("Filter by collection name"),
+          collection_slug: z.string().optional(),
+          mode: z.string().optional().describe("semantic, keyword, or both"),
         }),
-        execute: async ({ query }) => {
-          const mcpResult = await rawSearchHadith.execute({ query });
+        execute: async (args) => {
+          const mcpResult = await rawSearchHadith.execute(args);
           return normalizeHadithResult(mcpResult);
         },
       });
@@ -91,12 +74,17 @@ async function buildTools(): Promise<Record<string, ReturnType<typeof tool>>> {
     const rawFetchHadith = mcpTools.fetch_hadith as any;
     if (rawFetchHadith?.execute) {
       tools.fetch_hadith = tool({
-        description: "Fetch a specific hadith by ID",
+        description: "Fetch a specific hadith by ID, collection, or number",
         parameters: z.object({
-          id: z.string().describe("Hadith ID"),
+          hadith_id: z.number().optional().describe("Global hadith ID"),
+          collection: z.string().optional().describe("Collection name (e.g. Sahih al-Bukhari)"),
+          collection_slug: z.string().optional(),
+          hadith_number: z.union([z.number(), z.string()]).optional(),
+          id_in_book: z.number().optional(),
+          include_cross_references: z.boolean().optional(),
         }),
-        execute: async ({ id }) => {
-          const mcpResult = await rawFetchHadith.execute({ id });
+        execute: async (args) => {
+          const mcpResult = await rawFetchHadith.execute(args);
           return normalizeHadithResult(mcpResult);
         },
       });
@@ -106,27 +94,6 @@ async function buildTools(): Promise<Record<string, ReturnType<typeof tool>>> {
   }
 
   return tools;
-}
-
-function normalizeQuranResult(mcpResult: unknown): object {
-  const r = (mcpResult || {}) as Record<string, unknown>;
-  if (r.structuredContent && typeof r.structuredContent === "object") {
-    const sc = r.structuredContent as Record<string, unknown>;
-    const rawResults = sc.results || sc.verses || [];
-    const results = Array.isArray(rawResults) ? rawResults : [];
-    return {
-      verses: results.map(normalizeVerse),
-      total: sc.total_found || results.length,
-    };
-  }
-  const raw = r.raw || extractFirstText(r);
-  if (typeof raw === "string") {
-    try {
-      const parsed = JSON.parse(raw);
-      return normalizeQuranResult(parsed);
-    } catch {}
-  }
-  return { verses: [], raw };
 }
 
 function normalizeHadithResult(mcpResult: unknown): object {
@@ -140,7 +107,7 @@ function normalizeHadithResult(mcpResult: unknown): object {
       total: sc.total_found || results.length,
     };
   }
-  const raw = r.raw || extractFirstText(r);
+  const raw = extractFirstText(r);
   if (typeof raw === "string") {
     try {
       const parsed = JSON.parse(raw);
@@ -148,21 +115,6 @@ function normalizeHadithResult(mcpResult: unknown): object {
     } catch {}
   }
   return { hadiths: [], raw };
-}
-
-function normalizeVerse(item: any): object {
-  let key = item.verse_key || item.ayah_key || item.key || "";
-  if (!key && item.surah && item.ayah) key = `${item.surah}:${item.ayah}`;
-  const [surahNum] = key.split(":").map(Number);
-  return {
-    source: "quran_mcp" as const,
-    verseKey: key,
-    arabicText: item.text || item.arabicText || "",
-    translation: item.translation || item.translations?.[0]?.text || "",
-    ayahNumber: item.ayah || item.ayahNumber || (key.split(":")[1] ? Number(key.split(":")[1]) : undefined),
-    surahName: item.surah_name || item.surahName || undefined,
-    citation: item.url || item.citation || "",
-  };
 }
 
 function normalizeHadith(item: any): object {

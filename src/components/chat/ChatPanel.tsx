@@ -11,13 +11,53 @@ function extractEvidence(
   const hadiths: HadithEvidence[] = [];
 
   for (const part of parts) {
-    if (part.type === "tool-invocation" && part.toolInvocation?.state === "result") {
-      const { toolName, result } = part.toolInvocation;
-      if (toolName === "search_quran" && result?.verses) {
-        verses.push(...result.verses);
+    if (part.type !== "tool-invocation" || part.toolInvocation?.state !== "result") continue;
+    const { toolName, result } = part.toolInvocation;
+    if (!result) continue;
+
+    // Normalized format: { verses: [...] } or { hadiths: [...] }
+    if (toolName === "search_quran" && result.verses) {
+      verses.push(...result.verses);
+    }
+    if (toolName === "search_hadith" && result.hadiths) {
+      hadiths.push(...result.hadiths);
+    }
+
+    // Raw MCP format: { content: [...], structuredContent: { results: [...] } }
+    const sc = result.structuredContent;
+    if (sc) {
+      if (
+        (toolName === "search_quran" || toolName === "fetch_quran") &&
+        Array.isArray(sc.results)
+      ) {
+        verses.push(...sc.results.map((r: any) => {
+          const key = r.ayah_key || r.verse_key || "";
+          const [surahNum] = key.split(":").map(Number);
+          return {
+            source: "quran_mcp" as const,
+            verseKey: key,
+            arabicText: r.text || "",
+            translation: r.translations?.[0]?.text || "",
+            ayahNumber: r.ayah || (key.split(":")[1] ? Number(key.split(":")[1]) : undefined),
+            surahName: r.surah_name || undefined,
+            citation: r.url || "",
+          };
+        }));
       }
-      if (toolName === "search_hadith" && result?.hadiths) {
-        hadiths.push(...result.hadiths);
+      if (
+        (toolName === "search_hadith" || toolName === "fetch_hadith") &&
+        Array.isArray(sc.hadiths)
+      ) {
+        hadiths.push(...sc.hadiths.map((r: any) => ({
+          source: "hadith_mcp" as const,
+          collection: r.collection || "",
+          bookNumber: r.book_number || "",
+          hadithNumber: r.hadith_number || r.id?.toString() || "",
+          arabicText: r.text || r.body || "",
+          englishText: r.translation || "",
+          grades: r.grades || undefined,
+          citation: r.url || "",
+        })));
       }
     }
   }
