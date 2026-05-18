@@ -1,9 +1,8 @@
 import { useChat } from "@ai-sdk/react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { Button } from "@/components/ui/button";
 import { Bot, Sparkles, Send, Loader2 } from "lucide-react";
 import { useRef, useEffect } from "react";
+import { Message, MessageContent, MessageAvatar } from "@/components/prompt-kit/message";
 
 export function AiChat({ close }: { close: () => void }) {
   const { messages, input, handleInputChange, handleSubmit, status, error } = useChat({
@@ -35,27 +34,27 @@ export function AiChat({ close }: { close: () => void }) {
           </div>
         )}
 
-        <div className="space-y-4 p-4">
+        <div className="flex flex-col gap-4 p-4">
           {messages.map((m) => (
-            <div key={m.id} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-              <div
-                className={`rounded-lg px-4 py-2.5 text-sm max-w-[85%] leading-relaxed ${
-                  m.role === "user"
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-muted"
-                }`}
-              >
-                {m.role === "user" ? (
-                  m.content
-                ) : (
-                  <div className="prose prose-sm dark:prose-invert max-w-none">
-                    <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                      {m.content}
-                    </ReactMarkdown>
-                  </div>
-                )}
-              </div>
-            </div>
+            <Message key={m.id} className={m.role === "user" ? "flex-row-reverse" : ""}>
+              {m.role === "assistant" && (
+                <MessageAvatar
+                  src=""
+                  alt="AI"
+                  fallback="K"
+                />
+              )}
+              {m.role === "user" && (
+                <MessageAvatar
+                  src=""
+                  alt="You"
+                  fallback="U"
+                />
+              )}
+              <MessageContent markdown={m.role === "assistant"}>
+                {m.role === "user" ? m.content : m.content}
+              </MessageContent>
+            </Message>
           ))}
 
           {error && (

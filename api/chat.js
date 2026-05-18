@@ -18,7 +18,17 @@ async function createMCPTools(url) {
     for (const t of defs.tools) {
       schemas[t.name] = { inputSchema: t.inputSchema };
     }
-    return client.toolsFromDefinitions(defs, { schemas });
+    const tools = client.toolsFromDefinitions(defs, { schemas });
+
+    // AI SDK v4 expects `parameters` field, not `inputSchema`.
+    // The tool() identity function passes through whatever we give it.
+    for (const [name, t] of Object.entries(tools)) {
+      if (t.inputSchema && !t.parameters) {
+        t.parameters = t.inputSchema;
+        delete t.inputSchema;
+      }
+    }
+    return tools;
   } catch (e) {
     console.error(`MCP init failed for ${url}:`, e.message);
     return {};
