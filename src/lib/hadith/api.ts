@@ -86,6 +86,21 @@ export async function fetchHadith(
   );
 }
 
+export async function fetchHadithByNumber(
+  slug: string,
+  hadithNumber: string
+): Promise<Hadith> {
+  const books = await fetchBooks(slug);
+  const num = parseInt(hadithNumber, 10);
+  const book = books.find(b => num >= b.hadithStartNumber && num <= b.hadithEndNumber);
+  
+  if (!book) {
+    throw new Error(`Hadith number ${hadithNumber} not found in collection ${slug}`);
+  }
+  
+  return fetchHadith(slug, book.bookNumber, hadithNumber);
+}
+
 export async function fetchHadithByURN(urn: number): Promise<Hadith> {
   return request<Hadith>(`${HADITH_API_BASE}/urn/${urn}`);
 }
