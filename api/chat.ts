@@ -1,144 +1,70 @@
 import { streamText, convertToCoreMessages, tool } from "ai";
-import { createMCPClient } from "@ai-sdk/mcp";
 import { openrouter, DEFAULT_OPENROUTER_MODEL } from "../src/lib/ai/openrouter.js";
 import type { IncomingMessage, ServerResponse } from "node:http";
 import { z } from "zod";
 
 export const maxDuration = 60;
 
-async function buildTools(): Promise<Record<string, ReturnType<typeof tool>>> {
-  const tools: Record<string, ReturnType<typeof tool>> = {};
-
-  try {
-    const quranMcp = await createMCPClient({
-      transport: {
-        type: "http",
-        url: process.env.QURAN_MCP_URL || "https://mcp.quran.ai",
-      },
-    });
-    const mcpTools = await quranMcp.tools();
-    setTimeout(() => { quranMcp.close().catch(() => {}); }, 60_000).unref();
-
-    const rawSearchQuran = mcpTools.search_quran as any;
-    const rawFetchQuran = mcpTools.fetch_quran as any;
-    const rawFetchGrounding = mcpTools.fetch_grounding_rules as any;
-    const rawFetchSkillGuide = mcpTools.fetch_skill_guide as any;
-
-    if (rawSearchQuran?.execute) {
-      tools.search_quran = rawSearchQuran;
-    }
-
-    if (rawFetchQuran?.execute) {
-      tools.fetch_quran = rawFetchQuran;
-    }
-
-    if (rawFetchGrounding?.execute) {
-      tools.fetch_grounding_rules = rawFetchGrounding;
-    }
-
-    if (rawFetchSkillGuide?.execute) {
-      tools.fetch_skill_guide = rawFetchSkillGuide;
-    }
-  } catch (e: unknown) {
-    console.error("Quran MCP error:", e instanceof Error ? e.message : e);
-  }
-
-  try {
-    const hadithMcp = await createMCPClient({
-      transport: {
-        type: "http",
-        url: process.env.HADITH_MCP_URL || "https://hadith-mcp.org",
-      },
-    });
-    const mcpTools = await hadithMcp.tools();
-    setTimeout(() => { hadithMcp.close().catch(() => {}); }, 60_000).unref();
-
-    const rawSearchHadith = mcpTools.search_hadith as any;
-    if (rawSearchHadith?.execute) {
-      tools.search_hadith = tool({
-        description: "Search hadith collections for a query",
-        parameters: z.object({
-          query: z.string().describe("Search query"),
-          limit: z.number().optional().describe("Max results (default 20)"),
-          collection: z.string().optional().describe("Filter by collection name"),
-          collection_slug: z.string().optional(),
-          mode: z.string().optional().describe("semantic, keyword, or both"),
-        }),
-        execute: async (args) => {
-          const mcpResult = await rawSearchHadith.execute(args);
-          return normalizeHadithResult(mcpResult);
-        },
-      });
-    }
-
-    const rawFetchHadith = mcpTools.fetch_hadith as any;
-    if (rawFetchHadith?.execute) {
-      tools.fetch_hadith = tool({
-        description: "Fetch a specific hadith by ID, collection, or number",
-        parameters: z.object({
-          hadith_id: z.number().optional().describe("Global hadith ID"),
-          collection: z.string().optional().describe("Collection name (e.g. Sahih al-Bukhari)"),
-          collection_slug: z.string().optional(),
-          hadith_number: z.union([z.number(), z.string()]).optional(),
-          id_in_book: z.number().optional(),
-          include_cross_references: z.boolean().optional(),
-        }),
-        execute: async (args) => {
-          const mcpResult = await rawFetchHadith.execute(args);
-          return normalizeHadithResult(mcpResult);
-        },
-      });
-    }
-  } catch (e: unknown) {
-    console.error("Hadith MCP error:", e instanceof Error ? e.message : e);
-  }
-
-  return tools;
+interface MCPConn {
+  url: string;
+  sessionId: string;
 }
 
-function normalizeHadithResult(mcpResult: unknown): object {
-  const r = (mcpResult || {}) as Record<string, unknown>;
-  if (r.structuredContent && typeof r.structuredContent === "object") {
-    const sc = r.structuredContent as Record<string, unknown>;
-    const rawResults = sc.hadiths || sc.results || [];
-    const results = Array.isArray(rawResults) ? rawResults : [];
-    return {
-      hadiths: results.map(normalizeHadith),
-      total: sc.total_found || results.length,
-    };
+async function mcpInit(url: string): Promise<MCPConn> {
+  const resp = await fetch(url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Accept: "application/json, text/event-stream" },
+    body: JSON.stringify({
+      jsonrpc: "2.0",
+      id: "init",
+      method: "initialize",
+      params: { protocolVersion: "2025-11-25", capabilities: {}, clientInfo: { name: "kamil", version: "1.0" } },
+    }),
+  });
+  const sessionId = resp.headers.get("mcp-session-id") || "";
+  await resp.text(); // drain SSE body
+  return { url, sessionId };
+}
+
+async function mcpCall(conn: MCPConn, method: string, params: Record<string, unknown>): Promise<any> {
+  const resp = await fetch(conn.url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json, text/event-stream",
+      "mcp-session-id": conn.sessionId,
+    },
+    body: JSON.stringify({ jsonrpc: "2.0", id: "call", method, params }),
+  });
+  const text = await resp.text();
+  for (const line of text.split("\n")) {
+    const s = line.trim();
+    if (s.startsWith("data: ")) {
+      try {
+        const parsed = JSON.parse(s.slice(6));
+        if (parsed.result) return parsed.result;
+        if (parsed.error) throw new Error(parsed.error.message || "MCP error");
+      } catch {}
+    }
   }
-  const raw = extractFirstText(r);
-  if (typeof raw === "string") {
+  try {
+    const parsed = JSON.parse(text);
+    if (parsed.result) return parsed.result;
+    if (parsed.error) throw new Error(parsed.error.message || "MCP error");
+    return parsed;
+  } catch {}
+  throw new Error(`MCP ${method} failed: ${text.slice(0, 200)}`);
+}
+
+function extractResults(mcpResult: any): any {
+  if (mcpResult.structuredContent) return mcpResult.structuredContent;
+  if (Array.isArray(mcpResult.content) && mcpResult.content.length > 0) {
+    const text = mcpResult.content[0].text || "";
     try {
-      const parsed = JSON.parse(raw);
-      return normalizeHadithResult(parsed);
+      return JSON.parse(text);
     } catch {}
   }
-  return { hadiths: [], raw };
-}
-
-function normalizeHadith(item: any): object {
-  return {
-    source: "hadith_mcp" as const,
-    collection: item.collection || item.source || "",
-    bookNumber: item.book_number || item.bookNumber,
-    hadithNumber: item.hadith_number || item.reference || item.hadithNumber || "",
-    arabicText: item.text || item.body || item.arabicText || "",
-    englishText: item.englishText || item.translation || item.english_text,
-    grades: Array.isArray(item.grades) ? item.grades : undefined,
-    citation: item.url || item.citation || "",
-  };
-}
-
-function extractFirstText(obj: Record<string, unknown>): string | null {
-  if (Array.isArray(obj.content)) {
-    for (const part of obj.content) {
-      if (part && typeof part === "object" && (part as any).type === "text") {
-        return (part as any).text || null;
-      }
-    }
-  }
-  return null;
+  return mcpResult;
 }
 
 export default async function handler(
@@ -156,12 +82,68 @@ export default async function handler(
   }
   const body = JSON.parse(Buffer.concat(chunks).toString());
 
-  const tools = await buildTools();
+  const tools: Record<string, ReturnType<typeof tool>> = {};
+
+  try {
+    const quran = await mcpInit(process.env.QURAN_MCP_URL || "https://mcp.quran.ai");
+
+    tools.search_quran = tool({
+      description: "Search the Quran for verses matching a query",
+      parameters: z.object({ query: z.string() }),
+      execute: async (args) => {
+        const r = await mcpCall(quran, "tools/call", { name: "search_quran", arguments: args });
+        return extractResults(r);
+      },
+    });
+
+    tools.fetch_quran = tool({
+      description: "Fetch specific Quran verses by ayah keys (e.g. '2:255' or ['2:255','1:1'])",
+      parameters: z.object({ ayahs: z.union([z.string(), z.array(z.string())]) }),
+      execute: async (args) => {
+        const r = await mcpCall(quran, "tools/call", { name: "fetch_quran", arguments: args });
+        return extractResults(r);
+      },
+    });
+
+    tools.fetch_grounding_rules = tool({
+      description: "Fetch grounding rules for Quran citation",
+      parameters: z.object({}),
+      execute: async () => {
+        const r = await mcpCall(quran, "tools/call", { name: "fetch_grounding_rules", arguments: {} });
+        return extractResults(r);
+      },
+    });
+  } catch (e: unknown) {
+    console.error("Quran MCP:", e instanceof Error ? e.message : e);
+  }
+
+  try {
+    const hadith = await mcpInit(process.env.HADITH_MCP_URL || "https://hadith-mcp.org");
+
+    tools.search_hadith = tool({
+      description: "Search hadith collections for a query",
+      parameters: z.object({ query: z.string(), limit: z.number().optional(), collection: z.string().optional(), mode: z.string().optional() }),
+      execute: async (args) => {
+        const r = await mcpCall(hadith, "tools/call", { name: "search_hadith", arguments: args });
+        return extractResults(r);
+      },
+    });
+
+    tools.fetch_hadith = tool({
+      description: "Fetch a specific hadith by ID, collection+number",
+      parameters: z.object({ hadith_id: z.number().optional(), collection: z.string().optional(), hadith_number: z.union([z.number(), z.string()]).optional() }),
+      execute: async (args) => {
+        const r = await mcpCall(hadith, "tools/call", { name: "fetch_hadith", arguments: args });
+        return extractResults(r);
+      },
+    });
+  } catch (e: unknown) {
+    console.error("Hadith MCP:", e instanceof Error ? e.message : e);
+  }
 
   const result = streamText({
     model: openrouter(DEFAULT_OPENROUTER_MODEL),
-    system:
-      "You are a Quran/Hadith writing assistant. For factual religious content, use tools first and cite retrieved evidence. If no tool data, explicitly say source unavailable.",
+    system: "You are a Quran/Hadith writing assistant. For factual religious content, use tools first and cite retrieved evidence. If no tool data, explicitly say source unavailable.",
     messages: convertToCoreMessages(body.messages || []),
     tools: Object.keys(tools).length > 0 ? tools : undefined,
     maxSteps: 5,
