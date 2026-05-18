@@ -1,0 +1,253 @@
+import { useState, useEffect } from "react";
+import { useParams, useNavigate } from "react-router-dom";
+import { ArrowLeft, GitFork, Clock, User, Loader2 } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
+import { cn } from "@/lib/utils";
+
+interface Article {
+  id: string;
+  title: string;
+  content: any;
+  author: { display_name: string; username: string | null; avatar_url: string | null };
+  is_fork: boolean;
+  fork_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export function ReadPage() {
+  const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
+  const [article, setArticle] = useState<Article | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [forking, setForking] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!id) return;
+
+    fetch(`/api/pages/${id}`)
+      .then(async (res) => {
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.error || "Failed to load");
+        }
+        return res.json();
+      })
+      .then((data) => {
+        setArticle({
+          ...data.page,
+          author: data.page.user_profiles || { display_name: "Unknown", username: null, avatar_url: null },
+        });
+      })
+      .catch((e) => {
+        setError(e.message);
+      })
+      .finally(() => setLoading(false));
+  }, [id]);
+
+  const handleFork = async () => {
+    if (!id) return;
+    setForking(true);
+    try {
+      const token = localStorage.getItem("qf_tokens");
+      if (!token) {
+        navigate("/");
+        return;
+      }
+
+      const tokens = JSON.parse(token);
+      const res = await fetch(`/api/pages/${id}/fork`, {
+        method: "POST",
+        headers: { "x-auth-token": tokens.access_token },
+      });
+
+      if (!res.ok) throw new Error("Fork failed");
+
+      const data = await res.json();
+      // Redirect to editor with the forked page
+      // The forked page needs to be added to local DB first
+      // For now, just show success
+      alert("تم نسخ المقالة بنجاح! ستظهر في محررك.");
+      window.location.reload();
+    } catch {
+      alert("فشل نسخ المقالة");
+    } finally {
+      setForking(false);
+    }
+  };
+
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString("ar-SA", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="max-w-3xl mx-auto space-y-6" dir="rtl">
+        <Skeleton className="h-10 w-48" />
+        <Skeleton className="h-8 w-3/4" />
+        <Skeleton className="h-4 w-32" />
+        <div className="space-y-3">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <Skeleton key={i} className="h-4 w-full" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !article) {
+    return (
+      <div className="max-w-3xl mx-auto text-center py-16" dir="rtl">
+        <p className="text-lg text-muted-foreground">{error || "المقالة غير موجودة"}</p>
+        <button
+          onClick={() => navigate("/discover")}
+          className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg"
+        >
+          العودة للاكتشاف
+        </button>
+      </div>
+    );
+  }
+
+  // Render content from Plate/Slate JSON
+  const renderContent = (content: any) => {
+    try {
+      const nodes = typeof content === "string" ? JSON.parse(content) : content;
+      if (!Array.isArray(nodes)) return null;
+
+      return nodes.map((node: any, i: number) => renderNode(node, i));
+    } catch {
+      return <p className="text-muted-foreground">خطأ في عرض المحتوى</p>;
+    }
+  };
+
+  const renderNode = (node: any, key: number) => {
+    if (!node) return null;
+
+    const children = node.children?.map((child: any, i: number) => renderInline(child, `${key}-${i}`));
+
+    switch (node.type) {
+      case "h1":
+        return <h1 key={key} className="text-2xl font-bold mb-4 mt-6 first:mt-0">{children}</h1>;
+      case "h2":
+        return <h2 key={key} className="text-xl font-bold mb-3 mt-5 first:mt-0">{children}</h2>;
+      case "h3":
+        return <h3 key={key} className="text-lg font-semibold mb-2 mt-4 first:mt-0">{children}</h3>;
+      case "p":
+        return <p key={key} className="text-base leading-loose mb-3 last:mb-0">{children}</p>;
+      case "blockquote":
+        return (
+          <blockquote key={key} className="border-r-4 border-primary/30 pr-4 py-2 my-3 text-muted-foreground italic">
+            {children}
+          </blockquote>
+        );
+      case "verse":
+        return (
+          <span key={key} className="inline-block bg-primary/5 border border-primary/20 rounded-lg px-3 py-1.5 mx-1 my-1 text-lg font-medium text-primary">
+            ﴿{node.verseText || node.children?.[0]?.text || ""}﴾
+            <span className="text-xs text-muted-foreground mr-1">({node.surahName}: {node.ayaNumber})</span>
+          </span>
+        );
+      case "hadith":
+        return (
+          <div key={key} className="bg-muted/50 border rounded-lg p-3 my-2">
+            <p className="text-base leading-loose mb-1">{node.hadithText || node.children?.[0]?.text || ""}</p>
+            <p className="text-xs text-muted-foreground">
+              [{node.collection} {node.hadithNumber}]
+              {node.grades?.length ? ` · ${node.grades.map((g: any) => g.grade).join(", ")}` : ""}
+            </p>
+          </div>
+        );
+      case "ul":
+        return <ul key={key} className="list-disc list-inside space-y-1 my-2">{children}</ul>;
+      case "ol":
+        return <ol key={key} className="list-decimal list-inside space-y-1 my-2">{children}</ol>;
+      case "li":
+        return <li key={key} className="text-base leading-loose">{children}</li>;
+      case "code_block":
+        return (
+          <pre key={key} className="bg-muted rounded-lg p-4 my-3 overflow-x-auto text-sm">
+            <code>{node.children?.[0]?.text || ""}</code>
+          </pre>
+        );
+      default:
+        return <div key={key}>{children}</div>;
+    }
+  };
+
+  const renderInline = (node: any, key: string) => {
+    if (!node) return null;
+    if (node.text !== undefined) {
+      let text = <span key={key}>{node.text}</span>;
+      if (node.bold) text = <strong key={key}>{node.text}</strong>;
+      if (node.italic) text = <em key={key}>{node.text}</em>;
+      if (node.code) text = <code key={key} className="bg-muted px-1 py-0.5 rounded text-sm">{node.text}</code>;
+      return text;
+    }
+    return renderNode(node, parseInt(key));
+  };
+
+  return (
+    <div className="max-w-3xl mx-auto" dir="rtl">
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-6">
+        <button
+          onClick={() => navigate("/discover")}
+          className="p-2 hover:bg-accent rounded-lg transition-colors"
+        >
+          <ArrowLeft className="h-5 w-5" />
+        </button>
+        <div className="flex-1" />
+        <button
+          onClick={handleFork}
+          disabled={forking}
+          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+        >
+          {forking ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <GitFork className="h-4 w-4" />
+          )}
+          نسخ المقالة
+        </button>
+      </div>
+
+      {/* Article header */}
+      <div className="mb-8 pb-6 border-b">
+        <h1 className="text-3xl font-bold mb-4 leading-tight">{article.title}</h1>
+        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+              {article.author.avatar_url ? (
+                <img src={article.author.avatar_url} alt="" className="h-8 w-8 rounded-full" />
+              ) : (
+                <User className="h-4 w-4 text-primary" />
+              )}
+            </div>
+            <span>{article.author.display_name}</span>
+          </div>
+          <span className="flex items-center gap-1">
+            <Clock className="h-3.5 w-3.5" />
+            {formatDate(article.created_at)}
+          </span>
+          {article.fork_count > 0 && (
+            <span className="flex items-center gap-1">
+              <GitFork className="h-3.5 w-3.5" />
+              {article.fork_count}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Article content */}
+      <div className="prose prose-lg max-w-none">
+        {renderContent(article.content)}
+      </div>
+    </div>
+  );
+}

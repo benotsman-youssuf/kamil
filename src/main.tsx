@@ -9,6 +9,8 @@ import { UserLayout } from "./layout/UserLayout";
 import { Collections } from "./pages/Collections";
 import { Settings } from "./pages/Settings";
 import { Stats } from "./pages/Stats";
+import { Discover } from "./pages/Discover";
+import { ReadPage } from "./pages/ReadPage";
 import { RequireAuth } from "./components/RequireAuth";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -30,6 +32,14 @@ const router = createBrowserRouter([
   { path: "/pages/:id", element: <SideBar /> },
   { path: "/callback", element: <AuthCallback /> },
   { path: "/logout", element: <LogoutPage /> },
+  {
+    path: "/discover",
+    element: <UserLayout title="اكتشف"><Discover /></UserLayout>,
+  },
+  {
+    path: "/read/:id",
+    element: <ReadPage />,
+  },
   {
     path: "/collections",
     element: <RequireAuth><UserLayout title="المجلدات"><Collections /></UserLayout></RequireAuth>,

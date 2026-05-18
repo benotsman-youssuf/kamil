@@ -69,6 +69,7 @@
     "@streamdown/code": "^1.1.1",
     "@streamdown/math": "^1.0.2",
     "@streamdown/mermaid": "^1.0.2",
+    "@supabase/supabase-js": "^2.106.0",
     "@tailwindcss/vite": "^4.1.11",
     "@udecode/cn": "^49.0.15",
     "ai": "^6.0.184",

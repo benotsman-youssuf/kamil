@@ -9,6 +9,9 @@ interface Page {
   createdAt: string;
   updatedAt: string;
   isPinned?: boolean;
+  remoteId?: string;       // Supabase page UUID
+  synced?: boolean;        // Whether synced to Supabase
+  syncedAt?: string;       // Last sync timestamp
 }
 
 const db = new Dexie('PagesDatabase') as Dexie & {
@@ -25,6 +28,10 @@ db.version(1).stores({
 
 db.version(2).stores({
   pages: '++id, name, description, content, createdAt, updatedAt, isPinned'
+});
+
+db.version(3).stores({
+  pages: '++id, name, description, content, createdAt, updatedAt, isPinned, remoteId, synced, syncedAt'
 });
 
 

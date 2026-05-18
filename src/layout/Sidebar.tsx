@@ -14,6 +14,8 @@ import { debounce } from "@/lib/utils/debounce";
 import { SharedRightPanel } from "@/components/SharedRightPanel";
 import { fetchVerseDetails } from "@/lib/qf/api";
 import { useSidebarState } from "@/hooks/use-sidebar-state";
+import { getTokens } from "@/lib/qf/auth";
+import { syncSinglePage } from "@/lib/sync";
 
 export default function SideBar() {
   const [pageContent, setPageContent] = useState<string>();
@@ -39,6 +41,16 @@ export default function SideBar() {
     value: [],
   });
 
+  // ── Auto-pull from cloud on mount ─────────────────────────────────────────
+  useEffect(() => {
+    const tokens = getTokens();
+    if (tokens?.access_token) {
+      import("@/lib/sync").then(({ pullFromRemote }) => {
+        pullFromRemote().catch(() => {}); // silent fail
+      });
+    }
+  }, []);
+
   // ── Auto-save ─────────────────────────────────────────────────────────────
   const savePage = useCallback(async () => {
     try {
@@ -53,6 +65,15 @@ export default function SideBar() {
       });
       setSaveState("saved");
       setTimeout(() => setSaveState("idle"), 1500);
+
+      // Auto-push to cloud (debounced, silent fail)
+      const tokens = getTokens();
+      if (tokens?.access_token) {
+        const page = await db.pages.get(Number(id));
+        if (page) {
+          syncSinglePage(page).catch(() => {});
+        }
+      }
     } catch (error) {
       console.error("Error saving:", error);
       setSaveState("error");

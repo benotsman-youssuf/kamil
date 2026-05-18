@@ -4,14 +4,17 @@ import type { UserProfile } from "@/lib/qf/api";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { Mail, Globe, Award, FileText, Heart, Users, AlertCircle, Download, Upload, CloudLightning, ShieldCheck } from "lucide-react";
+import { Mail, Globe, Award, FileText, Heart, Users, AlertCircle, Download, Upload, CloudLightning, ShieldCheck, RefreshCw, CheckCircle, XCircle } from "lucide-react";
 import { db } from "@/lib/db";
 import { toast } from "sonner";
+import { useSync } from "@/hooks/use-sync";
+import type { SyncStatus } from "@/lib/sync";
 
 export function Settings() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { status, sync: doSync, isSyncing } = useSync();
 
   useEffect(() => {
     setLoading(true);
@@ -220,6 +223,49 @@ export function Settings() {
         </p>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Cloud Sync card */}
+          <div className="p-4 rounded-lg border bg-background flex flex-col justify-between gap-4 md:col-span-2">
+            <div>
+              <h4 className="text-sm font-semibold flex items-center gap-2">
+                <RefreshCw className="h-4 w-4 text-purple-500" />
+                مزامنة سحابية (Cloud Sync)
+              </h4>
+              <p className="text-xs text-muted-foreground mt-1 leading-normal">
+                مزامنة صفحاتك مع حسابك للوصول إليها من أي جهاز. يتم المزامنة تلقائياً عند الحفظ.
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <button
+                onClick={async () => {
+                  try {
+                    await doSync();
+                    toast.success("تمت المزامنة بنجاح", { duration: 2000 });
+                  } catch {
+                    toast.error("فشل المزامنة", { duration: 2000 });
+                  }
+                }}
+                disabled={isSyncing}
+                className="flex-1 py-2 px-4 rounded bg-primary text-primary-foreground font-medium text-sm hover:opacity-90 transition-opacity active:scale-[0.98] transition-transform duration-100 flex items-center justify-center gap-2 disabled:opacity-50"
+              >
+                {isSyncing ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : status.state === "success" ? (
+                  <CheckCircle className="h-4 w-4" />
+                ) : status.state === "error" ? (
+                  <XCircle className="h-4 w-4" />
+                ) : (
+                  <RefreshCw className="h-4 w-4" />
+                )}
+                {isSyncing ? "جاري المزامنة..." : status.message || "مزامنة الآن"}
+              </button>
+              {status.lastSync && (
+                <span className="text-xs text-muted-foreground whitespace-nowrap">
+                  آخر مزامنة: {new Date(status.lastSync).toLocaleDateString("ar-SA", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                </span>
+              )}
+            </div>
+          </div>
+
           {/* Export card */}
           <div className="p-4 rounded-lg border bg-background flex flex-col justify-between gap-4">
             <div>
