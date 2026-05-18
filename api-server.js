@@ -1,5 +1,4 @@
 import http from 'http';
-import { Readable } from 'stream';
 
 const PORT = process.env.API_PORT || 3001;
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || '';
@@ -36,50 +35,26 @@ const server = http.createServer(async (req, res) => {
         const { createOpenRouter } = await import('@openrouter/ai-sdk-provider');
         const { streamText } = await import('ai');
         const { createMCPClient } = await import('@ai-sdk/mcp');
-        const { z } = await import('zod');
 
         const openrouter = createOpenRouter({
           apiKey: OPENROUTER_API_KEY,
         });
 
-        async function createMCPTools(url) {
+        async function getMCPTools(url) {
           try {
             const client = await createMCPClient({
-              transport: { type: 'http', url },
+              transport: { type: 'streamable-http', url },
             });
-            const defs = await client.listTools();
-            const schemas = {};
-            for (const t of defs.tools) {
-              schemas[t.name] = { inputSchema: t.inputSchema };
-            }
-            const tools = client.toolsFromDefinitions(defs, { schemas });
-
-            for (const [, t] of Object.entries(tools)) {
-              if (t.inputSchema && !t.parameters) {
-                const jsonSchema = t.inputSchema;
-                const props = jsonSchema?.properties;
-                if (props && Object.keys(props).length > 0) {
-                  const shape = {};
-                  for (const key of Object.keys(props)) {
-                    shape[key] = z.any().optional();
-                  }
-                  t.parameters = z.object(shape);
-                } else {
-                  t.parameters = z.object({});
-                }
-                delete t.inputSchema;
-              }
-            }
-            return tools;
+            return await client.tools();
           } catch (e) {
-            console.error(`MCP init failed for ${url}:`, e.message);
+            console.error(`MCP failed for ${url}:`, e.message);
             return {};
           }
         }
 
         const [quranTools, hadithTools] = await Promise.all([
-          createMCPTools(process.env.QURAN_MCP_URL || 'https://mcp.quran.ai'),
-          createMCPTools(process.env.HADITH_MCP_URL || 'https://hadith-mcp.org'),
+          getMCPTools(process.env.QURAN_MCP_URL || 'https://mcp.quran.ai'),
+          getMCPTools(process.env.HADITH_MCP_URL || 'https://hadith-mcp.org'),
         ]);
 
         const tools = { ...quranTools, ...hadithTools };
@@ -103,6 +78,8 @@ RULES:
           maxSteps: 5,
         });
 
+        const stream = result.toDataStream();
+        const reader = stream.getReader();
         res.writeHead(200, {
           'Content-Type': 'text/plain; charset=utf-8',
           'X-Vercel-AI-Data-Stream': 'v1',
@@ -110,11 +87,10 @@ RULES:
           'Access-Control-Allow-Origin': '*',
         });
 
-        const reader = result.toDataStream().getReader();
         while (true) {
           const { done, value } = await reader.read();
           if (done) { res.end(); break; }
-          res.write(Buffer.from(value));
+          res.write(value);
         }
       } else if (url.pathname === '/api/verse') {
         const surah = url.searchParams.get('surah');
