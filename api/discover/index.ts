@@ -14,17 +14,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     let query = supabase
       .from("pages")
-      .select(`
-        id,
-        title,
-        content,
-        is_fork,
-        fork_count,
-        created_at,
-        updated_at,
-        qf_user_id,
-        user_profiles(display_name, username, avatar_url)
-      `)
+      .select("id, title, content, is_fork, fork_count, created_at, updated_at, qf_user_id", { count: "estimated" })
       .eq("is_public", true);
 
     if (q) {
@@ -32,7 +22,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     if (sort === "most_forked") {
-      query = query.order("fork_count", { ascending: false });
+      query = query.order("fork_count", { ascending: false, nullsFirst: false });
     } else {
       query = query.order("updated_at", { ascending: false });
     }
@@ -42,11 +32,24 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     if (error) throw error;
 
+    const userIds = [...new Set((data || []).map((p: any) => p.qf_user_id).filter(Boolean))];
+    let profileMap: Record<string, any> = {};
+
+    if (userIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from("user_profiles")
+        .select("qf_user_id, display_name, username, avatar_url")
+        .in("qf_user_id", userIds);
+      for (const p of profiles || []) {
+        profileMap[p.qf_user_id] = p;
+      }
+    }
+
     const pages = (data || []).map((p: any) => ({
       id: p.id,
       title: p.title,
       snippet: extractSnippet(p.content),
-      author: p.user_profiles || { display_name: "Unknown", username: null, avatar_url: null },
+      author: profileMap[p.qf_user_id] || { display_name: "Unknown", username: null, avatar_url: null },
       is_fork: p.is_fork,
       fork_count: p.fork_count,
       created_at: p.created_at,
