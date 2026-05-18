@@ -1,8 +1,11 @@
-import { createRxDatabase, type RxDatabase, type RxCollection } from "rxdb/plugins/core";
+import { createRxDatabase, addRxPlugin, type RxDatabase, type RxCollection } from "rxdb/plugins/core";
 import { getRxStorageDexie } from "rxdb/plugins/storage-dexie";
+import { RxDBQueryBuilderPlugin } from "rxdb/plugins/query-builder";
 import { replicateRxCollection } from "rxdb/plugins/replication";
 import { getValidAccessToken } from "@/lib/qf/auth";
 import { QF_CONFIG } from "@/lib/qf/config";
+
+addRxPlugin(RxDBQueryBuilderPlugin);
 
 export type PageDocType = {
   id: string;
@@ -47,21 +50,26 @@ export const PAGE_SCHEMA = {
 };
 
 let dbInstance: KamilDatabase | null = null;
+let initPromise: Promise<KamilDatabase> | null = null;
 let replicationInstance: any = null;
+let warned404 = false;
 
 export async function getDb(): Promise<KamilDatabase> {
   if (dbInstance) return dbInstance;
-  const db = await createRxDatabase<KamilDatabase>({
+  if (initPromise) return initPromise;
+  initPromise = createRxDatabase<KamilDatabase>({
     name: "kamil",
     storage: getRxStorageDexie(),
+  }).then(async (db) => {
+    await db.addCollections({
+      pages: {
+        schema: PAGE_SCHEMA,
+      },
+    });
+    dbInstance = db;
+    return db;
   });
-  await db.addCollections({
-    pages: {
-      schema: PAGE_SCHEMA,
-    },
-  });
-  dbInstance = db;
-  return db;
+  return initPromise;
 }
 
 async function getAuthToken(): Promise<string | null> {
@@ -89,8 +97,11 @@ export async function startSync() {
         const since = checkpoint || "";
         const data: any = await apiRequest(
           `/sync?since=${encodeURIComponent(since)}&limit=${batchSize}`
-        ).catch((err) => {
-          console.error("[rxdb] pull failed", err);
+        ).catch((err: any) => {
+          if (err?.message?.includes("404") && !warned404) {
+            warned404 = true;
+            console.warn("[rxdb] sync endpoint not found (404) — sync disabled");
+          }
           return { pages: [] };
         });
         const pages = (data.pages || []).map((p: any) => ({
@@ -140,7 +151,12 @@ export async function startSync() {
         }));
 
         await apiRequest("/sync", { method: "POST", body: { pages } }).catch(
-          (err) => console.error("[rxdb] push failed", err)
+          (err: any) => {
+            if (err?.message?.includes("404") && !warned404) {
+              warned404 = true;
+              console.warn("[rxdb] sync endpoint not found (404) — sync disabled");
+            }
+          }
         );
 
         return rows.map((r: any) => r.newDocumentState);

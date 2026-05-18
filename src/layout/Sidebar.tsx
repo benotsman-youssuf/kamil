@@ -53,10 +53,15 @@ export default function SideBar() {
       const updatedAt = new Date().toISOString();
       const content = JSON.stringify(editor.children);
       const db = await getDb();
-      const existing = await db.pages.findOne(id!).exec();
-      if (existing) {
-        await existing.patch({ content, updated_at: updatedAt });
-      }
+      await db.pages.findOne(id!).exec().then(async (existing: any) => {
+        if (existing) {
+          await existing.incrementalModify((doc: any) => {
+            doc.content = content;
+            doc.updated_at = updatedAt;
+            return doc;
+          });
+        }
+      });
       setPageContent((prev) => {
         if (!prev) return prev;
         const page = JSON.parse(prev);
