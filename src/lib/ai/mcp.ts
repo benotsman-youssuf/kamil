@@ -1,49 +1,70 @@
 import type { HadithEvidence, VerseEvidence } from "../../types/ai-evidence.js";
 
-const QURAN_MCP_URL = process.env.QURAN_MCP_URL || "https://mcp.quran.ai";
-const HADITH_MCP_URL = process.env.HADITH_MCP_URL || "https://hadith-mcp.org";
+const QURAN_API = "https://api.quran.com/api/v4";
+const HADITH_API = "https://api.islamic.app/v1/hadith";
 
 export async function searchQuranMcp(query: string): Promise<VerseEvidence[]> {
-  const response = await fetch(`${QURAN_MCP_URL}/search`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ query }),
-  });
+  try {
+    const searchRes = await fetch(
+      `${QURAN_API}/search?q=${encodeURIComponent(query)}&size=5`
+    );
+    if (!searchRes.ok) return [];
+    const searchData = await searchRes.json();
+    const results: { verse_key: string }[] = searchData.search?.results || [];
 
-  if (!response.ok) return [];
-  const json = await response.json();
-  const rows = Array.isArray(json?.verses) ? json.verses : Array.isArray(json?.results) ? json.results : [];
+    const verses: VerseEvidence[] = [];
+    for (const r of results.slice(0, 5)) {
+      const vrRes = await fetch(
+        `${QURAN_API}/verses/by_key/${r.verse_key}?words=false`
+      );
+      if (!vrRes.ok) continue;
+      const vrData = await vrRes.json();
+      const verse = vrData.verse;
+      if (!verse) continue;
 
-  return rows.slice(0, 5).map((row: any) => ({
-    source: "quran_mcp",
-    verseKey: String(row.verse_key || row.verseKey || ""),
-    arabicText: String(row.arabic || row.text || ""),
-    translation: row.translation ? String(row.translation) : undefined,
-    surahName: row.surah_name ? String(row.surah_name) : undefined,
-    ayahNumber: row.ayah_number ? Number(row.ayah_number) : undefined,
-    citation: `quran_mcp:${row.verse_key || row.verseKey || "unknown"}`,
-  }));
+      verses.push({
+        source: "quran_mcp",
+        verseKey: r.verse_key,
+        arabicText: verse.text_uthmani || verse.text_imlaei || "",
+        translation: verse.translations?.[0]?.text || undefined,
+        surahName: verse.chapter?.name_arabic || undefined,
+        ayahNumber: verse.verse_number || undefined,
+        citation: `quran_mcp:${r.verse_key}`,
+      });
+    }
+    return verses;
+  } catch {
+    return [];
+  }
 }
 
 export async function searchHadithMcp(query: string): Promise<HadithEvidence[]> {
-  const response = await fetch(`${HADITH_MCP_URL}/search_hadith`, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ query }),
-  });
+  try {
+    const res = await fetch(
+      `${HADITH_API}/search?q=${encodeURIComponent(query)}&limit=5&lang=both`
+    );
+    if (!res.ok) return [];
+    const data = await res.json();
 
-  if (!response.ok) return [];
-  const json = await response.json();
-  const rows = Array.isArray(json?.hadiths) ? json.hadiths : Array.isArray(json?.results) ? json.results : [];
+    const raw = data.results || data.hadiths || [];
+    const rows = Array.isArray(raw) ? raw : [];
 
-  return rows.slice(0, 5).map((row: any) => ({
-    source: "hadith_mcp",
-    collection: String(row.collection || ""),
-    bookNumber: row.book_number ? String(row.book_number) : undefined,
-    hadithNumber: String(row.hadith_number || row.hadithNumber || ""),
-    arabicText: String(row.arabic || row.text || ""),
-    englishText: row.english ? String(row.english) : undefined,
-    grades: Array.isArray(row.grades) ? row.grades : [],
-    citation: `hadith_mcp:${row.collection || "unknown"}:${row.hadith_number || row.hadithNumber || ""}`,
-  }));
+    return rows.slice(0, 5).map((row: any) => ({
+      source: "hadith_mcp" as const,
+      collection: String(row.collection || ""),
+      bookNumber: row.bookNumber ? String(row.bookNumber) : undefined,
+      hadithNumber: String(row.hadithNumber || row.hadith_number || ""),
+      arabicText: String(row.ar?.text || row.arabic || row.text || ""),
+      englishText: row.en?.text || row.english || undefined,
+      grades: Array.isArray(row.ar?.grades)
+        ? row.ar.grades.map((g: any) => ({
+            graded_by: g.graded_by || "",
+            grade: g.grade || "",
+          }))
+        : [],
+      citation: `hadith_mcp:${row.collection || "unknown"}:${row.hadithNumber || row.hadith_number || ""}`,
+    }));
+  } catch {
+    return [];
+  }
 }
