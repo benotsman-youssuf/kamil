@@ -1,5 +1,4 @@
 import { streamText, convertToCoreMessages } from "ai";
-import { createMCPClient } from "@ai-sdk/mcp";
 import { openrouter, DEFAULT_OPENROUTER_MODEL } from "../src/lib/ai/openrouter.js";
 import type { IncomingMessage, ServerResponse } from "node:http";
 
@@ -14,46 +13,17 @@ export default async function handler(
     return;
   }
 
-  try {
-    const chunks: Buffer[] = [];
-    for await (const chunk of req) {
-      chunks.push(chunk);
-    }
-    const body = JSON.parse(Buffer.concat(chunks).toString());
-
-    const quranMcp = await createMCPClient({
-      transport: {
-        type: "http",
-        url: process.env.QURAN_MCP_URL || "https://mcp.quran.ai",
-      },
-    });
-
-    const hadithMcp = await createMCPClient({
-      transport: {
-        type: "http",
-        url: process.env.HADITH_MCP_URL || "https://hadith-mcp.org",
-      },
-    });
-
-    const [quranTools, hadithTools] = await Promise.all([
-      quranMcp.tools(),
-      hadithMcp.tools(),
-    ]);
-
-    const result = streamText({
-      model: openrouter(DEFAULT_OPENROUTER_MODEL),
-      system:
-        "You are a Quran/Hadith writing assistant. For factual religious content, use tools first and cite retrieved evidence. If no tool data, explicitly say source unavailable.",
-      messages: convertToCoreMessages(body.messages || []),
-      tools: { ...quranTools, ...hadithTools } as any,
-      onFinish: async () => {
-        await Promise.all([quranMcp.close(), hadithMcp.close()]);
-      },
-    });
-
-    result.pipeDataStreamToResponse(res);
-  } catch (error: any) {
-    console.error("Chat API error:", error?.message || error);
-    res.writeHead(500).end(JSON.stringify({ error: error?.message || "Unknown error" }));
+  const chunks: Buffer[] = [];
+  for await (const chunk of req) {
+    chunks.push(chunk);
   }
+  const body = JSON.parse(Buffer.concat(chunks).toString());
+
+  const result = streamText({
+    model: openrouter(DEFAULT_OPENROUTER_MODEL),
+    system: "You are a helpful assistant.",
+    messages: convertToCoreMessages(body.messages || []),
+  });
+
+  result.pipeDataStreamToResponse(res);
 }
