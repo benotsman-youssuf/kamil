@@ -9,7 +9,7 @@ import { Link, useLocation } from "react-router-dom";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { PageActions } from "./PageActions";
-import { Pin, Sun, Moon } from "lucide-react";
+import { Pin, Sun, Moon, Compass } from "lucide-react";
 import { UserAccount } from "./UserAccount";
 import { useTheme } from "@/hooks/use-theme";
 
@@ -87,7 +87,23 @@ export function AppSidebar({ pinned, onTogglePin, ...props }: AppSidebarProps) {
       {/* ── Pages list ──────────────────────────────────────────────────────── */}
       <SidebarContent className="flex-1 min-h-0">
         <ScrollArea className="h-full">
-          <nav className="flex flex-col gap-0.5 px-2 py-2">
+          {/* Discover link */}
+          <div className="px-2 py-2">
+            <Link
+              to="/discover"
+              className={cn(
+                "flex items-center gap-2 rounded-lg px-2 py-1.5 text-sm transition-all duration-150",
+                location.pathname === "/discover"
+                  ? "bg-primary/10 text-primary"
+                  : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
+              )}
+            >
+              <Compass className="h-4 w-4" />
+              <span>اكتشف</span>
+            </Link>
+          </div>
+
+          <nav className="flex flex-col gap-0.5 px-2 pb-2">
             {sortedPages?.map((page) => {
               const isActive = location.pathname === `/pages/${page.id}`;
               return (
