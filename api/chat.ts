@@ -212,6 +212,7 @@ export default async function handler(
       "You are a Quran/Hadith writing assistant. For factual religious content, use tools first and cite retrieved evidence. If no tool data, explicitly say source unavailable.",
     messages: convertToCoreMessages(body.messages || []),
     tools: Object.keys(tools).length > 0 ? tools : undefined,
+    maxSteps: 5,
   });
 
   result.pipeDataStreamToResponse(res, {
