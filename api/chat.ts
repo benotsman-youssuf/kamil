@@ -44,7 +44,7 @@ export default async function handler(
     system:
       "You are a Quran/Hadith writing assistant. For factual religious content, use tools first and cite retrieved evidence. If no tool data, explicitly say source unavailable.",
     messages: convertToCoreMessages(body.messages || []),
-    tools: { ...quranTools, ...hadithTools },
+    tools: { ...quranTools, ...hadithTools } as any,
     onFinish: async () => {
       await Promise.all([quranMcp.close(), hadithMcp.close()]);
     },
