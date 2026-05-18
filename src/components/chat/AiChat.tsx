@@ -109,23 +109,8 @@ const EvidenceCardItem = memo(function EvidenceCardItem({
       ? `Surah ${card.surah}:${card.ayah}`
       : `${card.collection} #${card.number}`;
 
-  const description = card.loading
-    ? undefined
-    : card.type === "hadith" && card.hadithTextEn
-    ? card.hadithTextEn
-    : card.text;
-
   return (
-    <Source
-      title={label}
-      description={
-        card.loading ? (
-          <Shimmer>Loading…</Shimmer>
-        ) : (
-          description
-        )
-      }
-    >
+    <Source title={label}>
       <div className="flex items-start justify-between gap-3 py-2">
         <div className="flex items-start gap-2 min-w-0">
           {card.type === "verse" ? (
@@ -206,7 +191,7 @@ const MessageEvidenceBlock = memo(function MessageEvidenceBlock({
   return (
     <div className="mt-3 ml-2">
       <Sources>
-        <SourcesTrigger>{triggerLabel}</SourcesTrigger>
+        <SourcesTrigger count={cards.length}>{triggerLabel}</SourcesTrigger>
         <SourcesContent>
           {cards.map((card) => (
             <EvidenceCardItem key={card.id} card={card} onInsert={onInsert} />
