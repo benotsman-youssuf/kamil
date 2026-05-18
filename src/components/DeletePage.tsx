@@ -11,7 +11,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Trash } from "lucide-react";
 import { getDb } from "@/lib/rxdb";
-import { getTokens } from "@/lib/qf/auth";
+import { getValidAccessToken } from "@/lib/qf/auth";
+import { QF_CONFIG } from "@/lib/qf/config";
 import { toast } from "sonner";
 
 export const DeletePage = ({ pageId }: { pageId: string }) => {
@@ -23,11 +24,11 @@ export const DeletePage = ({ pageId }: { pageId: string }) => {
       toast.success(`تم حذف الصفحة بنجاح`);
 
       // Also delete from Supabase via API
-      const tokens = getTokens();
-      if (tokens?.access_token) {
-        fetch(`/api/pages/${pageId}`, {
+      const token = await getValidAccessToken();
+      if (token) {
+        fetch(`${QF_CONFIG.apiBaseUrl}/pages/${pageId}`, {
           method: "DELETE",
-          headers: { "x-auth-token": tokens.access_token },
+          headers: { "x-auth-token": token },
         }).catch(() => {});
       }
     } catch (error) {

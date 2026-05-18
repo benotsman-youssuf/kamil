@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
-import { getDb } from "@/lib/rxdb";
-import { getTokens } from "@/lib/qf/auth";
+import { getDb, pushPageToServer } from "@/lib/rxdb";
+import { getTokens, getValidAccessToken } from "@/lib/qf/auth";
+import { QF_CONFIG } from "@/lib/qf/config";
 import { Share2, Globe, Lock, Copy, Check, Loader2 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
@@ -38,11 +39,11 @@ export function ShareDialog({ pageId }: ShareDialogProps) {
 
   const fetchPageStatus = async (id: string) => {
     try {
-      const tokens = getTokens();
-      if (!tokens?.access_token) return;
+      const token = await getValidAccessToken();
+      if (!token) return;
 
-      const res = await fetch(`/api/pages/${id}`, {
-        headers: { "x-auth-token": tokens.access_token },
+      const res = await fetch(`${QF_CONFIG.apiBaseUrl}/pages/${id}`, {
+        headers: { "x-auth-token": token },
       });
       if (res.ok) {
         const data = await res.json();
@@ -56,39 +57,27 @@ export function ShareDialog({ pageId }: ShareDialogProps) {
   const handleSync = async () => {
     setSyncing(true);
     try {
-      const tokens = getTokens();
-      if (!tokens?.access_token) {
-        toast.error("يجب تسجيل الدخول أولاً");
-        return;
-      }
-
       const db = await getDb();
       const page = await db.pages.findOne(pageId).exec();
       if (!page) return;
 
       const pageData = page.toJSON();
-      const res = await fetch("/api/sync", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-auth-token": tokens.access_token,
-        },
-        body: JSON.stringify({
-          pages: [{
-            id: pageData.id,
-            title: pageData.title || pageData.name,
-            content: pageData.content,
-            is_public: false,
-            created_at: pageData.created_at,
-            updated_at: pageData.updated_at,
-          }],
-        }),
-      });
+      const data = await pushPageToServer([{
+        id: pageData.id,
+        name: pageData.name || pageData.title,
+        title: pageData.title || pageData.name,
+        content: pageData.content,
+        description: pageData.description || "",
+        is_public: false,
+        is_fork: pageData.is_fork ?? false,
+        fork_count: pageData.fork_count ?? 0,
+        forked_from: pageData.forked_from || "",
+        created_at: pageData.created_at,
+        updated_at: pageData.updated_at,
+        isPinned: pageData.isPinned ?? false,
+      }]);
 
-      if (!res.ok) throw new Error("Sync failed");
-
-      const data = await res.json();
-      const result = data.synced?.[0];
+      const result = data?.synced?.[0];
       if (result?.id) {
         setRemoteId(result.id);
         toast.success("تمت المزامنة");
@@ -108,14 +97,14 @@ export function ShareDialog({ pageId }: ShareDialogProps) {
 
     setLoading(true);
     try {
-      const tokens = getTokens();
-      if (!tokens?.access_token) return;
+      const token = await getValidAccessToken();
+      if (!token) return;
 
-      const res = await fetch(`/api/pages/${remoteId}`, {
+      const res = await fetch(`${QF_CONFIG.apiBaseUrl}/pages/${remoteId}`, {
         method: "PATCH",
         headers: {
           "Content-Type": "application/json",
-          "x-auth-token": tokens.access_token,
+          "x-auth-token": token,
         },
         body: JSON.stringify({ is_public: !isPublic }),
       });

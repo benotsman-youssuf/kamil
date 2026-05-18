@@ -1,8 +1,8 @@
 import { useEffect, useState } from "react";
-import { getDb } from "@/lib/rxdb";
+import { getDb, type PageDocType } from "@/lib/rxdb";
 
 export function usePages() {
-  const [pages, setPages] = useState<any[]>([]);
+  const [pages, setPages] = useState<PageDocType[]>([]);
 
   useEffect(() => {
     let sub: any;
@@ -14,7 +14,7 @@ export function usePages() {
         .find()
         .sort({ updated_at: "desc" })
         .$.subscribe((docs: any[]) => {
-          setPages(docs);
+          setPages(docs.map((d: any) => d.toJSON()));
         });
     });
 

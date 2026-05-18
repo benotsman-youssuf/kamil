@@ -28,6 +28,8 @@ export function AppSidebar({ pinned, onTogglePin, ...props }: AppSidebarProps) {
     return a.isPinned ? -1 : 1;
   });
 
+  const firstPageId = sortedPages?.[0]?.id;
+
   return (
     <Sidebar
       collapsible="none"
@@ -38,7 +40,7 @@ export function AppSidebar({ pinned, onTogglePin, ...props }: AppSidebarProps) {
       <div className="flex items-center justify-between px-3 py-3 flex-shrink-0 border-b border-sidebar-border">
         {/* Logo */}
         <Link
-          to="/pages/1"
+          to={firstPageId ? `/pages/${firstPageId}` : "/"}
           className="flex items-center gap-2 group"
           aria-label="العودة للرئيسية"
         >

@@ -28,7 +28,8 @@ import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Pin, Trash, Pencil, PinOff } from "lucide-react";
 import { useState } from "react";
 import { getDb } from "@/lib/rxdb";
-import { getTokens } from "@/lib/qf/auth";
+import { getValidAccessToken } from "@/lib/qf/auth";
+import { QF_CONFIG } from "@/lib/qf/config";
 import { toast } from "sonner";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -64,16 +65,21 @@ export function PageActions({ page, isActive }: PageActionsProps) {
             toast.success("تم حذف الصفحة بنجاح");
 
             // Also delete from Supabase
-            const tokens = getTokens();
-            if (tokens?.access_token) {
-                fetch(`/api/pages/${page.id}`, {
+            const token = await getValidAccessToken();
+            if (token) {
+                fetch(`${QF_CONFIG.apiBaseUrl}/pages/${page.id}`, {
                     method: "DELETE",
-                    headers: { "x-auth-token": tokens.access_token },
+                    headers: { "x-auth-token": token },
                 }).catch(() => {});
             }
 
-            if (Number(id) === Number(page.id)) {
-                navigate("/pages/1");
+            if (id === page.id) {
+                const remaining = await db.pages.find().exec();
+                if (remaining.length > 0) {
+                    navigate(`/pages/${remaining[0].id}`);
+                } else {
+                    navigate("/");
+                }
             }
         } catch (error) {
             toast.error("حدث خطأ أثناء حذف الصفحة");

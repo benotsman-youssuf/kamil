@@ -24,6 +24,9 @@ export function UserAccount() {
         .then((res) => setUser(res.data))
         .catch(() => setUser(null))
         .finally(() => setLoading(false));
+      import("@/lib/rxdb").then(({ startSyncIfAuthenticated }) => {
+        startSyncIfAuthenticated();
+      });
     }
   }, [tokens?.access_token]);
 

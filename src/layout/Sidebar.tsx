@@ -14,7 +14,6 @@ import { debounce } from "@/lib/utils/debounce";
 import { SharedRightPanel } from "@/components/SharedRightPanel";
 import { fetchVerseDetails } from "@/lib/qf/api";
 import { useSidebarState } from "@/hooks/use-sidebar-state";
-import { getTokens } from "@/lib/qf/auth";
 
 export default function SideBar() {
   const [pageContent, setPageContent] = useState<string>();
@@ -42,12 +41,9 @@ export default function SideBar() {
 
   // ── Start RxDB sync on mount if authenticated ────────────────────────
   useEffect(() => {
-    const tokens = getTokens();
-    if (tokens?.access_token) {
-      import("@/lib/rxdb").then(({ startSync }) => {
-        startSync().catch(() => {});
-      });
-    }
+    import("@/lib/rxdb").then(({ startSyncIfAuthenticated }) => {
+      startSyncIfAuthenticated();
+    });
   }, []);
 
   // ── Auto-save ─────────────────────────────────────────────────────────────
