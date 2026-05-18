@@ -19,7 +19,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import { BookMarked, FileText, FolderOpen, Bookmark, Award, ChevronRight } from "lucide-react";
+import { BookMarked, FileText, FolderOpen, Bookmark, Award } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { SURAH_NAMES } from "@/constants/surahs";
 
@@ -194,32 +194,6 @@ export function Stats() {
               <Bar dataKey="ملاحظات" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
             </BarChart>
           </ResponsiveContainer>
-        </div>
-      )}
-
-      {/* Collections list */}
-      {collections.length > 0 && (
-        <div>
-          <h3 className="text-sm font-semibold mb-3 flex items-center gap-2">
-            <FolderOpen className="h-4 w-4 text-primary" /> المجموعات
-          </h3>
-          <div className="space-y-2">
-            {collections.map((col) => (
-              <div
-                key={col.id}
-                className="bg-card border rounded-xl p-3 flex items-center justify-between hover:bg-accent/30 transition-colors"
-              >
-                <div>
-                  <p className="text-sm font-medium">{col.name}</p>
-                  <p className="text-[10px] text-muted-foreground">
-                    {col.bookmarksCount ?? 0} آية · {col.isPrivate ? "خاصة" : "عامة"}
-                    {col.isDefault && " · افتراضية"}
-                  </p>
-                </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground" />
-              </div>
-            ))}
-          </div>
         </div>
       )}
 
