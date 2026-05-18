@@ -8,7 +8,6 @@ import { Mail, Globe, Award, FileText, Heart, Users, AlertCircle, Download, Uplo
 import { db } from "@/lib/db";
 import { toast } from "sonner";
 import { useSync } from "@/hooks/use-sync";
-import type { SyncStatus } from "@/lib/sync";
 
 export function Settings() {
   const [profile, setProfile] = useState<UserProfile | null>(null);

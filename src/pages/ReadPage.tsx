@@ -2,7 +2,6 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { ArrowLeft, GitFork, Clock, User, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
 
 interface Article {
   id: string;
@@ -64,10 +63,7 @@ export function ReadPage() {
 
       if (!res.ok) throw new Error("Fork failed");
 
-      const data = await res.json();
-      // Redirect to editor with the forked page
-      // The forked page needs to be added to local DB first
-      // For now, just show success
+      await res.json();
       alert("تم نسخ المقالة بنجاح! ستظهر في محررك.");
       window.location.reload();
     } catch {
