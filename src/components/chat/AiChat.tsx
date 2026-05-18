@@ -26,7 +26,6 @@ import {
   ConversationContent,
   ConversationScrollButton,
   ConversationEmptyState,
-  ConversationDownload,
 } from "@/components/ai-elements/conversation";
 import {
   Message,
@@ -405,7 +404,7 @@ export function AiChat({ close }: { close: () => void }) {
   const totalEvidence = Object.values(evidenceByMessage).flat().length;
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col" dir="rtl">
       {/* ── Header ── */}
       <div className="px-4 py-3 border-b flex items-center justify-between flex-shrink-0">
         <div className="flex items-center gap-2">
@@ -420,12 +419,6 @@ export function AiChat({ close }: { close: () => void }) {
         </div>
 
         <div className="flex items-center gap-1">
-          {messages.length > 0 && (
-            <ConversationDownload
-              messages={messages}
-              filename="kamil-chat.md"
-            />
-          )}
           <Button
             size="icon"
             variant="ghost"
