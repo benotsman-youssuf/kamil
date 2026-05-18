@@ -1,7 +1,10 @@
 import React from 'react';
 
+import { useEditorRef } from 'platejs/react';
+
 import { Editor } from "@/components/ui/editor";
 import { EditorContainer } from "@/components/ui/editor";
+import { useArabicAndroidInput } from "@/hooks/use-arabic-android-input";
 import { useIsAndroid } from "@/hooks/use-is-android";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +18,8 @@ function EditorContentInner({
   className = "",
 }: EditorContentProps) {
   const isAndroid = useIsAndroid();
+  const editor = useEditorRef();
+  useArabicAndroidInput(editor, isAndroid);
 
   const renderLeaf = React.useCallback(
     (props: {
