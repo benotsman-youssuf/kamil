@@ -22,13 +22,13 @@ export function AuthCallback() {
     if (code && state) {
       handleCallback(code, state)
         .then(() => {
-          navigate("/pages/1", { replace: true });
+          navigate("/", { replace: true });
         })
         .catch((err) => {
           setError(err.message || "فشل تسجيل الدخول");
         });
     } else {
-      navigate("/pages/1", { replace: true });
+      navigate("/", { replace: true });
     }
   }, [searchParams, navigate]);
 
@@ -38,7 +38,7 @@ export function AuthCallback() {
         <AlertCircle className="h-12 w-12 text-red-500" />
         <p className="text-xl font-bold text-red-600 font-amiri">فشل تسجيل الدخول</p>
         <p className="text-muted-foreground">{error}</p>
-        <Button variant="outline" onClick={() => navigate("/pages/1")}>
+        <Button variant="outline" onClick={() => navigate("/")}>
           العودة للصفحة الرئيسية
         </Button>
       </div>

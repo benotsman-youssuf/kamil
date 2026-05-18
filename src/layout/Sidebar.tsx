@@ -84,7 +84,7 @@ export default function SideBar() {
       const db = await getDb();
       const page = await db.pages.findOne(id!).exec();
       editor.tf.setValue(page?.content ? JSON.parse(page.content) : []);
-      setPageContent(JSON.stringify(page?.toJSON() || null));
+      setPageContent(page ? JSON.stringify(page.toJSON()) : undefined);
     } catch (error) {
       console.error("Error fetching page:", error);
     }
