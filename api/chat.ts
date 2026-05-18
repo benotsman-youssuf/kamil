@@ -29,13 +29,8 @@ async function buildTools(): Promise<Record<string, ReturnType<typeof tool>>> {
           query: z.string().describe("Search query"),
         }),
         execute: async ({ query }) => {
-          const result = await rawSearchQuran.execute({ query });
-          const text = extractText(result);
-          try {
-            return JSON.parse(text);
-          } catch {
-            return { verses: [], raw: text };
-          }
+          const mcpResult = await rawSearchQuran.execute({ query });
+          return normalizeQuranResult(mcpResult);
         },
       });
     }
@@ -48,13 +43,8 @@ async function buildTools(): Promise<Record<string, ReturnType<typeof tool>>> {
           ayah: z.number().describe("Ayah number"),
         }),
         execute: async ({ surah, ayah }) => {
-          const result = await rawFetchQuran.execute({ surah, ayah });
-          const text = extractText(result);
-          try {
-            return JSON.parse(text);
-          } catch {
-            return { verses: [], raw: text };
-          }
+          const mcpResult = await rawFetchQuran.execute({ surah, ayah });
+          return normalizeQuranResult(mcpResult);
         },
       });
     }
@@ -65,13 +55,8 @@ async function buildTools(): Promise<Record<string, ReturnType<typeof tool>>> {
         description: "Fetch grounding rules for Quran citation",
         parameters: z.object({}),
         execute: async () => {
-          const result = await rawFetchGrounding.execute({});
-          const text = extractText(result);
-          try {
-            return JSON.parse(text);
-          } catch {
-            return { raw: text };
-          }
+          const mcpResult = await rawFetchGrounding.execute({});
+          return normalizeQuranResult(mcpResult);
         },
       });
     }
@@ -97,13 +82,8 @@ async function buildTools(): Promise<Record<string, ReturnType<typeof tool>>> {
           query: z.string().describe("Search query"),
         }),
         execute: async ({ query }) => {
-          const result = await rawSearchHadith.execute({ query });
-          const text = extractText(result);
-          try {
-            return JSON.parse(text);
-          } catch {
-            return { hadiths: [], raw: text };
-          }
+          const mcpResult = await rawSearchHadith.execute({ query });
+          return normalizeHadithResult(mcpResult);
         },
       });
     }
@@ -116,13 +96,8 @@ async function buildTools(): Promise<Record<string, ReturnType<typeof tool>>> {
           id: z.string().describe("Hadith ID"),
         }),
         execute: async ({ id }) => {
-          const result = await rawFetchHadith.execute({ id });
-          const text = extractText(result);
-          try {
-            return JSON.parse(text);
-          } catch {
-            return { hadiths: [], raw: text };
-          }
+          const mcpResult = await rawFetchHadith.execute({ id });
+          return normalizeHadithResult(mcpResult);
         },
       });
     }
@@ -133,17 +108,85 @@ async function buildTools(): Promise<Record<string, ReturnType<typeof tool>>> {
   return tools;
 }
 
-function extractText(result: unknown): string {
-  if (!result || typeof result !== "object") return String(result);
-  const r = result as Record<string, unknown>;
-  if (r.type === "content" && Array.isArray(r.value)) {
-    for (const part of r.value) {
+function normalizeQuranResult(mcpResult: unknown): object {
+  const r = (mcpResult || {}) as Record<string, unknown>;
+  if (r.structuredContent && typeof r.structuredContent === "object") {
+    const sc = r.structuredContent as Record<string, unknown>;
+    const rawResults = sc.results || sc.verses || [];
+    const results = Array.isArray(rawResults) ? rawResults : [];
+    return {
+      verses: results.map(normalizeVerse),
+      total: sc.total_found || results.length,
+    };
+  }
+  const raw = r.raw || extractFirstText(r);
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw);
+      return normalizeQuranResult(parsed);
+    } catch {}
+  }
+  return { verses: [], raw };
+}
+
+function normalizeHadithResult(mcpResult: unknown): object {
+  const r = (mcpResult || {}) as Record<string, unknown>;
+  if (r.structuredContent && typeof r.structuredContent === "object") {
+    const sc = r.structuredContent as Record<string, unknown>;
+    const rawResults = sc.hadiths || sc.results || [];
+    const results = Array.isArray(rawResults) ? rawResults : [];
+    return {
+      hadiths: results.map(normalizeHadith),
+      total: sc.total_found || results.length,
+    };
+  }
+  const raw = r.raw || extractFirstText(r);
+  if (typeof raw === "string") {
+    try {
+      const parsed = JSON.parse(raw);
+      return normalizeHadithResult(parsed);
+    } catch {}
+  }
+  return { hadiths: [], raw };
+}
+
+function normalizeVerse(item: any): object {
+  let key = item.verse_key || item.ayah_key || item.key || "";
+  if (!key && item.surah && item.ayah) key = `${item.surah}:${item.ayah}`;
+  const [surahNum] = key.split(":").map(Number);
+  return {
+    source: "quran_mcp" as const,
+    verseKey: key,
+    arabicText: item.text || item.arabicText || "",
+    translation: item.translation || item.translations?.[0]?.text || "",
+    ayahNumber: item.ayah || item.ayahNumber || (key.split(":")[1] ? Number(key.split(":")[1]) : undefined),
+    surahName: item.surah_name || item.surahName || undefined,
+    citation: item.url || item.citation || "",
+  };
+}
+
+function normalizeHadith(item: any): object {
+  return {
+    source: "hadith_mcp" as const,
+    collection: item.collection || item.source || "",
+    bookNumber: item.book_number || item.bookNumber,
+    hadithNumber: item.hadith_number || item.reference || item.hadithNumber || "",
+    arabicText: item.text || item.body || item.arabicText || "",
+    englishText: item.englishText || item.translation || item.english_text,
+    grades: Array.isArray(item.grades) ? item.grades : undefined,
+    citation: item.url || item.citation || "",
+  };
+}
+
+function extractFirstText(obj: Record<string, unknown>): string | null {
+  if (Array.isArray(obj.content)) {
+    for (const part of obj.content) {
       if (part && typeof part === "object" && (part as any).type === "text") {
-        return (part as any).text || "";
+        return (part as any).text || null;
       }
     }
   }
-  return JSON.stringify(result);
+  return null;
 }
 
 export default async function handler(
