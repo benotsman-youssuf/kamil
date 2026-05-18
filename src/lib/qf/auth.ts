@@ -94,7 +94,6 @@ interface DecodedIdToken {
 
 async function verifyIdToken(idToken: string, expectedNonce: string | null): Promise<DecodedIdToken> {
   const { payload } = await jwtVerify(idToken, JWKS, {
-    issuer: `${AUTH_BASE_URL}/`,
     audience: CLIENT_ID,
   });
 
