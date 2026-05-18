@@ -54,7 +54,7 @@ export async function login(scope?: string) {
   localStorage.setItem("qf_nonce", nonce);
   localStorage.setItem("qf_code_verifier", codeVerifier);
 
-  const requestedScope = scope || "openid offline_access user collection bookmark note preference reading_session goal streak activity_day";
+  const requestedScope = scope || "openid offline_access user collection bookmark note preferences reading_sessions goals streaks activity_days";
 
   const params = new URLSearchParams({
     client_id: CLIENT_ID,
