@@ -1,5 +1,5 @@
 import { useChat } from "@ai-sdk/react";
-import { DefaultChatTransport, type UIToolInvocation } from "ai";
+import { DefaultChatTransport, type DynamicToolUIPart } from "ai";
 import { Button } from "@/components/ui/button";
 import { Bot, BookOpen, ScrollText, Loader2, Wrench, ChevronDown, CheckCircle, Clock } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -37,23 +37,32 @@ interface EvidenceCard {
   loading?: boolean;
 }
 
-function ToolCard({ toolInvocation }: { toolInvocation: UIToolInvocation }) {
-  const [open, setOpen] = useState(toolInvocation.state === "result");
+function ToolCard({ toolPart }: { toolPart: DynamicToolUIPart }) {
+  const [open, setOpen] = useState(toolPart.state === "output-available" || toolPart.state === "output-error" || toolPart.state === "output-denied");
 
-  const state = toolInvocation.state;
+  const state = toolPart.state;
   const stateLabels: Record<string, string> = {
-    "partial-call": "Pending",
-    "call": "Running",
-    "result": "Completed",
+    "input-streaming": "Pending",
+    "input-available": "Running",
+    "approval-requested": "Waiting for approval",
+    "approval-responded": "Approved",
+    "output-available": "Completed",
+    "output-error": "Error",
+    "output-denied": "Denied",
   };
 
   const stateIcons: Record<string, React.ReactNode> = {
-    "partial-call": <Clock className="size-4" />,
-    "call": <Clock className="size-4 animate-pulse" />,
-    "result": <CheckCircle className="size-4 text-green-600" />,
+    "input-streaming": <Clock className="size-4" />,
+    "input-available": <Clock className="size-4 animate-pulse" />,
+    "approval-requested": <Clock className="size-4" />,
+    "approval-responded": <CheckCircle className="size-4 text-green-600" />,
+    "output-available": <CheckCircle className="size-4 text-green-600" />,
+    "output-error": <Clock className="size-4 text-red-600" />,
+    "output-denied": <Clock className="size-4 text-red-600" />,
   };
 
-  const isResult = state === "result";
+  const isResult = state === "output-available";
+  const isError = state === "output-error";
 
   return (
     <div className="group mb-4 w-full rounded-md border">
@@ -63,7 +72,7 @@ function ToolCard({ toolInvocation }: { toolInvocation: UIToolInvocation }) {
       >
         <div className="flex items-center gap-2">
           <Wrench className="size-4 text-muted-foreground" />
-          <span className="font-medium text-sm">{toolInvocation.toolName}</span>
+          <span className="font-medium text-sm">{toolPart.toolName}</span>
           <span className="gap-1.5 rounded-full text-xs bg-secondary px-2 py-0.5 inline-flex items-center">
             {stateIcons[state]}
             {stateLabels[state]}
@@ -78,7 +87,7 @@ function ToolCard({ toolInvocation }: { toolInvocation: UIToolInvocation }) {
               Parameters
             </h4>
             <pre className="rounded-md bg-muted/50 p-2 text-xs overflow-x-auto">
-              {JSON.stringify(toolInvocation.args, null, 2)}
+              {JSON.stringify(toolPart.input, null, 2)}
             </pre>
           </div>
           {isResult && (
@@ -87,7 +96,17 @@ function ToolCard({ toolInvocation }: { toolInvocation: UIToolInvocation }) {
                 Result
               </h4>
               <pre className="rounded-md bg-muted/50 p-2 text-xs overflow-x-auto">
-                {JSON.stringify(toolInvocation.result, null, 2)}
+                {JSON.stringify(toolPart.output, null, 2)}
+              </pre>
+            </div>
+          )}
+          {isError && (
+            <div className="space-y-2">
+              <h4 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
+                Error
+              </h4>
+              <pre className="rounded-md bg-red-50 p-2 text-xs overflow-x-auto text-red-600">
+                {toolPart.errorText}
               </pre>
             </div>
           )}
@@ -226,7 +245,7 @@ export function AiChat({ close }: { close: () => void }) {
                   {message.parts.map((part, i) => {
                     if (part.type === "text") {
                       return (
-                        <Message from={message.role === "data" ? "assistant" : message.role} key={`${message.id}-${i}`}>
+                        <Message from={message.role} key={`${message.id}-${i}`}>
                           <MessageContent>
                             <MessageResponse>
                               {message.role === "assistant"
@@ -238,11 +257,11 @@ export function AiChat({ close }: { close: () => void }) {
                       );
                     }
 
-                    if (part.type === "tool-invocation") {
+                    if (part.type === "dynamic-tool") {
                       return (
                         <ToolCard
                           key={`${message.id}-${i}`}
-                          toolInvocation={part.toolInvocation}
+                          toolPart={part}
                         />
                       );
                     }
