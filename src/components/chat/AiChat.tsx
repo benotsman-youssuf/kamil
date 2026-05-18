@@ -558,14 +558,14 @@ export function AiChat({ close }: { close: () => void }) {
           onSubmit={() => handleSubmit({ text: input })}
           className="mt-2 mb-2 relative"
         >
-          <PromptInputTextarea className="pe-10" />
+          <PromptInputTextarea className="pe-20" />
 
           {isStreaming ? (
             /* Stop button during streaming */
             <Button
               size="icon"
               variant="outline"
-              className="absolute bottom-1.5 end-1.5 h-8 w-8"
+              className="absolute bottom-1.5 end-1.5 h-8 w-8 rounded-full"
               onClick={stop}
               title="Stop generation"
             >
@@ -574,7 +574,7 @@ export function AiChat({ close }: { close: () => void }) {
           ) : (
             <Button
               size="icon"
-              className="absolute bottom-1.5 end-1.5 h-8 w-8"
+              className="absolute bottom-1.5 end-1.5 h-8 w-8 rounded-full"
               onClick={() => handleSubmit({ text: input })}
               disabled={!input.trim()}
               title="Send message"
