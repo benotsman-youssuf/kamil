@@ -232,6 +232,7 @@ export default function SideBar() {
         <div className="flex flex-1 min-h-0 overflow-hidden">
           <EditorLayout
             editor={editor}
+            pageId={id}
             className="flex-1 font-['Amiri'] min-w-0 overflow-hidden"
             onChange={() => {
               if (editor.children.length > 0) {

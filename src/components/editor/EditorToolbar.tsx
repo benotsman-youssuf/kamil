@@ -3,6 +3,7 @@ import { AlignToolbarButton } from "@/components/ui/align-toolbar-button";
 import { Bold, Italic, Underline, Bot } from "lucide-react";
 import { FontSizeToolbarButton } from "@/components/ui/font-size-toolbar-button";
 import { ExportDropdown } from "./ExportDropdown";
+import { ShareDialog } from "@/components/ShareDialog";
 
 interface ExportHandlers {
   onExportJSON?: () => void;
@@ -14,10 +15,11 @@ interface ExportHandlers {
 interface EditorToolbarProps {
   className?: string;
   editor: any;
+  pageId?: string;
   exportHandlers?: ExportHandlers;
 }
 
-export function EditorToolbar({ className = "", editor }: EditorToolbarProps) {
+export function EditorToolbar({ className = "", editor, pageId }: EditorToolbarProps) {
   // Icon + hover style for the dark toolbar
   const btnCls = "p-1.5 rounded-lg hover:bg-primary-foreground/10 active:bg-primary-foreground/20 transition-all duration-150 ease-out group";
   const iconCls = "w-5 h-5 text-primary-foreground/70 group-hover:text-primary-foreground transition-colors";
@@ -51,6 +53,13 @@ export function EditorToolbar({ className = "", editor }: EditorToolbarProps) {
           <Bot className="w-5 h-5" />
         </button>
       </div>
+
+      {/* Share */}
+      {pageId && (
+        <div className="ml-1 border-l border-primary-foreground/10 pl-2">
+          <ShareDialog pageId={pageId} />
+        </div>
+      )}
 
       {/* Export */}
       <div className="ml-1 border-l border-primary-foreground/10 pl-2">

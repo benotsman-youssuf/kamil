@@ -23,6 +23,7 @@ interface ExportHandlers {
 interface EditorLayoutProps {
   className?: string;
   editor: any;
+  pageId?: string;
   onChange?: (value: any[]) => void;
   exportHandlers?: ExportHandlers;
 }
@@ -30,6 +31,7 @@ interface EditorLayoutProps {
 export function EditorLayout({
   className = "",
   editor,
+  pageId,
   onChange,
   exportHandlers,
 }: EditorLayoutProps) {
@@ -41,6 +43,7 @@ export function EditorLayout({
           <EditorToolbar
             className="gap-1 flex-nowrap"
             editor={editor}
+            pageId={pageId}
             exportHandlers={exportHandlers}
           />
         </FixedToolbar>
