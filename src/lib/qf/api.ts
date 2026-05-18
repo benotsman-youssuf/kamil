@@ -33,12 +33,14 @@ async function getAuthHeaders(): Promise<Record<string, string>> {
   const ct = await ensureContentToken();
   if (ct) {
     headers["x-auth-token"] = ct;
+    headers["Authorization"] = `Bearer ${ct}`;
     return headers;
   }
 
   const token = await getValidAccessToken();
   if (token) {
     headers["x-auth-token"] = token;
+    headers["Authorization"] = `Bearer ${token}`;
   }
 
   return headers;
@@ -577,6 +579,7 @@ async function userApiFetch<T>(path: string, options?: RequestInit): Promise<T> 
 
   const url = `${USER_API}${path}`;
   const headers: Record<string, string> = {
+    "Authorization": `Bearer ${token}`,
     "x-auth-token": token,
     "x-client-id": CLIENT_ID,
     "Content-Type": "application/json",

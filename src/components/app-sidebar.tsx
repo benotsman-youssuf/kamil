@@ -38,7 +38,7 @@ export function AppSidebar({ pinned, onTogglePin, ...props }: AppSidebarProps) {
       <div className="flex items-center justify-between px-3 py-3 flex-shrink-0 border-b border-sidebar-border">
         {/* Logo */}
         <Link
-          to="/"
+          to="/pages/1"
           className="flex items-center gap-2 group"
           aria-label="العودة للرئيسية"
         >
