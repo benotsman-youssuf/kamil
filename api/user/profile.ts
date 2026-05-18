@@ -47,6 +47,7 @@ async function getProfile(req: VercelRequest, res: VercelResponse) {
         qf_user_id: qfUserId,
         display_name: displayName,
         username: payload.email?.split("@")[0] || null,
+        avatar_url: (payload as any).avatar_url || (payload as any).photo_url || null,
       })
       .select()
       .single();
@@ -67,16 +68,30 @@ async function updateProfile(req: VercelRequest, res: VercelResponse) {
     const payload = await verifyQFJwt(token);
     const qfUserId = payload.sub;
 
-    const { display_name, username, bio } = req.body;
+    const { display_name, username, avatar_url, bio } = req.body;
+
+    // Verify profile exists before updating
+    const { data: existing, error: fetchError } = await supabase
+      .from("user_profiles")
+      .select("qf_user_id")
+      .eq("qf_user_id", qfUserId)
+      .maybeSingle();
+
+    if (fetchError) throw fetchError;
+    if (!existing) {
+      return res.status(404).json({ error: "Profile not found" });
+    }
 
     const updates: Record<string, any> = { updated_at: new Date().toISOString() };
     if (display_name !== undefined) updates.display_name = display_name;
     if (username !== undefined) updates.username = username;
+    if (avatar_url !== undefined) updates.avatar_url = avatar_url;
     if (bio !== undefined) updates.bio = bio;
 
     const { data, error } = await supabase
       .from("user_profiles")
-      .upsert({ qf_user_id: qfUserId, ...updates })
+      .update(updates)
+      .eq("qf_user_id", qfUserId)
       .select()
       .single();
 
