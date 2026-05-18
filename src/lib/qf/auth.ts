@@ -7,7 +7,7 @@ const PROXY_BASE_URL = QF_CONFIG.proxyBaseUrl;
 const CLIENT_ID = QF_CONFIG.clientId;
 const REDIRECT_URI = QF_CONFIG.redirectUri;
 
-const JWKS = createRemoteJWKSet(new URL(`${AUTH_BASE_URL}/.well-known/jwks.json`));
+const JWKS = createRemoteJWKSet(new URL(`${TOKEN_BASE_URL}/jwks`));
 
 function base64URLEncode(buffer: ArrayBuffer): string {
   const bytes = new Uint8Array(buffer);
@@ -50,7 +50,7 @@ export async function login(scope?: string) {
   localStorage.setItem("qf_nonce", nonce);
   localStorage.setItem("qf_code_verifier", codeVerifier);
 
-  const requestedScope = scope || "openid offline_access";
+  const requestedScope = scope || "openid offline_access user collection bookmark note preference reading_session goal streak activity_day";
 
   const params = new URLSearchParams({
     client_id: CLIENT_ID,

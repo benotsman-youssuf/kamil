@@ -9,7 +9,7 @@ const PORT = 3001;
 
 const server = createServer(async (req, res) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
-  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
 
   if (req.method === "OPTIONS") {
@@ -18,14 +18,40 @@ const server = createServer(async (req, res) => {
     return;
   }
 
+  const url = new URL(req.url || "/", `http://localhost:${PORT}`);
+  const path = url.pathname;
+
+  if (path.startsWith("/api/auth/jwks")) {
+    if (req.method !== "GET") {
+      res.writeHead(405, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "Method not allowed" }));
+      return;
+    }
+
+    try {
+      const response = await fetch(`${AUTH_BASE_URL}/.well-known/jwks.json`);
+      const data = await response.json();
+
+      if (!response.ok) {
+        res.writeHead(response.status, { "Content-Type": "application/json" });
+        res.end(JSON.stringify({ error: "Failed to fetch JWKS" }));
+        return;
+      }
+
+      res.writeHead(200, { "Content-Type": "application/json" });
+      res.end(JSON.stringify(data));
+    } catch {
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: "JWKS fetch failed" }));
+    }
+    return;
+  }
+
   if (req.method !== "POST") {
     res.writeHead(405, { "Content-Type": "application/json" });
     res.end(JSON.stringify({ error: "Method not allowed" }));
     return;
   }
-
-  const url = new URL(req.url || "/", `http://localhost:${PORT}`);
-  const path = url.pathname;
 
   if (!path.startsWith("/api/auth/token") && !path.startsWith("/api/auth/refresh") && !path.startsWith("/api/auth/content-token")) {
     res.writeHead(404, { "Content-Type": "application/json" });

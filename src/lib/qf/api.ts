@@ -802,6 +802,13 @@ export async function fetchReadingSessions(params?: { from?: string; to?: string
   }
 }
 
+export async function addOrUpdateReadingSession(data: { date: string; duration: number; startVerse?: string; endVerse?: string; pagesRead?: number }) {
+  return userApiFetch<any>("/reading-sessions", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
 // ─── Goals ────────────────────────────────────────────────────────
 
 export async function fetchGoals(): Promise<{ success: boolean; data: Goal[] }> {
@@ -841,6 +848,24 @@ export async function fetchTodaysGoalPlan(): Promise<{ success: boolean; data: a
   }
 }
 
+export async function createGoal(data: { type: string; targetAmount: number; startDate?: string; endDate?: string }) {
+  return userApiFetch<any>("/goals", {
+    method: "POST",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateGoal(goalId: string, data: { targetAmount?: number; startDate?: string; endDate?: string; isCompleted?: boolean }) {
+  return userApiFetch<any>(`/goals/${goalId}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteGoal(goalId: string) {
+  return userApiFetch<any>(`/goals/${goalId}`, { method: "DELETE" });
+}
+
 // ─── Preferences ──────────────────────────────────────────────────
 
 export async function fetchUserPreferences(): Promise<{ success: boolean; data: Preference[] }> {
@@ -849,6 +874,20 @@ export async function fetchUserPreferences(): Promise<{ success: boolean; data: 
   } catch {
     return { success: false, data: [] };
   }
+}
+
+export async function addOrUpdatePreference(key: string, value: string | number | boolean) {
+  return userApiFetch<any>("/preferences", {
+    method: "POST",
+    body: JSON.stringify({ key, value }),
+  });
+}
+
+export async function bulkAddOrUpdatePreferences(preferences: { key: string; value: string | number | boolean }[]) {
+  return userApiFetch<any>("/preferences/bulk", {
+    method: "POST",
+    body: JSON.stringify({ preferences }),
+  });
 }
 
 // ─── User Profile ─────────────────────────────────────────────────
