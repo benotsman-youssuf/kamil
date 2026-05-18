@@ -18,7 +18,7 @@
     "@fontsource/amiri": "^5.2.8",
     "@heroicons/react": "^2.2.0",
     "@nozbe/microfuzz": "^1.0.0",
-    "@openrouter/ai-sdk-provider": "^0.4.5",
+    "@openrouter/ai-sdk-provider": "^2.9.0",
     "@platejs/ai": "^49.1.12",
     "@platejs/basic-nodes": "^49.0.0",
     "@platejs/basic-styles": "^49.0.0",
