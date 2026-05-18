@@ -4,7 +4,7 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { cn } from "@/lib/utils";
 import { VersePanelContent } from "./VersePanel";
 import { HadithPanelContent } from "./HadithPanel";
-import { ChatPanel } from "./chat/ChatPanel";
+import { AiChat } from "./chat/AiChat";
 
 export function SharedRightPanel() {
   const [open, setOpen] = useState(false);
@@ -137,7 +137,7 @@ export function SharedRightPanel() {
         <HadithPanelContent hadithData={activeData} close={close} />
       )}
       {activeType === "ai" && (
-        <ChatPanel close={close} />
+        <AiChat close={close} />
       )}
     </div>
   );
