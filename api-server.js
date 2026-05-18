@@ -78,20 +78,7 @@ RULES:
           maxSteps: 5,
         });
 
-        const stream = result.toDataStream();
-        const reader = stream.getReader();
-        res.writeHead(200, {
-          'Content-Type': 'text/plain; charset=utf-8',
-          'X-Vercel-AI-Data-Stream': 'v1',
-          'Transfer-Encoding': 'chunked',
-          'Access-Control-Allow-Origin': '*',
-        });
-
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) { res.end(); break; }
-          res.write(value);
-        }
+        result.pipeUIMessageStreamToResponse(res);
       } else if (url.pathname === '/api/verse') {
         const surah = url.searchParams.get('surah');
         const ayah = url.searchParams.get('ayah');

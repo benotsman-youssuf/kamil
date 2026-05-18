@@ -52,17 +52,7 @@ RULES:
       maxSteps: 5,
     });
 
-    const stream = result.toDataStream();
-    const reader = stream.getReader();
-    res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-    res.setHeader('X-Vercel-AI-Data-Stream', 'v1');
-    res.setHeader('Transfer-Encoding', 'chunked');
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) { res.end(); break; }
-      res.write(value);
-    }
+    result.pipeUIMessageStreamToResponse(res);
 
   } catch (e) {
     console.error('Handler error:', e);
