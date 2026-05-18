@@ -33,7 +33,7 @@ const server = http.createServer(async (req, res) => {
 
       if (url.pathname === '/api/chat') {
         const { createOpenRouter } = await import('@openrouter/ai-sdk-provider');
-        const { streamText } = await import('ai');
+        const { convertToModelMessages, streamText } = await import('ai');
         const { createMCPClient } = await import('@ai-sdk/mcp');
 
         const openrouter = createOpenRouter({
@@ -43,21 +43,23 @@ const server = http.createServer(async (req, res) => {
         async function getMCPTools(url) {
           try {
             const client = await createMCPClient({
-              transport: { type: 'streamable-http', url },
+              transport: { type: 'http', url },
             });
-            return await client.tools();
+            const tools = await client.tools();
+            return { tools, client };
           } catch (e) {
             console.error(`MCP failed for ${url}:`, e.message);
-            return {};
+            return { tools: {}, client: null };
           }
         }
 
-        const [quranTools, hadithTools] = await Promise.all([
+        const [quranResult, hadithResult] = await Promise.all([
           getMCPTools(process.env.QURAN_MCP_URL || 'https://mcp.quran.ai'),
           getMCPTools(process.env.HADITH_MCP_URL || 'https://hadith-mcp.org'),
         ]);
 
-        const tools = { ...quranTools, ...hadithTools };
+        const tools = { ...quranResult.tools, ...hadithResult.tools };
+        const mcpClients = [quranResult.client, hadithResult.client].filter(Boolean);
 
         const result = streamText({
           model: openrouter(process.env.OPENROUTER_MODEL || 'openrouter/owl-alpha'),
@@ -73,9 +75,17 @@ RULES:
 - When you find a verse or hadith the scholar can use, append exactly:
   [INSERT_VERSE: surah=X ayah=Y] or [INSERT_HADITH: collection=X number=Y]
   This marker tells the editor what to insert.`,
-          messages: parsedBody.messages || [],
-          tools,
-          maxSteps: 5,
+          messages: await convertToModelMessages(parsedBody.messages || []),
+          tools: Object.keys(tools).length > 0 ? tools : undefined,
+          stopWhen: (options) => options.stepCount >= 5,
+          onError: (error) => {
+            console.error('streamText error:', error.error);
+          },
+          onFinish: async () => {
+            for (const client of mcpClients) {
+              try { await client.close(); } catch {}
+            }
+          },
         });
 
         result.pipeUIMessageStreamToResponse(res);

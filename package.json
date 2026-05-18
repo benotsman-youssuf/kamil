@@ -12,7 +12,7 @@
   },
   "dependencies": {
     "@ai-sdk/mcp": "^1.0.42",
-    "@ai-sdk/react": "^1.2.11",
+    "@ai-sdk/react": "^3.0.186",
     "@ariakit/react": "^0.4.17",
     "@emoji-mart/data": "^1.2.1",
     "@fontsource/amiri": "^5.2.8",

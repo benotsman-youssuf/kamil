@@ -1,5 +1,5 @@
 import { useChat } from "@ai-sdk/react";
-import type { ToolInvocation } from "@ai-sdk/ui-utils";
+import { DefaultChatTransport, type UIToolInvocation } from "ai";
 import { Button } from "@/components/ui/button";
 import { Bot, BookOpen, ScrollText, Loader2, Wrench, ChevronDown, CheckCircle, Clock } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -22,6 +22,10 @@ import {
 import { parseVerseMarkers, parseHadithMarkers, removeMarkers, fetchVerse } from "@/lib/quran-api";
 import { toast } from "sonner";
 
+const chatTransport = new DefaultChatTransport({
+  api: "/api/chat",
+});
+
 interface EvidenceCard {
   id: string;
   type: "verse" | "hadith";
@@ -33,22 +37,23 @@ interface EvidenceCard {
   loading?: boolean;
 }
 
-function ToolCard({ toolInvocation }: { toolInvocation: ToolInvocation }) {
+function ToolCard({ toolInvocation }: { toolInvocation: UIToolInvocation }) {
   const [open, setOpen] = useState(toolInvocation.state === "result");
 
-  const stateLabels = {
+  const state = toolInvocation.state;
+  const stateLabels: Record<string, string> = {
     "partial-call": "Pending",
     "call": "Running",
     "result": "Completed",
   };
 
-  const stateIcons = {
+  const stateIcons: Record<string, React.ReactNode> = {
     "partial-call": <Clock className="size-4" />,
     "call": <Clock className="size-4 animate-pulse" />,
     "result": <CheckCircle className="size-4 text-green-600" />,
   };
 
-  const isResult = toolInvocation.state === "result";
+  const isResult = state === "result";
 
   return (
     <div className="group mb-4 w-full rounded-md border">
@@ -60,8 +65,8 @@ function ToolCard({ toolInvocation }: { toolInvocation: ToolInvocation }) {
           <Wrench className="size-4 text-muted-foreground" />
           <span className="font-medium text-sm">{toolInvocation.toolName}</span>
           <span className="gap-1.5 rounded-full text-xs bg-secondary px-2 py-0.5 inline-flex items-center">
-            {stateIcons[toolInvocation.state]}
-            {stateLabels[toolInvocation.state]}
+            {stateIcons[state]}
+            {stateLabels[state]}
           </span>
         </div>
         <ChevronDown className={`size-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
@@ -73,7 +78,7 @@ function ToolCard({ toolInvocation }: { toolInvocation: ToolInvocation }) {
               Parameters
             </h4>
             <pre className="rounded-md bg-muted/50 p-2 text-xs overflow-x-auto">
-              {JSON.stringify((toolInvocation as { args: unknown }).args, null, 2)}
+              {JSON.stringify(toolInvocation.args, null, 2)}
             </pre>
           </div>
           {isResult && (
@@ -82,7 +87,7 @@ function ToolCard({ toolInvocation }: { toolInvocation: ToolInvocation }) {
                 Result
               </h4>
               <pre className="rounded-md bg-muted/50 p-2 text-xs overflow-x-auto">
-                {JSON.stringify((toolInvocation as { result: unknown }).result, null, 2)}
+                {JSON.stringify(toolInvocation.result, null, 2)}
               </pre>
             </div>
           )}
@@ -93,8 +98,8 @@ function ToolCard({ toolInvocation }: { toolInvocation: ToolInvocation }) {
 }
 
 export function AiChat({ close }: { close: () => void }) {
-  const { messages, append, status, error } = useChat({
-    api: "/api/chat",
+  const { messages, sendMessage, status, error } = useChat({
+    transport: chatTransport,
   });
 
   const [evidenceCards, setEvidenceCards] = useState<EvidenceCard[]>([]);
@@ -190,7 +195,7 @@ export function AiChat({ close }: { close: () => void }) {
 
   const handleSubmit = ({ text }: { text: string }) => {
     if (text.trim()) {
-      append({ role: "user", content: text });
+      sendMessage({ text });
     }
   };
 
