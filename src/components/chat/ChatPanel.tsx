@@ -32,7 +32,6 @@ function extractEvidence(
       ) {
         verses.push(...sc.results.map((r: any) => {
           const key = r.ayah_key || r.verse_key || "";
-          const [surahNum] = key.split(":").map(Number);
           return {
             source: "quran_mcp" as const,
             verseKey: key,
