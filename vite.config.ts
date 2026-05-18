@@ -22,6 +22,10 @@ export default defineConfig(({ mode }) => {
           changeOrigin: true,
           rewrite: (path) => path.replace(/^\/proxy-api/, ''),
         },
+        '/api': {
+          target: 'http://localhost:3001',
+          changeOrigin: true,
+        },
       },
     },
     optimizeDeps: {

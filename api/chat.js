@@ -1,6 +1,7 @@
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { streamText } from 'ai';
 import { createMCPClient } from '@ai-sdk/mcp';
+import { z } from 'zod';
 
 export const maxDuration = 60;
 
@@ -20,11 +21,20 @@ async function createMCPTools(url) {
     }
     const tools = client.toolsFromDefinitions(defs, { schemas });
 
-    // AI SDK v4 expects `parameters` field, not `inputSchema`.
-    // The tool() identity function passes through whatever we give it.
-    for (const [name, t] of Object.entries(tools)) {
+    // AI SDK v4 expects `parameters` as a Zod schema (not raw JSON schema).
+    for (const [, t] of Object.entries(tools)) {
       if (t.inputSchema && !t.parameters) {
-        t.parameters = t.inputSchema;
+        const jsonSchema = t.inputSchema;
+        const props = jsonSchema?.properties;
+        if (props && Object.keys(props).length > 0) {
+          const shape = {};
+          for (const key of Object.keys(props)) {
+            shape[key] = z.any().optional();
+          }
+          t.parameters = z.object(shape);
+        } else {
+          t.parameters = z.object({});
+        }
         delete t.inputSchema;
       }
     }
@@ -38,9 +48,14 @@ async function createMCPTools(url) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).end();
 
-  const body = [];
-  for await (const chunk of req) body.push(chunk);
-  const { messages } = JSON.parse(Buffer.concat(body).toString());
+  let messages;
+  if (req.body) {
+    messages = req.body.messages;
+  } else {
+    const body = [];
+    for await (const chunk of req) body.push(chunk);
+    messages = JSON.parse(Buffer.concat(body).toString()).messages;
+  }
 
   const [quranTools, hadithTools] = await Promise.all([
     createMCPTools(process.env.QURAN_MCP_URL || 'https://mcp.quran.ai'),
