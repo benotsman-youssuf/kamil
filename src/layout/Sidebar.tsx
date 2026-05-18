@@ -12,6 +12,7 @@ import type { SaveState } from "@/components/SaveStatus";
 import { exportToJSON, exportToHTMLAsync, exportToMarkdownAsync, exportToPDF } from "@/lib/utils/export";
 import { debounce } from "@/lib/utils/debounce";
 import { SharedRightPanel } from "@/components/SharedRightPanel";
+import { fetchVerseDetails } from "@/lib/qf/api";
 import { useSidebarState } from "@/hooks/use-sidebar-state";
 
 export default function SideBar() {
@@ -91,6 +92,40 @@ export default function SideBar() {
   }, [pageContent]);
 
   useEffect(() => { fetchPage(); }, [id]);
+
+  // Listen for verse insertion
+  useEffect(() => {
+    const handler = async (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      if (!detail?.verseKey) return;
+
+      let verseText = detail.verseText || "";
+      let surahName = detail.surahName || "";
+      let ayaNumber = detail.ayaNumber || 0;
+
+      if (!verseText) {
+        try {
+          const verse = await fetchVerseDetails(detail.verseKey);
+          verseText = verse.text_uthmani || verse.text_imlaei || "";
+          ayaNumber = Number(detail.verseKey.split(":")[1] || 0);
+        } catch {}
+      }
+
+      editor.tf.insertNodes({
+        type: "verse",
+        verseKey: detail.verseKey,
+        surahName,
+        ayaNumber,
+        verseText,
+        children: [{ text: `﴿${verseText || detail.verseKey}﴾` }],
+      });
+      editor.tf.insertText(" ");
+      editor.tf.move({ distance: 1, unit: "character" });
+    };
+
+    window.addEventListener("insert-verse", handler);
+    return () => window.removeEventListener("insert-verse", handler);
+  }, [editor]);
 
   // Listen for hadith insertion
   useEffect(() => {

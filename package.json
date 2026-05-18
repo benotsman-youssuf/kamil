@@ -102,7 +102,11 @@
     "tailwind-scrollbar-hide": "^4.0.0",
     "tailwindcss": "^4.1.11",
     "tailwindcss-animate": "^1.0.7",
-    "zustand": "^5.0.6"
+    "zustand": "^5.0.6",
+    "ai": "^4.3.16",
+    "@ai-sdk/react": "^1.2.11",
+    "@openrouter/ai-sdk-provider": "^0.4.5",
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@eslint/js": "^9.30.1",
