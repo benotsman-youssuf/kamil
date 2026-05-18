@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { login, logout, getTokens } from "@/lib/qf/auth";
 import { fetchUserProfile } from "@/lib/qf/api";
 import type { UserProfile } from "@/lib/qf/api";
-import { User, LogOut, Settings, BookOpen, BarChart2, ExternalLink, UserCircle } from "lucide-react";
+import { User, LogOut, Settings, BookOpen, BarChart2 } from "lucide-react";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem,
   DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger,
