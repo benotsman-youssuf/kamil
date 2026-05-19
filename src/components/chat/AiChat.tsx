@@ -415,12 +415,12 @@ export function AiChat({ close }: { close: () => void }) {
             size="icon"
             variant="ghost"
             onClick={handleReset}
-            title="Clear chat"
+            title="مسح المحادثة"
           >
             <Trash2 className="h-4 w-4 text-muted-foreground" />
           </Button>
           <Button size="sm" variant="ghost" onClick={close}>
-            Close
+            إغلاق
           </Button>
         </div>
       </div>

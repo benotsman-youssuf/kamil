@@ -52,7 +52,7 @@ export const PAGE_SCHEMA = {
 let dbInstance: KamilDatabase | null = null;
 let initPromise: Promise<KamilDatabase> | null = null;
 let replicationInstance: any = null;
-let warned404 = false;
+let syncDisabled = false;
 
 export async function getDb(): Promise<KamilDatabase> {
   if (dbInstance) return dbInstance;
@@ -76,14 +76,65 @@ async function getAuthToken(): Promise<string | null> {
   return getValidAccessToken();
 }
 
+async function syncFetch(path: string, options?: { method?: string; body?: any }) {
+  const token = await getValidAccessToken();
+  if (!token) throw new Error("Not authenticated");
+
+  const url = `/api${path}`;
+  const headers: Record<string, string> = {
+    "Authorization": `Bearer ${token}`,
+    "x-auth-token": token,
+  };
+  if (options?.body || options?.method === "POST") {
+    headers["Content-Type"] = "application/json";
+  }
+
+  const res = await fetch(url, {
+    method: options?.method || "GET",
+    headers,
+    body: options?.body ? JSON.stringify(options.body) : undefined,
+  });
+
+  if (res.status === 401) {
+    const refreshed = await getValidAccessToken();
+    if (refreshed) {
+      headers["Authorization"] = `Bearer ${refreshed}`;
+      headers["x-auth-token"] = refreshed;
+      const retryRes = await fetch(url, {
+        method: options?.method || "GET",
+        headers,
+        body: options?.body ? JSON.stringify(options.body) : undefined,
+      });
+      if (!retryRes.ok) throw new Error(`sync request failed: ${retryRes.status}`);
+      return retryRes.json();
+    }
+    throw new Error("Not authenticated");
+  }
+
+  if (!res.ok) throw new Error(`sync request failed: ${res.status}`);
+  return res.json();
+}
+
 export async function startSync() {
   const db = await getDb();
   const token = await getAuthToken();
-  if (!token) return;
+  if (!token || syncDisabled) return;
 
   if (replicationInstance) {
     await replicationInstance.cancel();
     replicationInstance = null;
+  }
+
+  // Probe sync endpoint before starting replication
+  try {
+    const probe = await syncFetch("/sync?limit=1");
+    if (!probe) throw new Error("empty response");
+  } catch {
+    if (!syncDisabled) {
+      syncDisabled = true;
+      console.warn("[rxdb] sync endpoint unavailable sync disabled");
+    }
+    return;
   }
 
   const rep = replicateRxCollection({
@@ -92,18 +143,12 @@ export async function startSync() {
     pull: {
       handler: async (checkpoint: string | undefined, batchSize: number) => {
         const token = await getAuthToken();
-        if (!token) return { documents: [], checkpoint };
+        if (!token || syncDisabled) return { documents: [], checkpoint };
 
         const since = checkpoint || "";
-        const data: any = await apiRequest(
+        const data: any = await syncFetch(
           `/sync?since=${encodeURIComponent(since)}&limit=${batchSize}`
-        ).catch((err: any) => {
-          if (err?.message?.includes("404") && !warned404) {
-            warned404 = true;
-            console.warn("[rxdb] sync endpoint not found (404) — sync disabled");
-          }
-          return { pages: [] };
-        });
+        ).catch(() => ({ pages: [] }));
         const pages = (data.pages || []).map((p: any) => ({
           id: p.id,
           name: p.name || p.title,
@@ -133,7 +178,7 @@ export async function startSync() {
     push: {
       handler: async (rows) => {
         const token = await getAuthToken();
-        if (!token) return rows.map((r) => (r as any).newDocumentState);
+        if (!token || syncDisabled) return rows.map((r) => (r as any).newDocumentState);
 
         const pages = rows.map((row: any) => ({
           id: row.newDocumentState.id,
@@ -150,13 +195,8 @@ export async function startSync() {
           isPinned: row.newDocumentState.isPinned ?? false,
         }));
 
-        await apiRequest("/sync", { method: "POST", body: { pages } }).catch(
-          (err: any) => {
-            if (err?.message?.includes("404") && !warned404) {
-              warned404 = true;
-              console.warn("[rxdb] sync endpoint not found (404) — sync disabled");
-            }
-          }
+        await syncFetch("/sync", { method: "POST", body: { pages } }).catch(
+          () => {}
         );
 
         return rows.map((r: any) => r.newDocumentState);
@@ -239,7 +279,7 @@ export async function apiRequest<T = any>(
 
 export async function pushPageToServer(pages: any[]) {
   try {
-    return await apiRequest("/sync", { method: "POST", body: { pages } });
+    return await syncFetch("/sync", { method: "POST", body: { pages } });
   } catch {
     return null;
   }

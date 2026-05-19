@@ -77,32 +77,38 @@ export default function SideBar() {
     }
   }, [id, editor.children]);
 
-  const debouncedSave = useRef(debounce((save: () => void) => save(), 750)).current;
+  const saveRef = useRef(savePage);
+  saveRef.current = savePage;
 
-  const fetchPage = async () => {
+  const debouncedSave = useRef(debounce(() => saveRef.current(), 750)).current;
+
+  const fetchGenRef = useRef(0);
+  const fetchPage = useCallback(async () => {
+    const gen = ++fetchGenRef.current;
     try {
       const db = await getDb();
       const page = await db.pages.findOne(id!).exec();
+      if (gen !== fetchGenRef.current) return;
       editor.tf.setValue(page?.content ? JSON.parse(page.content) : []);
       setPageContent(page ? JSON.stringify(page.toJSON()) : undefined);
     } catch (error) {
-      console.error("Error fetching page:", error);
+      if (gen === fetchGenRef.current) console.error("Error fetching page:", error);
     }
-  };
+  }, [id, editor.tf]);
 
   // Export handlers
-  const handleExportJSON = () => {
+  const handleExportJSON = useCallback(() => {
     if (pageContent) { exportToJSON(editor.children, JSON.parse(pageContent).name); toast.success("تم تصدير الملف بصيغة JSON", { duration: 2000 }); }
-  };
-  const handleExportHTML = async () => {
+  }, [pageContent, editor.children]);
+  const handleExportHTML = useCallback(async () => {
     if (pageContent) { await exportToHTMLAsync(editor.children, JSON.parse(pageContent).name); toast.success("تم تصدير الملف بصيغة HTML", { duration: 2000 }); }
-  };
-  const handleExportMarkdown = async () => {
+  }, [pageContent, editor.children]);
+  const handleExportMarkdown = useCallback(async () => {
     if (pageContent) { await exportToMarkdownAsync(editor.children, JSON.parse(pageContent).name); toast.success("تم تصدير الملف بصيغة Markdown", { duration: 2000 }); }
-  };
-  const handleExportPDF = () => {
+  }, [pageContent, editor.children]);
+  const handleExportPDF = useCallback(() => {
     if (pageContent) { exportToPDF(editor.children, JSON.parse(pageContent).name); toast.success("تم فتح نافذة الطباعة لحفظ PDF", { duration: 2000 }); }
-  };
+  }, [pageContent, editor.children]);
 
   useEffect(() => {
     if (pageContent) setTitleValue(JSON.parse(pageContent).name);
@@ -232,7 +238,7 @@ export default function SideBar() {
             className="flex-1 font-['Amiri'] min-w-0 overflow-hidden"
             onChange={() => {
               if (editor.children.length > 0) {
-                debouncedSave(savePage);
+                debouncedSave();
               }
             }}
             exportHandlers={{

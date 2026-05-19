@@ -23,10 +23,14 @@ export function AppSidebar({ pinned, onTogglePin, ...props }: AppSidebarProps) {
   const location = useLocation();
   const { theme, toggleTheme } = useTheme();
 
-  const sortedPages = pages?.sort((a, b) => {
-    if (a.isPinned === b.isPinned) return 0;
-    return a.isPinned ? -1 : 1;
-  });
+  const sortedPages = React.useMemo(() => {
+    if (!pages) return [];
+    return [...pages].sort((a, b) => {
+      if (a.isPinned && !b.isPinned) return -1;
+      if (!a.isPinned && b.isPinned) return 1;
+      return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+    });
+  }, [pages]);
 
   const firstPageId = sortedPages?.[0]?.id;
 
@@ -112,7 +116,7 @@ export function AppSidebar({ pinned, onTogglePin, ...props }: AppSidebarProps) {
                 <div
                   key={page.id}
                   className={cn(
-                    "group flex items-center justify-between rounded-lg px-2 py-1.5 text-sm transition-all duration-150 ease-out",
+                    "group flex items-center justify-between rounded-lg px-2 py-1.5 text-sm",
                     isActive
                       ? "bg-primary/10 text-primary"
                       : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
