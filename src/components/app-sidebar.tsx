@@ -9,7 +9,7 @@ import { Link, useLocation } from "react-router-dom";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { cn } from "@/lib/utils";
 import { PageActions } from "./PageActions";
-import { Pin, Sun, Moon, Compass } from "lucide-react";
+import { Pin, Sun, Moon, Compass, FileText } from "lucide-react";
 import { UserAccount } from "./UserAccount";
 import { useTheme } from "@/hooks/use-theme";
 
@@ -110,7 +110,12 @@ export function AppSidebar({ pinned, onTogglePin, ...props }: AppSidebarProps) {
           </div>
 
           <nav className="flex flex-col gap-0.5 px-2 pb-2">
-            {sortedPages?.map((page) => {
+            {sortedPages.length === 0 ? (
+              <div className="flex flex-col items-center gap-2 py-8 text-muted-foreground">
+                <FileText className="h-8 w-8 opacity-30" />
+                <span className="text-xs">لا توجد صفحات بعد</span>
+              </div>
+            ) : sortedPages?.map((page) => {
               const isActive = location.pathname === `/pages/${page.id}`;
               return (
                 <div

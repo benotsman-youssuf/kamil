@@ -6,7 +6,7 @@ import { EditorLayout } from "@/components/editor/EditorLayout";
 import { usePlateEditor } from "@platejs/core/react";
 import { editorPlugins } from "@/constants/editor";
 import { getDb } from "@/lib/rxdb";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useEffect, useState, useCallback, useRef } from "react";
 import type { SaveState } from "@/components/SaveStatus";
 import { exportToJSON, exportToHTMLAsync, exportToMarkdownAsync, exportToPDF } from "@/lib/utils/export";
@@ -14,12 +14,16 @@ import { debounce } from "@/lib/utils/debounce";
 import { SharedRightPanel } from "@/components/SharedRightPanel";
 import { fetchVerseDetails } from "@/lib/qf/api";
 import { useSidebarState } from "@/hooks/use-sidebar-state";
+import { OnboardingPage } from "@/components/onboarding/OnboardingPage";
 
 export default function SideBar() {
   const [pageContent, setPageContent] = useState<string>();
   const [_saveState, setSaveState] = useState<SaveState>("idle");
   const [_titleValue, setTitleValue] = useState("");
+  const [hasPages, setHasPages] = useState<boolean | null>(null);
+  const [pageNotFound, setPageNotFound] = useState(false);
   const { id } = useParams();
+  const navigate = useNavigate();
 
   const {
     sidebarOpen,
@@ -46,14 +50,33 @@ export default function SideBar() {
     });
   }, []);
 
+  useEffect(() => {
+    getDb().then(async (db) => {
+      const count = await db.pages.count().exec();
+      setHasPages(count > 0);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (hasPages === true && !id) {
+      getDb().then(async (db) => {
+        const pages = await db.pages.find().exec();
+        if (pages.length > 0) {
+          navigate(`/pages/${pages[0].id}`, { replace: true });
+        }
+      });
+    }
+  }, [hasPages, id, navigate]);
+
   // ── Auto-save ─────────────────────────────────────────────────────────────
   const savePage = useCallback(async () => {
+    if (!id) return;
     try {
       setSaveState("saving");
       const updatedAt = new Date().toISOString();
       const content = JSON.stringify(editor.children);
       const db = await getDb();
-      await db.pages.findOne(id!).exec().then(async (existing: any) => {
+      await db.pages.findOne(id).exec().then(async (existing: any) => {
         if (existing) {
           await existing.incrementalModify((doc: any) => {
             doc.content = content;
@@ -85,10 +108,16 @@ export default function SideBar() {
   const fetchGenRef = useRef(0);
   const fetchPage = useCallback(async () => {
     const gen = ++fetchGenRef.current;
+    if (!id) return;
     try {
       const db = await getDb();
-      const page = await db.pages.findOne(id!).exec();
+      const page = await db.pages.findOne(id).exec();
       if (gen !== fetchGenRef.current) return;
+      if (!page) {
+        setPageNotFound(true);
+      } else {
+        setPageNotFound(false);
+      }
       editor.tf.setValue(page?.content ? JSON.parse(page.content) : []);
       setPageContent(page ? JSON.stringify(page.toJSON()) : undefined);
     } catch (error) {
@@ -230,26 +259,52 @@ export default function SideBar() {
           "transition-[margin] duration-[280ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
         )}
       >
-        {/* Editor + Right Panel - fills full height */}
-        <div className="flex flex-1 min-h-0 overflow-hidden">
-          <EditorLayout
-            editor={editor}
-            pageId={id}
-            className="flex-1 font-['Amiri'] min-w-0 overflow-hidden"
-            onChange={() => {
-              if (editor.children.length > 0) {
-                debouncedSave();
-              }
-            }}
-            exportHandlers={{
-              onExportJSON: handleExportJSON,
-              onExportHTML: handleExportHTML,
-              onExportMarkdown: handleExportMarkdown,
-              onExportPDF: handleExportPDF,
-            }}
-          />
-          <SharedRightPanel />
-        </div>
+        {hasPages === null ? (
+          <div className="flex-1 flex items-center justify-center p-6">
+            <div className="flex flex-col items-center gap-3 text-muted-foreground">
+              <div className="h-8 w-8 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
+              <span className="text-xs">جاري التحميل...</span>
+            </div>
+          </div>
+        ) : hasPages === false ? (
+          <OnboardingPage />
+        ) : pageNotFound ? (
+          <div className="flex-1 flex flex-col items-center justify-center p-6" dir="rtl">
+            <div className="text-center max-w-sm">
+              <div className="text-6xl mb-4 text-muted-foreground/30">٤٠٤</div>
+              <h2 className="text-lg font-semibold mb-2">الصفحة غير موجودة</h2>
+              <p className="text-sm text-muted-foreground mb-6">
+                لم نتمكن من العثور على الصفحة التي تبحث عنها. ربما تم حذفها أو الرابط غير صحيح.
+              </p>
+              <button
+                onClick={() => navigate("/")}
+                className="text-sm text-primary hover:underline"
+              >
+                العودة للرئيسية
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-1 min-h-0 overflow-hidden">
+            <EditorLayout
+              editor={editor}
+              pageId={id}
+              className="flex-1 font-['Amiri'] min-w-0 overflow-hidden"
+              onChange={() => {
+                if (editor.children.length > 0) {
+                  debouncedSave();
+                }
+              }}
+              exportHandlers={{
+                onExportJSON: handleExportJSON,
+                onExportHTML: handleExportHTML,
+                onExportMarkdown: handleExportMarkdown,
+                onExportPDF: handleExportPDF,
+              }}
+            />
+            <SharedRightPanel />
+          </div>
+        )}
       </div>
 
       <Toaster

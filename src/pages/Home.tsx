@@ -29,32 +29,14 @@ export function Home() {
     try {
       const db = await getDb();
       const pages = await db.pages.find().exec();
-      let targetId: string;
 
       if (pages.length === 0) {
-        const id = crypto.randomUUID();
-        const now = new Date().toISOString();
-        await db.pages.insert({
-          id,
-          name: "مرحباً بك",
-          title: "مرحباً بك",
-          content: JSON.stringify([]),
-          description: "دليل البداية السريعة",
-          created_at: now,
-          updated_at: now,
-          is_public: false,
-          is_fork: false,
-          fork_count: 0,
-          forked_from: "",
-        });
-        targetId = id;
+        navigate("/pages");
       } else {
-        targetId = pages[0].id;
+        navigate(`/pages/${pages[0].id}`);
       }
-
-      navigate(`/pages/${targetId}`);
     } catch (error) {
-      console.error("Error creating page:", error);
+      console.error("Error navigating:", error);
       alert("حدث خطأ أثناء تحميل الصفحة، حاول مرة أخرى.");
     } finally {
       setLoading(false);
