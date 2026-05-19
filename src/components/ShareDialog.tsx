@@ -74,7 +74,7 @@ export function ShareDialog({ pageId }: ShareDialogProps) {
     setLoading(true);
     setError(null);
     try {
-      await syncFetch(`/pages/${pageId}`, {
+      await syncFetch(`/pages?id=${pageId}`, {
         method: "PATCH",
         body: { is_public: false },
       });

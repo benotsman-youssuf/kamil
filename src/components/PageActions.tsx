@@ -27,7 +27,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { MoreHorizontal, Pin, Trash, Pencil, PinOff } from "lucide-react";
 import { useState } from "react";
-import { getDb, apiRequest } from "@/lib/rxdb";
+import { getDb, syncFetch } from "@/lib/rxdb";
 import { toast } from "sonner";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -62,7 +62,7 @@ export function PageActions({ page, isActive }: PageActionsProps) {
             await db.pages.bulkRemove([page.id]);
             toast.success("تم حذف الصفحة بنجاح");
 
-            apiRequest(`/pages/${page.id}`, { method: "DELETE" }).catch(() => {});
+            syncFetch(`/pages?id=${page.id}`, { method: "DELETE" }).catch(() => {});
 
             if (id === page.id) {
                 const remaining = await db.pages.find().exec();

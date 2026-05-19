@@ -25,7 +25,7 @@ export function ReadPage() {
   useEffect(() => {
     if (!id) return;
 
-    fetch(`/api/pages/${id}`)
+    fetch(`/api/pages?id=${id}`)
       .then(async (res) => {
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
@@ -56,7 +56,7 @@ export function ReadPage() {
       }
 
       const tokens = JSON.parse(token);
-      const res = await fetch(`/api/pages/${id}`, {
+      const res = await fetch(`/api/pages?id=${id}`, {
         method: "POST",
         headers: { "x-auth-token": tokens.access_token },
       });

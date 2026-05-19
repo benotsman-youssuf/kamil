@@ -10,7 +10,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Trash } from "lucide-react";
-import { getDb, apiRequest } from "@/lib/rxdb";
+import { getDb, syncFetch } from "@/lib/rxdb";
 import { toast } from "sonner";
 
 export const DeletePage = ({ pageId }: { pageId: string }) => {
@@ -21,7 +21,7 @@ export const DeletePage = ({ pageId }: { pageId: string }) => {
       await db.pages.bulkRemove([pageId]);
       toast.success(`تم حذف الصفحة بنجاح`);
 
-      apiRequest(`/pages/${pageId}`, { method: "DELETE" }).catch(() => {});
+      syncFetch(`/pages?id=${pageId}`, { method: "DELETE" }).catch(() => {});
     } catch (error) {
       toast.error(`حدث خطأ أثناء حذف الصفحة`);
     }
