@@ -14,7 +14,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method === "PUT") return updatePage(req, res, id);
     if (req.method === "DELETE") return deletePage(req, res, id);
     if (req.method === "PATCH") return togglePublic(req, res, id);
-    if (req.method === "POST") return forkPage(req, res, id);
+    if (req.method === "POST") {
+      const action = (req.body as any)?.action;
+      if (action === "like") return toggleLike(req, res, id);
+      return forkPage(req, res, id);
+    }
     return res.status(405).json({ error: "Method not allowed" });
   }
 
@@ -65,10 +69,22 @@ async function getPage(req: VercelRequest, res: VercelResponse, pageId: string) 
       .eq("qf_user_id", page.qf_user_id)
       .maybeSingle();
 
+    let liked = false;
+    if (qfUserId) {
+      const { data: like } = await supabase
+        .from("page_likes")
+        .select("id")
+        .eq("page_id", pageId)
+        .eq("qf_user_id", qfUserId)
+        .maybeSingle();
+      liked = !!like;
+    }
+
     return res.status(200).json({
       page: {
         ...page,
         user_profiles: profile || null,
+        liked_by_user: liked,
       },
     });
   } catch (e: any) {
@@ -292,6 +308,52 @@ async function createPage(req: VercelRequest, res: VercelResponse) {
     if (error) throw error;
 
     return res.status(201).json({ page: data });
+  } catch (e: any) {
+    return res.status(500).json({ error: e.message });
+  }
+}
+
+async function toggleLike(req: VercelRequest, res: VercelResponse, pageId: string) {
+  try {
+    const token = req.headers["x-auth-token"] as string;
+    if (!token) return res.status(401).json({ error: "Missing auth token" });
+
+    const payload = await verifyQFJwt(token);
+    const qfUserId = payload.sub;
+
+    const { data: page } = await supabase
+      .from("pages")
+      .select("id")
+      .eq("id", pageId)
+      .neq("_deleted", true)
+      .single();
+
+    if (!page) return res.status(404).json({ error: "Page not found" });
+
+    const { data: existing } = await supabase
+      .from("page_likes")
+      .select("id")
+      .eq("page_id", pageId)
+      .eq("qf_user_id", qfUserId)
+      .maybeSingle();
+
+    let liked: boolean;
+    if (existing) {
+      await supabase.from("page_likes").delete().eq("id", existing.id);
+      liked = false;
+    } else {
+      await supabase.from("page_likes").insert({ page_id: pageId, qf_user_id: qfUserId });
+      liked = true;
+    }
+
+    const { count } = await supabase
+      .from("page_likes")
+      .select("id", { count: "exact", head: true })
+      .eq("page_id", pageId);
+
+    await supabase.from("pages").update({ like_count: count ?? 0 }).eq("id", pageId);
+
+    return res.status(200).json({ liked, like_count: count ?? 0 });
   } catch (e: any) {
     return res.status(500).json({ error: e.message });
   }

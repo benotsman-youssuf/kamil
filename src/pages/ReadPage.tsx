@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, GitFork, Clock, User, Loader2, Sun, Moon } from "lucide-react";
+import { ArrowLeft, GitFork, Heart, Clock, User, Sun, Moon, Loader2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/use-theme";
@@ -12,6 +12,8 @@ interface Article {
   author: { display_name: string; username: string | null; avatar_url: string | null };
   is_fork: boolean;
   fork_count: number;
+  like_count: number;
+  liked_by_user: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -21,8 +23,10 @@ export function ReadPage() {
   const navigate = useNavigate();
   const [article, setArticle] = useState<Article | null>(null);
   const [loading, setLoading] = useState(true);
-  const [forking, setForking] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [forking, setForking] = useState(false);
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
   const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
@@ -37,10 +41,13 @@ export function ReadPage() {
         return res.json();
       })
       .then((data) => {
-        setArticle({
+        const page = {
           ...data.page,
           author: data.page.user_profiles || { display_name: "Unknown", username: null, avatar_url: null },
-        });
+        };
+        setArticle(page);
+        setLiked(page.liked_by_user);
+        setLikeCount(page.like_count ?? 0);
       })
       .catch((e) => {
         setError(e.message);
@@ -61,18 +68,48 @@ export function ReadPage() {
       const tokens = JSON.parse(token);
       const res = await fetch(`/api/pages?id=${id}`, {
         method: "POST",
-        headers: { "x-auth-token": tokens.access_token },
+        headers: { "x-auth-token": tokens.access_token, "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "fork" }),
       });
 
       if (!res.ok) throw new Error("Fork failed");
 
       await res.json();
-      alert("تم نسخ المقالة بنجاح! ستظهر في محررك.");
       window.location.reload();
     } catch {
-      alert("فشل نسخ المقالة");
+      // silent
     } finally {
       setForking(false);
+    }
+  };
+
+  const handleLike = async () => {
+    if (!id) return;
+    const token = localStorage.getItem("qf_tokens");
+    if (!token) return;
+
+    const tokens = JSON.parse(token);
+    const prevLiked = liked;
+    const prevCount = likeCount;
+
+    setLiked(!liked);
+    setLikeCount((c) => (prevLiked ? c - 1 : c + 1));
+
+    try {
+      const res = await fetch(`/api/pages?id=${id}`, {
+        method: "POST",
+        headers: { "x-auth-token": tokens.access_token, "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "like" }),
+      });
+
+      if (!res.ok) throw new Error("Like failed");
+
+      const data = await res.json();
+      setLiked(data.liked);
+      setLikeCount(data.like_count);
+    } catch {
+      setLiked(prevLiked);
+      setLikeCount(prevCount);
     }
   };
 
@@ -113,7 +150,6 @@ export function ReadPage() {
     );
   }
 
-  // Render content from Plate/Slate JSON
   const renderContent = (content: any) => {
     try {
       const nodes = typeof content === "string" ? JSON.parse(content) : content;
@@ -209,20 +245,6 @@ export function ReadPage() {
         >
           {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
         </button>
-        <div className="flex-1" />
-        <Button
-          onClick={handleFork}
-          disabled={forking}
-          size="lg"
-          className="shadow-md"
-        >
-          {forking ? (
-            <Loader2 className="h-5 w-5 animate-spin" />
-          ) : (
-            <GitFork className="h-5 w-5" />
-          )}
-          نسخ المقالة
-        </Button>
       </div>
 
       {/* Article header */}
@@ -253,8 +275,35 @@ export function ReadPage() {
       </div>
 
       {/* Article content */}
-      <div className="prose prose-lg max-w-none">
+      <div className="prose prose-lg max-w-none mb-10">
         {renderContent(article.content)}
+      </div>
+
+      {/* Actions */}
+      <div className="flex items-center gap-3 pt-6 border-t">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleLike}
+          className={`gap-2 hover:bg-red-50 hover:text-red-500 transition-colors ${liked ? "text-red-500" : ""}`}
+        >
+          <Heart className={`h-4 w-4 ${liked ? "fill-current" : ""}`} />
+          {likeCount > 0 && <span className="text-xs">{likeCount}</span>}
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleFork}
+          disabled={forking}
+          className="gap-2 hover:bg-accent transition-colors"
+        >
+          {forking ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <GitFork className="h-4 w-4" />
+          )}
+          <span>نسخ</span>
+        </Button>
       </div>
     </div>
   );

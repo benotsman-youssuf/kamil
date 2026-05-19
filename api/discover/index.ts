@@ -14,7 +14,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     let query = supabase
       .from("pages")
-      .select("id, title, content, is_fork, fork_count, created_at, updated_at, qf_user_id", { count: "estimated" })
+      .select("id, title, content, is_fork, fork_count, like_count, created_at, updated_at, qf_user_id", { count: "estimated" })
       .eq("is_public", true)
       .neq("_deleted", true);
 
@@ -53,6 +53,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       author: profileMap[p.qf_user_id] || { display_name: "Unknown", username: null, avatar_url: null },
       is_fork: p.is_fork,
       fork_count: p.fork_count,
+      like_count: p.like_count ?? 0,
       created_at: p.created_at,
       updated_at: p.updated_at,
     }));

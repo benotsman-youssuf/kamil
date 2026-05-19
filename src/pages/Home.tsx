@@ -14,46 +14,6 @@ import { AnimatedGridPattern } from "@/components/magicui/animated-grid-pattern"
 import { getDb } from "@/lib/rxdb";
 import { cn } from "@/lib/utils";
 
-const features = [
-  {
-    icon: () => (
-      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
-        <polyline points="14 2 14 8 20 8" />
-        <line x1="16" y1="13" x2="8" y2="13" />
-        <line x1="16" y1="17" x2="8" y2="17" />
-        <line x1="10" y1="9" x2="8" y2="9" />
-      </svg>
-    ),
-    title: "تحرير النصوص",
-    desc: "محرر نصوص متكامل يدعم الآيات القرآنية والأحاديث النبوية مع تنسيق غني",
-  },
-  {
-    icon: () => (
-      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
-        <path d="M2 12h20" />
-        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-      </svg>
-    ),
-    title: "مزامنة تلقائية",
-    desc: "احفظ ومزامن محتواك تلقائياً عبر جميع أجهزتك بأمان",
-  },
-  {
-    icon: () => (
-      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-        <circle cx="18" cy="5" r="3" />
-        <circle cx="6" cy="12" r="3" />
-        <circle cx="18" cy="19" r="3" />
-        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
-        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
-      </svg>
-    ),
-    title: "نشر ومشاركة",
-    desc: "انشر صفحاتك للعالم وشارك معرفتك مع الآخرين بسهولة",
-  },
-];
-
 export function Home() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
@@ -219,52 +179,28 @@ export function Home() {
             لا تتكبد عناء التنقل بين التطبيقات لنقل آية
           </motion.p>
 
-          {/* Feature Cards */}
+          {/* Buttons */}
           <motion.div
-            className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto mb-10"
+            className="flex flex-col sm:flex-row gap-3 justify-center items-center mb-12"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.6 }}
           >
-            {features.map((f, i) => {
-              const Icon = f.icon;
-              return (
-                <div
-                  key={i}
-                  className="bg-white/60 backdrop-blur-sm border border-white/40 rounded-xl p-4 text-center hover:border-primary/30 transition-colors"
-                >
-                  <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-primary/10 text-primary mx-auto mb-3">
-                    <Icon />
-                  </div>
-                  <h3 className="text-sm font-semibold mb-1 text-gray-800">{f.title}</h3>
-                  <p className="text-[11px] text-muted-foreground leading-relaxed">{f.desc}</p>
-                </div>
-              );
-            })}
-          </motion.div>
-
-          {/* Buttons */}
-          <motion.div
-            className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.4, duration: 0.6 }}
-          >
             <ShimmerButton
               onClick={handleStart}
               disabled={loading}
-              className="hover:scale-105 active:scale-95 transition-transform duration-200"
+              className="hover:scale-105 active:scale-95 transition-transform duration-200 shadow-lg"
             >
-              {loading ? "يتم التحميل..." : "اكتب"}
+              {loading ? "يتم التحميل..." : "ابدأ الكتابة"}
             </ShimmerButton>
             <Button
               variant="outline"
               size="lg"
               onClick={() => navigate("/discover")}
-              className="border-gray-300 hover:border-gray-400 hover:bg-white/80 transition-colors flex items-center gap-2"
+              className="h-11 px-6 border-gray-300 hover:border-gray-400 hover:bg-white/80 transition-all flex items-center gap-2 text-sm"
             >
               <Compass className="h-4 w-4" />
-              اكتشف المقالات
+              اكتشف
             </Button>
           </motion.div>
 
