@@ -261,7 +261,8 @@ export function AiChat({ close }: { close: () => void }) {
         type: "hadith" as const,
         collection: m.collection,
         number: m.number,
-        loading: true,
+        text: m.text || "",
+        loading: !m.text,
       })),
     ];
 
@@ -298,21 +299,25 @@ export function AiChat({ close }: { close: () => void }) {
           )
           .catch(() => patch(card.id, { loading: false, text: "Failed to load verse" }));
       } else if (card.type === "hadith" && card.collection && card.number) {
-        fetchHadithByNumber(card.collection, String(card.number))
-          .then((data) =>
-            patch(card.id, {
-              text: data.ar.text || data.en.text || "",
-              loading: false,
-              bookNumber: data.bookNumber,
-              hadithTextEn: data.en.text,
-              grades: data.ar.grades,
-              chapterTitle:
-                data.chapterTitle?.ar || data.chapterTitle?.en || "",
-            })
-          )
-          .catch(() =>
-            patch(card.id, { loading: false, text: "Failed to load hadith" })
-          );
+        if (card.text) {
+          patch(card.id, { loading: false });
+        } else {
+          fetchHadithByNumber(card.collection, String(card.number))
+            .then((data) =>
+              patch(card.id, {
+                text: data.ar.text || data.en.text || "",
+                loading: false,
+                bookNumber: data.bookNumber,
+                hadithTextEn: data.en.text,
+                grades: data.ar.grades,
+                chapterTitle:
+                  data.chapterTitle?.ar || data.chapterTitle?.en || "",
+              })
+            )
+            .catch(() =>
+              patch(card.id, { loading: false, text: "Failed to load hadith" })
+            );
+        }
       }
     }
   }, [messages, status]);

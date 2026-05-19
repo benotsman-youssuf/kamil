@@ -87,9 +87,32 @@ export async function fetchHadith(
 }
 
 export async function fetchHadithByNumber(
-  slug: string,
+  slugOrName: string,
   hadithNumber: string
 ): Promise<Hadith> {
+  const NAME_TO_SLUG: Record<string, string> = {
+    "صحيح البخاري": "bukhari",
+    "صحيح مسلم": "muslim",
+    "سنن النسائي": "nasai",
+    "سنن أبي داود": "abudawud",
+    "جامع الترمذي": "tirmidhi",
+    "سنن ابن ماجه": "ibnmajah",
+    "موطأ مالك": "malik",
+    "مسند أحمد": "ahmad",
+    "سنن الدارمي": "darimi",
+    "رياض الصالحين": "riyadussalihin",
+    "sahih al-bukhari": "bukhari",
+    "sahih muslim": "muslim",
+    "sunan an-nasai": "nasai",
+    "sunan abi dawud": "abudawud",
+    "jami at-tirmidhi": "tirmidhi",
+    "sunan ibn majah": "ibnmajah",
+    "muvatta malik": "malik",
+    "musnad ahmad": "ahmad",
+    "sunan ad-darimi": "darimi",
+    "riyad us-salihin": "riyadussalihin",
+  };
+  const slug = NAME_TO_SLUG[slugOrName.toLowerCase()] || slugOrName;
   const books = await fetchBooks(slug);
   const num = parseInt(hadithNumber, 10);
   const book = books.find(b => num >= b.hadithStartNumber && num <= b.hadithEndNumber);

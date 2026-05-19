@@ -15,11 +15,11 @@ export function parseVerseMarkers(text: string) {
 }
 
 export function parseHadithMarkers(text: string) {
-  const regex = /\[INSERT_HADITH:\s*collection=([^\]]+?)\s*number=(\d+)\]/g;
-  const matches: { collection: string; number: number }[] = [];
+  const regex = /\[INSERT_HADITH:\s*collection=([^\]]+?)\s*number=(\d+)(?:\s*text=([^\]]*?))?\]/g;
+  const matches: { collection: string; number: number; text?: string }[] = [];
   let match: RegExpExecArray | null;
   while ((match = regex.exec(text)) !== null) {
-    matches.push({ collection: match[1], number: parseInt(match[2]) });
+    matches.push({ collection: match[1], number: parseInt(match[2]), text: match[3] || undefined });
   }
   return matches;
 }
@@ -27,6 +27,6 @@ export function parseHadithMarkers(text: string) {
 export function removeMarkers(text: string) {
   return text
     .replace(/\[INSERT_VERSE:\s*surah=\d+\s*ayah=\d+\]/g, '')
-    .replace(/\[INSERT_HADITH:\s*collection=[^\]]+?\s*number=\d+\]/g, '')
+    .replace(/\[INSERT_HADITH:\s*collection=[^\]]+?\s*number=\d+(?:\s*text=[^\]]*?)?\]/g, '')
     .trim();
 }

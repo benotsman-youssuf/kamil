@@ -67,7 +67,10 @@ export default async function handler(req, res) {
              Line 1: Answer (1 sentence, tool data only)
              Line 2: Arabic text (Matn from tool output only)
              Line 3: [INSERT_VERSE: surah=X ayah=Y]
-                       or [INSERT_HADITH: collection=X number=Y]
+                       or [INSERT_HADITH: collection=SLUG number=Y text=ARABIC_BODY]
+             IMPORTANT: collection MUST be the SLUG (e.g. abudawud, bukhari, muslim),
+                        NEVER the full name. Extract ARABIC_BODY from the tool output's
+                        Arabic text (plain text, no HTML). Truncate to 500 chars if long.
       
       HADITH GRADING (use only if tool returns a grade):
         Sahih | Hasan | Da'if | Mawdu' | Munkar | Shadh
