@@ -59,7 +59,18 @@ async function getPage(req: VercelRequest, res: VercelResponse, pageId: string) 
       return res.status(403).json({ error: "Access denied" });
     }
 
-    return res.status(200).json({ page });
+    const { data: profile } = await supabase
+      .from("user_profiles")
+      .select("qf_user_id, display_name, username, avatar_url")
+      .eq("qf_user_id", page.qf_user_id)
+      .maybeSingle();
+
+    return res.status(200).json({
+      page: {
+        ...page,
+        user_profiles: profile || null,
+      },
+    });
   } catch (e: any) {
     return res.status(500).json({ error: e.message });
   }

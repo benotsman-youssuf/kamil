@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { handleCallback } from "@/lib/qf/auth";
 import { Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { syncFetch } from "@/lib/rxdb";
 
 export function AuthCallback() {
   const [searchParams] = useSearchParams();
@@ -21,7 +22,8 @@ export function AuthCallback() {
 
     if (code && state) {
       handleCallback(code, state)
-        .then(() => {
+        .then(async () => {
+          await syncFetch("/user/profile").catch(() => {});
           navigate("/", { replace: true });
         })
         .catch((err) => {
