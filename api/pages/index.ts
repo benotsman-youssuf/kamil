@@ -262,7 +262,7 @@ async function listPages(req: VercelRequest, res: VercelResponse) {
 
     const { data, error } = await supabase
       .from("pages")
-      .select("id, name, title, description, is_public, is_fork, fork_count, created_at, updated_at, isPinned")
+      .select("id, name, title, description, is_public, is_fork, fork_count, like_count, created_at, updated_at, isPinned")
       .eq("qf_user_id", qfUserId)
       .neq("_deleted", true)
       .order("updated_at", { ascending: false });
