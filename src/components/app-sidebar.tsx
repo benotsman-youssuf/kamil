@@ -121,7 +121,7 @@ export function AppSidebar({ pinned, onTogglePin, ...props }: AppSidebarProps) {
                 <div
                   key={page.id}
                   className={cn(
-                    "group flex items-center justify-between rounded-lg px-2 py-1.5 text-sm",
+                    "group grid grid-cols-[1fr_auto] items-center rounded-lg px-2 py-1.5 text-sm",
                     isActive
                       ? "bg-primary/10 text-primary"
                       : "text-muted-foreground hover:bg-muted/50 hover:text-foreground"
@@ -129,7 +129,7 @@ export function AppSidebar({ pinned, onTogglePin, ...props }: AppSidebarProps) {
                 >
                   <Link
                     to={`/pages/${page.id}`}
-                    className="flex items-center gap-2 overflow-hidden flex-1 min-w-0"
+                    className="flex items-center gap-2 overflow-hidden min-w-0"
                     title={page.name}
                   >
                     {page.isPinned && (
@@ -137,7 +137,7 @@ export function AppSidebar({ pinned, onTogglePin, ...props }: AppSidebarProps) {
                     )}
                     <span className="truncate">{page.name}</span>
                   </Link>
-                  <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-100 flex-shrink-0">
+                  <div>
                     <PageActions page={page} isActive={isActive} />
                   </div>
                 </div>

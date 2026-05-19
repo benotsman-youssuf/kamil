@@ -4,7 +4,7 @@ const HOVER_CLOSE_DELAY = 350;
 const SWIPE_EDGE_PX = 24;
 
 export function useSidebarState() {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [sidebarPinned, setSidebarPinned] = useState(() => {
     if (typeof window === "undefined") return false;
     return localStorage.getItem("sidebar-pinned") === "true";
