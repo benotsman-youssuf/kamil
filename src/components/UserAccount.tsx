@@ -21,14 +21,25 @@ export function UserAccount() {
   useEffect(() => {
     if (tokens?.access_token) {
       setLoading(true);
-      fetchUserProfile()
-        .then((res) => setUser(res.data))
-        .catch(() => setUser(null))
-        .finally(() => setLoading(false));
       import("@/lib/rxdb").then(({ startSyncIfAuthenticated }) => {
         startSyncIfAuthenticated();
       });
-      syncFetch("/user/profile").catch(() => {});
+      fetchUserProfile()
+        .then(async (res) => {
+          const qfUser = res.data;
+          setUser(qfUser);
+          const displayName = [qfUser.firstName, qfUser.lastName].filter(Boolean).join(" ");
+          const username = qfUser.email?.split("@")[0] || "";
+          const avatarUrl = qfUser.photoUrl || qfUser.avatarUrls?.small || "";
+          await syncFetch("/user/profile");
+          syncFetch("/user/profile", "PUT", {
+            display_name: displayName,
+            username,
+            avatar_url: avatarUrl,
+          }).catch(() => {});
+        })
+        .catch(() => setUser(null))
+        .finally(() => setLoading(false));
     }
   }, [tokens?.access_token]);
 

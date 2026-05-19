@@ -39,37 +39,10 @@ async function getProfile(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ profile: data });
     }
 
-    // Auto-create profile from QF's user API
-    const qfApiUrl = "https://apis.quran.foundation/auth/v1/users/profile";
-    let displayName = "User";
-    let username = "";
-    let avatarUrl = "";
-
-    try {
-      const qfRes = await fetch(qfApiUrl, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (qfRes.ok) {
-        const body = await qfRes.json();
-        const u = body.data;
-        displayName = [u.firstName, u.lastName].filter(Boolean).join(" ") || "User";
-        username = u.email?.split("@")[0] || u.username || "";
-        avatarUrl = u.photoUrl || u.avatarUrls?.small || "";
-      }
-    } catch {
-      displayName = [payload.first_name, payload.last_name].filter(Boolean).join(" ") || "User";
-      username = payload.email?.split("@")[0] || "";
-      avatarUrl = "";
-    }
-
+    // Create bare profile — client fills with real data via PUT
     const { data: newProfile, error: createError } = await supabase
       .from("user_profiles")
-      .insert({
-        qf_user_id: qfUserId,
-        display_name: displayName,
-        username: username || null,
-        avatar_url: avatarUrl || null,
-      })
+      .insert({ qf_user_id: qfUserId })
       .select()
       .single();
 
