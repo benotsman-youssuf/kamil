@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
+import { Compass } from "lucide-react";
 import chrome from "@/assets/chrome-logo.svg";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -12,6 +13,46 @@ import { AnimatedGridPattern } from "@/components/magicui/animated-grid-pattern"
 
 import { getDb } from "@/lib/rxdb";
 import { cn } from "@/lib/utils";
+
+const features = [
+  {
+    icon: () => (
+      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z" />
+        <polyline points="14 2 14 8 20 8" />
+        <line x1="16" y1="13" x2="8" y2="13" />
+        <line x1="16" y1="17" x2="8" y2="17" />
+        <line x1="10" y1="9" x2="8" y2="9" />
+      </svg>
+    ),
+    title: "تحرير النصوص",
+    desc: "محرر نصوص متكامل يدعم الآيات القرآنية والأحاديث النبوية مع تنسيق غني",
+  },
+  {
+    icon: () => (
+      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z" />
+        <path d="M2 12h20" />
+        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+      </svg>
+    ),
+    title: "مزامنة تلقائية",
+    desc: "احفظ ومزامن محتواك تلقائياً عبر جميع أجهزتك بأمان",
+  },
+  {
+    icon: () => (
+      <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <circle cx="18" cy="5" r="3" />
+        <circle cx="6" cy="12" r="3" />
+        <circle cx="18" cy="19" r="3" />
+        <line x1="8.59" y1="13.51" x2="15.42" y2="17.49" />
+        <line x1="15.41" y1="6.51" x2="8.59" y2="10.49" />
+      </svg>
+    ),
+    title: "نشر ومشاركة",
+    desc: "انشر صفحاتك للعالم وشارك معرفتك مع الآخرين بسهولة",
+  },
+];
 
 export function Home() {
   const navigate = useNavigate();
@@ -31,7 +72,22 @@ export function Home() {
       const pages = await db.pages.find().exec();
 
       if (pages.length === 0) {
-        navigate("/pages");
+        const id = crypto.randomUUID();
+        const now = new Date().toISOString();
+        await db.pages.insert({
+          id,
+          name: "صفحتي الأولى",
+          title: "صفحتي الأولى",
+          content: JSON.stringify([]),
+          description: "",
+          created_at: now,
+          updated_at: now,
+          is_public: false,
+          is_fork: false,
+          fork_count: 0,
+          forked_from: "",
+        });
+        navigate(`/pages/${id}`);
       } else {
         navigate(`/pages/${pages[0].id}`);
       }
@@ -163,37 +219,70 @@ export function Home() {
             لا تتكبد عناء التنقل بين التطبيقات لنقل آية
           </motion.p>
 
-          {/* Buttons */}
+          {/* Feature Cards */}
           <motion.div
-            className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-20"
+            className="grid grid-cols-1 sm:grid-cols-3 gap-4 max-w-2xl mx-auto mb-10"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3, duration: 0.6 }}
+          >
+            {features.map((f, i) => {
+              const Icon = f.icon;
+              return (
+                <div
+                  key={i}
+                  className="bg-white/60 backdrop-blur-sm border border-white/40 rounded-xl p-4 text-center hover:border-primary/30 transition-colors"
+                >
+                  <div className="flex items-center justify-center h-10 w-10 rounded-xl bg-primary/10 text-primary mx-auto mb-3">
+                    <Icon />
+                  </div>
+                  <h3 className="text-sm font-semibold mb-1 text-gray-800">{f.title}</h3>
+                  <p className="text-[11px] text-muted-foreground leading-relaxed">{f.desc}</p>
+                </div>
+              );
+            })}
+          </motion.div>
+
+          {/* Buttons */}
+          <motion.div
+            className="flex flex-col sm:flex-row gap-4 justify-center items-center mb-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4, duration: 0.6 }}
           >
             <ShimmerButton
               onClick={handleStart}
               disabled={loading}
               className="hover:scale-105 active:scale-95 transition-transform duration-200"
             >
-              {loading ? "يتم التحميل..." : "ابدأ الكتابة"}
+              {loading ? "يتم التحميل..." : "اكتب"}
             </ShimmerButton>
             <Button
               variant="outline"
               size="lg"
-              className="border-gray-300 hover:border-gray-400 transition-colors flex items-center gap-2"
+              onClick={() => navigate("/discover")}
+              className="border-gray-300 hover:border-gray-400 hover:bg-white/80 transition-colors flex items-center gap-2"
             >
-              <a
-                href="https://github.com/benotsman-youssuf/kamil"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                ساهم في المشروع
-              </a>
-              <svg className="h-5 w-5 fill-current" viewBox="0 0 24 24" aria-hidden="true">
-                <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482C19.138 20.193 22 16.44 22 12.017 22 6.484 17.522 2 12 2z" />
-              </svg>
+              <Compass className="h-4 w-4" />
+              اكتشف المقالات
             </Button>
           </motion.div>
+
+          {/* GitHub Link */}
+          <motion.a
+            href="https://github.com/benotsman-youssuf/kamil"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-2 text-sm text-gray-400 hover:text-gray-600 transition-colors mb-20"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5, duration: 0.6 }}
+          >
+            <svg className="h-4 w-4 fill-current" viewBox="0 0 24 24" aria-hidden="true">
+              <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482C19.138 20.193 22 16.44 22 12.017 22 6.484 17.522 2 12 2z" />
+            </svg>
+            ساهم في المشروع
+          </motion.a>
 
           {/* Screenshot */}
           <motion.div

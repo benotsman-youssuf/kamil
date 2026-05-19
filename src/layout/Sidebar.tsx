@@ -14,13 +14,10 @@ import { debounce } from "@/lib/utils/debounce";
 import { SharedRightPanel } from "@/components/SharedRightPanel";
 import { fetchVerseDetails } from "@/lib/qf/api";
 import { useSidebarState } from "@/hooks/use-sidebar-state";
-import { OnboardingPage } from "@/components/onboarding/OnboardingPage";
-
 export default function SideBar() {
   const [pageContent, setPageContent] = useState<string>();
   const [_saveState, setSaveState] = useState<SaveState>("idle");
   const [_titleValue, setTitleValue] = useState("");
-  const [hasPages, setHasPages] = useState<boolean | null>(null);
   const [pageNotFound, setPageNotFound] = useState(false);
   const { id } = useParams();
   const navigate = useNavigate();
@@ -49,24 +46,6 @@ export default function SideBar() {
       startSyncIfAuthenticated();
     });
   }, []);
-
-  useEffect(() => {
-    getDb().then(async (db) => {
-      const count = await db.pages.count().exec();
-      setHasPages(count > 0);
-    });
-  }, []);
-
-  useEffect(() => {
-    if (hasPages === true && !id) {
-      getDb().then(async (db) => {
-        const pages = await db.pages.find().exec();
-        if (pages.length > 0) {
-          navigate(`/pages/${pages[0].id}`, { replace: true });
-        }
-      });
-    }
-  }, [hasPages, id, navigate]);
 
   // ── Auto-save ─────────────────────────────────────────────────────────────
   const savePage = useCallback(async () => {
@@ -259,16 +238,7 @@ export default function SideBar() {
           "transition-[margin] duration-[280ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
         )}
       >
-        {hasPages === null ? (
-          <div className="flex-1 flex items-center justify-center p-6">
-            <div className="flex flex-col items-center gap-3 text-muted-foreground">
-              <div className="h-8 w-8 rounded-full border-2 border-primary/30 border-t-primary animate-spin" />
-              <span className="text-xs">جاري التحميل...</span>
-            </div>
-          </div>
-        ) : hasPages === false ? (
-          <OnboardingPage />
-        ) : pageNotFound ? (
+        {pageNotFound ? (
           <div className="flex-1 flex flex-col items-center justify-center p-6" dir="rtl">
             <div className="text-center max-w-sm">
               <div className="text-6xl mb-4 text-muted-foreground/30">٤٠٤</div>

@@ -29,7 +29,6 @@ function LogoutPage() {
 
 const router = createBrowserRouter([
   { path: "/", element: <Home /> },
-  { path: "/pages", element: <SideBar /> },
   { path: "/pages/:id", element: <SideBar /> },
   { path: "/callback", element: <AuthCallback /> },
   { path: "/logout", element: <LogoutPage /> },
