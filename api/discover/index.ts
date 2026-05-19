@@ -15,7 +15,8 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     let query = supabase
       .from("pages")
       .select("id, title, content, is_fork, fork_count, created_at, updated_at, qf_user_id", { count: "estimated" })
-      .eq("is_public", true);
+      .eq("is_public", true)
+      .neq("_deleted", true);
 
     if (q) {
       query = query.ilike("title", `%${q}%`);

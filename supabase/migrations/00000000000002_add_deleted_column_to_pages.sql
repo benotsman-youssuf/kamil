@@ -1,0 +1,1 @@
+ALTER TABLE pages ADD COLUMN IF NOT EXISTS _deleted boolean NOT NULL DEFAULT false;

@@ -20,6 +20,7 @@ export type PageDocType = {
   created_at: string;
   updated_at: string;
   isPinned?: boolean;
+  _deleted?: boolean;
 };
 
 export type PageCollection = RxCollection<PageDocType>;
@@ -45,6 +46,7 @@ export const PAGE_SCHEMA = {
     created_at: { type: "string" },
     updated_at: { type: "string" },
     isPinned: { type: "boolean" },
+    _deleted: { type: "boolean" },
   },
   required: ["id", "title", "content", "created_at", "updated_at"],
 };
@@ -52,7 +54,6 @@ export const PAGE_SCHEMA = {
 let dbInstance: KamilDatabase | null = null;
 let initPromise: Promise<KamilDatabase> | null = null;
 let replicationInstance: any = null;
-let syncDisabled = false;
 
 export async function getDb(): Promise<KamilDatabase> {
   if (dbInstance) return dbInstance;
@@ -64,6 +65,15 @@ export async function getDb(): Promise<KamilDatabase> {
     await db.addCollections({
       pages: {
         schema: PAGE_SCHEMA,
+        conflictHandler: {
+          isEqual(a: any, b: any) {
+            return a.updated_at === b.updated_at;
+          },
+          resolve(i: any) {
+            // server-wins: keep the server version
+            return i.realMasterState;
+          },
+        },
       },
     });
     dbInstance = db;
@@ -118,23 +128,11 @@ export async function syncFetch(path: string, options?: { method?: string; body?
 export async function startSync() {
   const db = await getDb();
   const token = await getAuthToken();
-  if (!token || syncDisabled) return;
+  if (!token) return;
 
   if (replicationInstance) {
     await replicationInstance.cancel();
     replicationInstance = null;
-  }
-
-  // Probe sync endpoint before starting replication
-  try {
-    const probe = await syncFetch("/sync?limit=1");
-    if (!probe) throw new Error("empty response");
-  } catch {
-    if (!syncDisabled) {
-      syncDisabled = true;
-      console.warn("[rxdb] sync endpoint unavailable sync disabled");
-    }
-    return;
   }
 
   const rep = replicateRxCollection({
@@ -143,7 +141,7 @@ export async function startSync() {
     pull: {
       handler: async (checkpoint: string | undefined, batchSize: number) => {
         const token = await getAuthToken();
-        if (!token || syncDisabled) return { documents: [], checkpoint };
+        if (!token) return { documents: [], checkpoint };
 
         const since = typeof checkpoint === "string" ? checkpoint : "";
         const data: any = await syncFetch(
@@ -165,6 +163,7 @@ export async function startSync() {
           created_at: p.created_at,
           updated_at: p.updated_at,
           isPinned: p.isPinned ?? false,
+          _deleted: p._deleted ?? false,
         }));
 
         const lastDoc = pages[pages.length - 1];
@@ -178,9 +177,19 @@ export async function startSync() {
     push: {
       handler: async (rows) => {
         const token = await getAuthToken();
-        if (!token || syncDisabled) return rows.map((r) => (r as any).newDocumentState);
+        if (!token) return [];
 
-        const pages = rows.map((row: any) => ({
+        // Deduplicate: keep the row with the latest updated_at per id
+        const uniqueMap = new Map<string, any>();
+        for (const row of rows) {
+          const existing = uniqueMap.get(row.newDocumentState.id);
+          if (!existing || row.newDocumentState.updated_at > existing.newDocumentState.updated_at) {
+            uniqueMap.set(row.newDocumentState.id, row);
+          }
+        }
+        const dedupedRows = [...uniqueMap.values()];
+
+        const pages = dedupedRows.map((row: any) => ({
           id: row.newDocumentState.id,
           name: row.newDocumentState.name || row.newDocumentState.title,
           title: row.newDocumentState.title || row.newDocumentState.name,
@@ -193,13 +202,19 @@ export async function startSync() {
           created_at: row.newDocumentState.created_at,
           updated_at: row.newDocumentState.updated_at,
           isPinned: row.newDocumentState.isPinned ?? false,
+          _deleted: (row.newDocumentState as any)._deleted ?? false,
         }));
 
-        await syncFetch("/sync", { method: "POST", body: { pages } }).catch(
-          () => {}
-        );
+        const result = await syncFetch("/sync", {
+          method: "POST",
+          body: { pages },
+        }).catch(() => null);
 
-        return rows.map((r: any) => r.newDocumentState);
+        // Return full conflict documents to RxDB for client-side resolution
+        if (result && Array.isArray(result.conflicts)) {
+          return result.conflicts;
+        }
+        return [];
       },
       batchSize: 50,
     },

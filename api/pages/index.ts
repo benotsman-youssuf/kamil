@@ -51,6 +51,10 @@ async function getPage(req: VercelRequest, res: VercelResponse, pageId: string) 
       throw error;
     }
 
+    if (page._deleted) {
+      return res.status(404).json({ error: "Page not found" });
+    }
+
     if (!page.is_public && qfUserId !== page.qf_user_id) {
       return res.status(403).json({ error: "Access denied" });
     }
@@ -71,7 +75,7 @@ async function updatePage(req: VercelRequest, res: VercelResponse, pageId: strin
 
     const { data: existing, error: fetchError } = await supabase
       .from("pages")
-      .select("id")
+      .select("id, _deleted")
       .eq("id", pageId)
       .eq("qf_user_id", qfUserId)
       .single();
@@ -80,12 +84,19 @@ async function updatePage(req: VercelRequest, res: VercelResponse, pageId: strin
       return res.status(404).json({ error: "Page not found or access denied" });
     }
 
-    const { title, content, is_public } = req.body;
+    if (existing._deleted) {
+      return res.status(404).json({ error: "Page not found" });
+    }
+
+    const { title, content, is_public, name, description, isPinned } = req.body;
 
     const updates: Record<string, any> = {};
     if (title !== undefined) updates.title = title;
     if (content !== undefined) updates.content = content;
     if (is_public !== undefined) updates.is_public = is_public;
+    if (name !== undefined) updates.name = name;
+    if (description !== undefined) updates.description = description;
+    if (isPinned !== undefined) updates.isPinned = isPinned;
     updates.updated_at = new Date().toISOString();
 
     const { data, error } = await supabase
@@ -113,7 +124,7 @@ async function deletePage(req: VercelRequest, res: VercelResponse, pageId: strin
 
     const { error } = await supabase
       .from("pages")
-      .delete()
+      .update({ _deleted: true, updated_at: new Date().toISOString() })
       .eq("id", pageId)
       .eq("qf_user_id", qfUserId);
 
@@ -140,13 +151,17 @@ async function togglePublic(req: VercelRequest, res: VercelResponse, pageId: str
 
     const { data: existing, error: fetchError } = await supabase
       .from("pages")
-      .select("id")
+      .select("id, _deleted")
       .eq("id", pageId)
       .eq("qf_user_id", qfUserId)
       .single();
 
     if (fetchError || !existing) {
       return res.status(404).json({ error: "Page not found or access denied" });
+    }
+
+    if (existing._deleted) {
+      return res.status(404).json({ error: "Page not found" });
     }
 
     const { data, error } = await supabase
@@ -177,6 +192,7 @@ async function forkPage(req: VercelRequest, res: VercelResponse, pageId: string)
       .select("*")
       .eq("id", pageId)
       .eq("is_public", true)
+      .neq("_deleted", true)
       .single();
 
     if (fetchError || !original) {
@@ -219,8 +235,9 @@ async function listPages(req: VercelRequest, res: VercelResponse) {
 
     const { data, error } = await supabase
       .from("pages")
-      .select("id, title, is_public, is_fork, fork_count, created_at, updated_at")
+      .select("id, name, title, description, is_public, is_fork, fork_count, created_at, updated_at, isPinned")
       .eq("qf_user_id", qfUserId)
+      .neq("_deleted", true)
       .order("updated_at", { ascending: false });
 
     if (error) throw error;
@@ -239,7 +256,7 @@ async function createPage(req: VercelRequest, res: VercelResponse) {
     const payload = await verifyQFJwt(token);
     const qfUserId = payload.sub;
 
-    const { title, content, is_public, is_fork, forked_from } = req.body;
+    const { title, content, is_public, is_fork, forked_from, name, description, isPinned } = req.body;
 
     if (!title || !content) {
       return res.status(400).json({ error: "title and content are required" });
@@ -254,6 +271,9 @@ async function createPage(req: VercelRequest, res: VercelResponse) {
         is_public: is_public || false,
         is_fork: is_fork || false,
         forked_from: forked_from || null,
+        name: name || title,
+        description: description || "",
+        isPinned: isPinned ?? false,
       })
       .select()
       .single();
