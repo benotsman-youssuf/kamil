@@ -92,6 +92,7 @@ async function pushToRemote(req: VercelRequest, res: VercelResponse) {
           .update({
             title: page.title,
             content: page.content,
+            is_public: page.is_public ?? false,
             updated_at: new Date(page.updated_at || Date.now()).toISOString(),
           })
           .eq("id", page.id);

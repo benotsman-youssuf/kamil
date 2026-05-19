@@ -1,12 +1,10 @@
 import { useState, useEffect } from "react";
-import { getDb, pushPageToServer, apiRequest, syncFetch } from "@/lib/rxdb";
-import { getTokens } from "@/lib/qf/auth";
+import { getDb, syncFetch } from "@/lib/rxdb";
 import { Share2, Globe, Lock, Copy, Check, Loader2 } from "lucide-react";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import { Switch } from "@/components/ui/switch";
 import { toast } from "sonner";
 
 interface ShareDialogProps {
@@ -15,112 +13,87 @@ interface ShareDialogProps {
 
 export function ShareDialog({ pageId }: ShareDialogProps) {
   const [open, setOpen] = useState(false);
-  const [isPublic, setIsPublic] = useState(false);
+  const [isPublic, setIsPublic] = useState<boolean | null>(null);
   const [loading, setLoading] = useState(false);
-  const [syncing, setSyncing] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [remoteId, setRemoteId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) return;
-
-    setRemoteId(null);
-    setIsPublic(false);
-
-    const token = getTokens()?.access_token;
-    if (token) {
-      fetchPageStatus(pageId);
-    }
+    setError(null);
+    setCopied(false);
+    getDb()
+      .then((db) => db.pages.findOne(pageId).exec())
+      .then((page) => {
+        setIsPublic(page?.toJSON().is_public ?? false);
+      })
+      .catch(() => setIsPublic(false));
   }, [open, pageId]);
 
-  const fetchPageStatus = async (id: string) => {
-    try {
-      const data: any = await syncFetch(`/sync?since=&limit=1`);
-      const serverPages = data.pages || [];
-      const match = serverPages.find((p: any) => p.id === id);
-      if (match) {
-        setRemoteId(match.id);
-        setIsPublic(match.is_public ?? false);
-      }
-    } catch {
-      // silent
-    }
-  };
-
-  const handleSync = async (): Promise<string | null> => {
-    setSyncing(true);
+  const publish = async () => {
+    setLoading(true);
+    setError(null);
     try {
       const db = await getDb();
       const page = await db.pages.findOne(pageId).exec();
-      if (!page) return null;
+      if (!page) throw new Error("Page not found");
 
       const pageData = page.toJSON();
-      const data = await pushPageToServer([{
-        id: pageData.id,
-        name: pageData.name || pageData.title,
-        title: pageData.title || pageData.name,
-        content: pageData.content,
-        description: pageData.description || "",
-        is_public: false,
-        is_fork: pageData.is_fork ?? false,
-        fork_count: pageData.fork_count ?? 0,
-        forked_from: pageData.forked_from || "",
-        created_at: pageData.created_at,
-        updated_at: pageData.updated_at,
-        isPinned: pageData.isPinned ?? false,
-      }]);
+      await syncFetch("/sync", {
+        method: "POST",
+        body: {
+          pages: [{
+            id: pageData.id,
+            name: pageData.name || pageData.title,
+            title: pageData.title || pageData.name,
+            content: pageData.content,
+            description: pageData.description || "",
+            is_public: true,
+            is_fork: pageData.is_fork ?? false,
+            fork_count: pageData.fork_count ?? 0,
+            forked_from: pageData.forked_from || "",
+            created_at: pageData.created_at,
+            updated_at: new Date().toISOString(),
+            isPinned: pageData.isPinned ?? false,
+          }],
+        },
+      });
 
-      const result = data?.synced?.[0];
-      if (result?.id) {
-        setRemoteId(result.id);
-        toast.success("تمت المزامنة");
-        return result.id;
-      }
-      return null;
-    } catch {
-      toast.error("فشل المزامنة");
-      return null;
+      await page.patch({ is_public: true });
+      setIsPublic(true);
+      toast.success("تم نشر المقالة");
+    } catch (e: any) {
+      setError(e.message || "فشل النشر");
+      toast.error("فشل نشر المقالة");
     } finally {
-      setSyncing(false);
+      setLoading(false);
     }
   };
 
-  const handleTogglePublic = async () => {
-    let id = remoteId;
-    if (!id) {
-      id = await handleSync();
-      if (!id) {
-        toast.error("فشلت المزامنة، تعذر نشر الصفحة");
-        return;
-      }
-    }
-
+  const unpublish = async () => {
     setLoading(true);
+    setError(null);
     try {
-      await apiRequest(`/pages/${id}`, {
+      await syncFetch(`/pages/${pageId}`, {
         method: "PATCH",
-        body: { is_public: !isPublic },
+        body: { is_public: false },
       });
-
-      setIsPublic(!isPublic);
 
       const db = await getDb();
       const doc = await db.pages.findOne(pageId).exec();
-      if (doc) {
-        await doc.patch({ is_public: !isPublic });
-      }
-
-      toast.success(isPublic ? "تم إخفاء المقالة" : "تم نشر المقالة");
-    } catch {
-      toast.error("فشل التحديث");
+      if (doc) await doc.patch({ is_public: false });
+      setIsPublic(false);
+      toast.success("تم إخفاء المقالة");
+    } catch (e: any) {
+      setError(e.message || "فشل الإخفاء");
+      toast.error("فشل إخفاء المقالة");
     } finally {
       setLoading(false);
     }
   };
 
   const handleCopyLink = () => {
-    if (!remoteId) return;
-    const url = `${window.location.origin}/read/${remoteId}`;
+    const url = `${window.location.origin}/read/${pageId}`;
     navigator.clipboard.writeText(url);
     setCopied(true);
     toast.success("تم نسخ الرابط");
@@ -146,63 +119,60 @@ export function ShareDialog({ pageId }: ShareDialogProps) {
           </DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-6 py-4">
-          {/* Public toggle */}
-          <div className="flex items-center justify-between p-4 rounded-lg border bg-card">
-            <div className="flex items-center gap-3">
-              {isPublic ? (
-                <Globe className="h-5 w-5 text-emerald-500" />
-              ) : (
-                <Lock className="h-5 w-5 text-muted-foreground" />
-              )}
-              <div>
-                <p className="text-sm font-medium">
-                  {isPublic ? "منشورة للعامة" : "خاصة"}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {isPublic
-                    ? "يمكن لأي شخص قراءة هذه المقالة"
-                    : "يمكنك فقط قراءة هذه المقالة"
-                  }
-                </p>
+        <div className="space-y-4 py-4">
+          {isPublic === null ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <>
+              <div className="flex items-center gap-3 p-4 rounded-lg border bg-card">
+                {isPublic ? (
+                  <Globe className="h-5 w-5 text-emerald-500 shrink-0" />
+                ) : (
+                  <Lock className="h-5 w-5 text-muted-foreground shrink-0" />
+                )}
+                <div>
+                  <p className="text-sm font-medium">
+                    {isPublic ? "منشورة للعامة" : "خاصة"}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {isPublic
+                      ? "يمكن لأي شخص قراءة هذه المقالة عبر الرابط"
+                      : "أنت فقط من يمكنه قراءة هذه المقالة"
+                    }
+                  </p>
+                </div>
               </div>
-            </div>
-            <Switch
-              checked={isPublic}
-              onCheckedChange={handleTogglePublic}
-              disabled={loading || syncing}
-            />
-          </div>
 
-          {/* Sync status */}
-          {!remoteId && (
-            <div className="p-4 rounded-lg border bg-amber-500/5 text-amber-600 dark:text-amber-400">
-              <p className="text-sm font-medium mb-2">هذه الصفحة غير متزامنة مع السحابة</p>
-              <p className="text-xs mb-3">يجب مزامنة الصفحة أولاً لنشرها</p>
               <Button
-                size="sm"
-                onClick={handleSync}
-                disabled={syncing}
+                onClick={isPublic ? unpublish : publish}
+                disabled={loading}
                 className="w-full"
+                variant={isPublic ? "outline" : "default"}
               >
-                {syncing ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}
-                مزامنة ونشر
+                {loading && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+                {loading ? "جاري النشر..." : isPublic ? "إخفاء المقالة" : "نشر المقالة للعامة"}
               </Button>
-            </div>
-          )}
 
-          {/* Copy link */}
-          {isPublic && remoteId && (
-            <div className="flex items-center gap-2">
-              <input
-                readOnly
-                value={`${window.location.origin}/read/${remoteId}`}
-                className="flex-1 px-3 py-2 bg-muted border rounded-lg text-sm font-mono"
-              />
-              <Button size="sm" variant="outline" onClick={handleCopyLink}>
-                {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-              </Button>
-            </div>
+              {error && (
+                <p className="text-xs text-red-500 text-center">{error}</p>
+              )}
+
+              {isPublic && (
+                <div className="flex items-center gap-2">
+                  <input
+                    readOnly
+                    value={`${window.location.origin}/read/${pageId}`}
+                    className="flex-1 px-3 py-2 bg-muted border rounded-lg text-sm font-mono"
+                    onClick={(e) => (e.target as HTMLInputElement).select()}
+                  />
+                  <Button size="sm" variant="outline" onClick={handleCopyLink}>
+                    {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+                  </Button>
+                </div>
+              )}
+            </>
           )}
         </div>
       </DialogContent>

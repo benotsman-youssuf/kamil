@@ -85,7 +85,7 @@ export async function syncFetch(path: string, options?: { method?: string; body?
     "Authorization": `Bearer ${token}`,
     "x-auth-token": token,
   };
-  if (options?.body || options?.method === "POST") {
+  if (options?.body || options?.method === "POST" || options?.method === "PATCH") {
     headers["Content-Type"] = "application/json";
   }
 
@@ -145,7 +145,7 @@ export async function startSync() {
         const token = await getAuthToken();
         if (!token || syncDisabled) return { documents: [], checkpoint };
 
-        const since = checkpoint || "";
+        const since = typeof checkpoint === "string" ? checkpoint : "";
         const data: any = await syncFetch(
           `/sync?since=${encodeURIComponent(since)}&limit=${batchSize}`
         ).catch(() => ({ pages: [] }));
