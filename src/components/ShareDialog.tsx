@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { getDb, pushPageToServer, apiRequest } from "@/lib/rxdb";
+import { getDb, pushPageToServer, apiRequest, syncFetch } from "@/lib/rxdb";
 import { getTokens } from "@/lib/qf/auth";
 import { Share2, Globe, Lock, Copy, Check, Loader2 } from "lucide-react";
 import {
@@ -35,7 +35,7 @@ export function ShareDialog({ pageId }: ShareDialogProps) {
 
   const fetchPageStatus = async (id: string) => {
     try {
-      const data: any = await apiRequest(`/sync?since=&limit=1`);
+      const data: any = await syncFetch(`/sync?since=&limit=1`);
       const serverPages = data.pages || [];
       const match = serverPages.find((p: any) => p.id === id);
       if (match) {
@@ -47,12 +47,12 @@ export function ShareDialog({ pageId }: ShareDialogProps) {
     }
   };
 
-  const handleSync = async () => {
+  const handleSync = async (): Promise<string | null> => {
     setSyncing(true);
     try {
       const db = await getDb();
       const page = await db.pages.findOne(pageId).exec();
-      if (!page) return;
+      if (!page) return null;
 
       const pageData = page.toJSON();
       const data = await pushPageToServer([{
@@ -74,18 +74,22 @@ export function ShareDialog({ pageId }: ShareDialogProps) {
       if (result?.id) {
         setRemoteId(result.id);
         toast.success("تمت المزامنة");
+        return result.id;
       }
+      return null;
     } catch {
       toast.error("فشل المزامنة");
+      return null;
     } finally {
       setSyncing(false);
     }
   };
 
   const handleTogglePublic = async () => {
-    if (!remoteId) {
-      await handleSync();
-      if (!remoteId) {
+    let id = remoteId;
+    if (!id) {
+      id = await handleSync();
+      if (!id) {
         toast.error("فشلت المزامنة، تعذر نشر الصفحة");
         return;
       }
@@ -93,7 +97,7 @@ export function ShareDialog({ pageId }: ShareDialogProps) {
 
     setLoading(true);
     try {
-      await apiRequest(`/pages/${remoteId}`, {
+      await apiRequest(`/pages/${id}`, {
         method: "PATCH",
         body: { is_public: !isPublic },
       });

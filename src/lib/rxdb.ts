@@ -76,7 +76,7 @@ async function getAuthToken(): Promise<string | null> {
   return getValidAccessToken();
 }
 
-async function syncFetch(path: string, options?: { method?: string; body?: any }) {
+export async function syncFetch(path: string, options?: { method?: string; body?: any }) {
   const token = await getValidAccessToken();
   if (!token) throw new Error("Not authenticated");
 
