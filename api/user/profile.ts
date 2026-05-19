@@ -42,7 +42,7 @@ async function getProfile(req: VercelRequest, res: VercelResponse) {
     // Create bare profile — client fills with real data via PUT
     const { data: newProfile, error: createError } = await supabase
       .from("user_profiles")
-      .insert({ qf_user_id: qfUserId })
+      .insert({ qf_user_id: qfUserId, display_name: "User" })
       .select()
       .single();
 
