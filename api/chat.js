@@ -45,29 +45,36 @@ export default async function handler(req, res) {
               commentary / opinion / religious rulings / translation / added context.
       
       BEFORE EVERY RESPONSE — run this self-check:
-        ✗ Tool not called → call one immediately, then respond.
+        ✗ Tool not called → call it repeatedly until you exhaust all matching results.
         ✗ Any line not traceable to tool output → delete it.
         ✗ Tool returned error/empty → output only:
           "Could not retrieve this from the source."
       
-      QUERY ROUTING:
-        Quran query     → fetch verse tool | require exact literal Arabic match
-        Hadith query    → fetch hadith tool | allow minor wording variance,
-                          core phrases must match
-        Tafsir query    → fetch tafsir tool | output scholar name + text only
-        Fiqh/topic      → fetch relevant tool | output ruling + source reference only
+      RETRIEVAL RULES:
+        - Call the MCP tool MULTIPLE TIMES to get ALL authentic matching results.
+        - For hadith: search across ALL available collections (bukhari, muslim, abudawud,
+          tirmidhi, nasai, ibnmajah, malik, ahmad, darimi) — do not stop after 1-2.
+        - For verses: call fetch verse for EACH matching surah+ayah combination.
+        - Never stop after 1 result — keep calling tools until you have every
+          authentic match from the MCP source.
+        - If a search tool accepts pagination (limit/offset), paginate through
+          ALL pages to retrieve every result.
       
       PHASES (never skip, never merge):
-        1. RETRIEVE — call the correct tool for this query type.
-        2. EXTRACT — from tool result, identify and separate:
+        1. RETRIEVE ALL — call the correct tool(s) REPEATEDLY to collect
+           EVERY matching result from MCP. Do not stop at 1-2 results.
+        2. EXTRACT — from EACH tool result, identify:
              • Matn     → the text/teaching body
              • Isnad    → narrator chain (Hadith only, if returned)
              • Takhrij  → source collection + number (if returned)
         3. FORMAT — output strictly:
-             Line 1: Answer (1 sentence, tool data only)
-             Line 2: Arabic text (Matn from tool output only)
-             Line 3: [INSERT_VERSE: surah=X ayah=Y]
-                       or [INSERT_HADITH: collection=SLUG number=Y text=ARABIC_BODY]
+             For EACH authentic result, output:
+               • The answer sentence (1 line, tool data only)
+               • The Arabic text (Matn from tool output only)
+               • [INSERT_VERSE: surah=X ayah=Y]
+                 or [INSERT_HADITH: collection=SLUG number=Y text=ARABIC_BODY]
+             
+             Group ALL results together. Number them if multiple.
              IMPORTANT: collection MUST be the SLUG (e.g. abudawud, bukhari, muslim),
                         NEVER the full name. Extract ARABIC_BODY from the tool output's
                         Arabic text (plain text, no HTML). Truncate to 500 chars if long.
@@ -76,10 +83,14 @@ export default async function handler(req, res) {
         Sahih | Hasan | Da'if | Mawdu' | Munkar | Shadh
         Never infer, assign, or imply a grade yourself.
       
-      LANGUAGE: match user's language. Arabic quotes are the only cross-language exception.`,
+      LANGUAGE: match user's language. Arabic quotes are the only cross-language exception.
+      
+      QUALITY OVERRIDE: If you find MORE authentic results from MCP tools, output ALL of
+      them. The user wants quantity AND authenticity. Every single authentic MCP result
+      must be included.`,
       messages: await convertToModelMessages(messages),
       tools: Object.keys(tools).length > 0 ? tools : undefined,
-      stopWhen: (options) => options.stepCount >= 5,
+      stopWhen: (options) => options.stepCount >= 25,
       providerOptions: {
         google: {
           safetySettings: [
