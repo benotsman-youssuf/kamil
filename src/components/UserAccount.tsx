@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { useNavigate } from "react-router-dom";
+import { syncFetch } from "@/lib/rxdb";
 
 export function UserAccount() {
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -27,6 +28,7 @@ export function UserAccount() {
       import("@/lib/rxdb").then(({ startSyncIfAuthenticated }) => {
         startSyncIfAuthenticated();
       });
+      syncFetch("/user/profile").catch(() => {});
     }
   }, [tokens?.access_token]);
 
