@@ -39,15 +39,36 @@ async function getProfile(req: VercelRequest, res: VercelResponse) {
       return res.status(200).json({ profile: data });
     }
 
-    // Auto-create profile from QF JWT data
-    const displayName = [payload.first_name, payload.last_name].filter(Boolean).join(" ") || "User";
+    // Auto-create profile from QF's user API
+    const qfApiUrl = "https://apis.quran.foundation/auth/v1/users/profile";
+    let displayName = "User";
+    let username = "";
+    let avatarUrl = "";
+
+    try {
+      const qfRes = await fetch(qfApiUrl, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (qfRes.ok) {
+        const body = await qfRes.json();
+        const u = body.data;
+        displayName = [u.firstName, u.lastName].filter(Boolean).join(" ") || "User";
+        username = u.email?.split("@")[0] || u.username || "";
+        avatarUrl = u.photoUrl || u.avatarUrls?.small || "";
+      }
+    } catch {
+      displayName = [payload.first_name, payload.last_name].filter(Boolean).join(" ") || "User";
+      username = payload.email?.split("@")[0] || "";
+      avatarUrl = "";
+    }
+
     const { data: newProfile, error: createError } = await supabase
       .from("user_profiles")
       .insert({
         qf_user_id: qfUserId,
         display_name: displayName,
-        username: payload.email?.split("@")[0] || null,
-        avatar_url: (payload as any).avatar_url || (payload as any).photo_url || null,
+        username: username || null,
+        avatar_url: avatarUrl || null,
       })
       .select()
       .single();
