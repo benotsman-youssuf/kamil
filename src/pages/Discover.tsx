@@ -1,8 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Search, BookOpen, GitFork } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { Badge } from "@/components/ui/badge";
+import { Search, BookOpen, GitFork, Compass } from "lucide-react";
 
 interface Article {
   id: string;
@@ -74,6 +74,14 @@ export function Discover() {
 
   return (
     <div className="space-y-6" dir="rtl">
+      {/* Header */}
+      <div className="flex items-center gap-3 mb-2">
+        <Compass className="h-6 w-6 text-primary/70" />
+        <p className="text-sm text-muted-foreground">
+          اكتشف مقالات عامة من جميع المستخدمين
+        </p>
+      </div>
+
       {/* Search + Sort */}
       <div className="flex gap-3">
         <form onSubmit={handleSearch} className="flex-1 relative">
@@ -83,13 +91,13 @@ export function Discover() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="ابحث في المقالات العامة..."
-            className="w-full pr-10 pl-4 py-2.5 bg-card border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20"
+            className="w-full pr-10 pl-4 py-2.5 bg-card border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-shadow"
           />
         </form>
         <select
           value={sort}
           onChange={(e) => setSort(e.target.value as "recent" | "most_forked")}
-          className="px-3 py-2.5 bg-card border rounded-xl text-sm focus:outline-none"
+          className="px-4 py-2.5 bg-card border rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 transition-shadow"
         >
           <option value="recent">الأحدث</option>
           <option value="most_forked">الأكثر نسخاً</option>
@@ -100,47 +108,59 @@ export function Discover() {
       {loading && page === 1 ? (
         <div className="space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-28 rounded-xl" />
+            <div key={i} className="bg-card border rounded-xl p-4">
+              <div className="flex items-start gap-3">
+                <Skeleton className="h-12 w-12 rounded-full shrink-0" />
+                <div className="flex-1 space-y-2">
+                  <Skeleton className="h-4 w-32" />
+                  <Skeleton className="h-5 w-3/4" />
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+              </div>
+            </div>
           ))}
         </div>
       ) : articles.length === 0 ? (
-        <div className="text-center py-16 text-muted-foreground">
-          <BookOpen className="h-12 w-12 mx-auto mb-4 opacity-30" />
-          <p className="text-lg">لا توجد مقالات عامة بعد</p>
-          <p className="text-sm mt-1">شارك مقالتك الأولى لتكون هنا</p>
+        <div className="text-center py-20">
+          <BookOpen className="h-16 w-16 mx-auto mb-4 text-muted-foreground/20" />
+          <p className="text-xl font-amiri text-muted-foreground">لا توجد مقالات عامة بعد</p>
+          <p className="text-sm text-muted-foreground/60 mt-2">شارك مقالتك الأولى لتكون هنا</p>
         </div>
       ) : (
         <div className="space-y-3">
           {articles.map((article) => (
             <div
               key={article.id}
-              className="bg-card border rounded-xl p-4 hover:bg-accent/30 transition-colors cursor-pointer"
+              className="bg-card border rounded-xl p-4 hover:shadow-md hover:border-primary/30 transition-all duration-200 cursor-pointer group"
               onClick={() => navigate(`/read/${article.id}`)}
             >
               <div className="flex items-start gap-3">
-                <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                <div className="h-12 w-12 rounded-full border-2 border-border/50 overflow-hidden shrink-0 bg-primary/5 flex items-center justify-center">
                   {article.author.avatar_url ? (
-                    <img src={article.author.avatar_url} alt="" className="h-10 w-10 rounded-full" />
+                    <img src={article.author.avatar_url} alt="" className="h-full w-full object-cover" />
                   ) : (
-                    <span className="text-sm font-bold text-primary">
+                    <span className="text-lg font-bold text-primary font-amiri">
                       {article.author.display_name?.[0] || "?"}
                     </span>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-sm font-medium">{article.author.display_name}</span>
+                    <span className="text-sm font-semibold font-amiri">{article.author.display_name}</span>
                     {article.author.username && (
                       <span className="text-xs text-muted-foreground">@{article.author.username}</span>
                     )}
                   </div>
-                  <h3 className="font-semibold text-base mb-1">{article.title}</h3>
+                  <h3 className="font-bold text-base mb-1 group-hover:text-primary transition-colors line-clamp-2">
+                    {article.title}
+                  </h3>
                   {article.snippet && (
-                    <p className="text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+                    <p className="text-sm text-muted-foreground/80 line-clamp-2 leading-relaxed font-amiri">
                       {article.snippet}
                     </p>
                   )}
-                  <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
+                  <div className="flex items-center gap-3 mt-2.5 text-xs text-muted-foreground">
                     <span>{formatDate(article.updated_at)}</span>
                     {article.fork_count > 0 && (
                       <span className="flex items-center gap-1">
@@ -149,9 +169,9 @@ export function Discover() {
                       </span>
                     )}
                     {article.is_fork && (
-                      <span className={cn("px-1.5 py-0.5 rounded text-[10px]", "bg-muted text-muted-foreground")}>
+                      <Badge variant="outline" className="text-[10px] px-2 py-0.5">
                         منسوخ
-                      </span>
+                      </Badge>
                     )}
                   </div>
                 </div>
@@ -163,10 +183,10 @@ export function Discover() {
 
       {/* Load more */}
       {hasMore && (
-        <div className="text-center">
+        <div className="text-center pt-2">
           <button
             onClick={() => fetchArticles(page + 1, true)}
-            className="px-6 py-2.5 bg-card border rounded-xl text-sm hover:bg-accent/50 transition-colors"
+            className="px-8 py-2.5 bg-card border rounded-xl text-sm hover:bg-accent/50 transition-colors font-medium"
           >
             تحميل المزيد
           </button>

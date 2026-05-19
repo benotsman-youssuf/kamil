@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, GitFork, Clock, User, Loader2 } from "lucide-react";
+import { ArrowLeft, GitFork, Clock, User, Loader2, Sun, Moon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Button } from "@/components/ui/button";
+import { useTheme } from "@/hooks/use-theme";
 
 interface Article {
   id: string;
@@ -21,6 +23,7 @@ export function ReadPage() {
   const [loading, setLoading] = useState(true);
   const [forking, setForking] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     if (!id) return;
@@ -144,7 +147,7 @@ export function ReadPage() {
         );
       case "verse":
         return (
-          <span key={key} className="inline-block bg-primary/5 border border-primary/20 rounded-lg px-3 py-1.5 mx-1 my-1 text-lg font-medium text-primary">
+          <span key={key} className="inline-block bg-primary/5 border border-primary/20 rounded-lg px-3 py-1.5 mx-1 my-1 text-lg font-medium text-primary font-amiri">
             ﴿{node.verseText || node.children?.[0]?.text || ""}﴾
             <span className="text-xs text-muted-foreground mr-1">({node.surahName}: {node.ayaNumber})</span>
           </span>
@@ -152,7 +155,7 @@ export function ReadPage() {
       case "hadith":
         return (
           <div key={key} className="bg-muted/50 border rounded-lg p-3 my-2">
-            <p className="text-base leading-loose mb-1">{node.hadithText || node.children?.[0]?.text || ""}</p>
+            <p className="text-base leading-loose mb-1 font-amiri">{node.hadithText || node.children?.[0]?.text || ""}</p>
             <p className="text-xs text-muted-foreground">
               [{node.collection} {node.hadithNumber}]
               {node.grades?.length ? ` · ${node.grades.map((g: any) => g.grade).join(", ")}` : ""}
@@ -191,26 +194,35 @@ export function ReadPage() {
   return (
     <div className="max-w-3xl mx-auto" dir="rtl">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
+      <div className="flex items-center gap-2 mb-6">
         <button
           onClick={() => navigate("/discover")}
           className="p-2 hover:bg-accent rounded-lg transition-colors"
+          title="العودة للاكتشاف"
         >
           <ArrowLeft className="h-5 w-5" />
         </button>
-        <div className="flex-1" />
         <button
+          onClick={toggleTheme}
+          className="p-2 hover:bg-accent rounded-lg transition-colors"
+          title={theme === "dark" ? "الوضع الفاتح" : "الوضع الداكن"}
+        >
+          {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+        </button>
+        <div className="flex-1" />
+        <Button
           onClick={handleFork}
           disabled={forking}
-          className="flex items-center gap-2 px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50"
+          size="lg"
+          className="shadow-md"
         >
           {forking ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
+            <Loader2 className="h-5 w-5 animate-spin" />
           ) : (
-            <GitFork className="h-4 w-4" />
+            <GitFork className="h-5 w-5" />
           )}
           نسخ المقالة
-        </button>
+        </Button>
       </div>
 
       {/* Article header */}
@@ -225,7 +237,7 @@ export function ReadPage() {
                 <User className="h-4 w-4 text-primary" />
               )}
             </div>
-            <span>{article.author.display_name}</span>
+            <span className="font-amiri">{article.author.display_name}</span>
           </div>
           <span className="flex items-center gap-1">
             <Clock className="h-3.5 w-3.5" />
