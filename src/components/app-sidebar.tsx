@@ -28,7 +28,7 @@ export function AppSidebar({ pinned, onTogglePin, ...props }: AppSidebarProps) {
     return [...pages].sort((a, b) => {
       if (a.isPinned && !b.isPinned) return -1;
       if (!a.isPinned && b.isPinned) return 1;
-      return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
     });
   }, [pages]);
 
