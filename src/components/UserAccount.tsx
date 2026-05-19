@@ -32,10 +32,9 @@ export function UserAccount() {
           const username = qfUser.email?.split("@")[0] || "";
           const avatarUrl = qfUser.photoUrl || qfUser.avatarUrls?.small || "";
           await syncFetch("/user/profile");
-          syncFetch("/user/profile", "PUT", {
-            display_name: displayName,
-            username,
-            avatar_url: avatarUrl,
+          syncFetch("/user/profile", {
+            method: "PUT",
+            body: { display_name: displayName, username, avatar_url: avatarUrl },
           }).catch(() => {});
         })
         .catch(() => setUser(null))
