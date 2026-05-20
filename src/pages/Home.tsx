@@ -12,6 +12,7 @@ import { ShimmerButton } from "@/components/magicui/shimmer-button";
 import { AnimatedGridPattern } from "@/components/magicui/animated-grid-pattern";
 
 import { getDb } from "@/lib/rxdb";
+import { getValidAccessToken } from "@/lib/qf/auth";
 import { cn } from "@/lib/utils";
 
 export function Home() {
@@ -29,28 +30,63 @@ export function Home() {
     setLoading(true);
     try {
       const db = await getDb();
-      const pages = await db.pages.find().exec();
+      const token = await getValidAccessToken();
 
-      if (pages.length === 0) {
-        const id = crypto.randomUUID();
-        const now = new Date().toISOString();
-        await db.pages.insert({
-          id,
-          name: "صفحتي الأولى",
-          title: "صفحتي الأولى",
-          content: JSON.stringify([]),
-          description: "",
-          created_at: now,
-          updated_at: now,
-          is_public: false,
-          is_fork: false,
-          fork_count: 0,
-          forked_from: "",
-        });
-        navigate(`/pages/${id}`);
-      } else {
-        navigate(`/pages/${pages[0].id}`);
+      // If authenticated, check server first to avoid sync-timing race
+      if (token) {
+        try {
+          const res = await fetch("/api/pages", {
+            headers: {
+              "x-auth-token": token,
+              Authorization: `Bearer ${token}`,
+            },
+          });
+          if (res.ok) {
+            const { pages } = await res.json();
+            if (pages?.length > 0) {
+              // Sort consistently with app-sidebar: pinned first, then by created_at desc
+              const sorted = (pages as any[]).sort((a, b) => {
+                if (a.isPinned && !b.isPinned) return -1;
+                if (!a.isPinned && b.isPinned) return 1;
+                return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+              });
+              navigate(`/pages/${sorted[0].id}`);
+              return;
+            }
+          }
+        } catch {
+          // server check failed — fall through to local check
+        }
       }
+
+      // Fall back to local RxDB check (consistent sort with app-sidebar)
+      const localPages = [...(await db.pages.find().exec())].sort((a, b) => {
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+      });
+      if (localPages.length > 0) {
+        navigate(`/pages/${localPages[0].id}`);
+        return;
+      }
+
+      // No pages anywhere — create "صفحتي الأولى"
+      const id = crypto.randomUUID();
+      const now = new Date().toISOString();
+      await db.pages.insert({
+        id,
+        name: "صفحتي الأولى",
+        title: "صفحتي الأولى",
+        content: JSON.stringify([]),
+        description: "",
+        created_at: now,
+        updated_at: now,
+        is_public: false,
+        is_fork: false,
+        fork_count: 0,
+        forked_from: "",
+      });
+      navigate(`/pages/${id}`);
     } catch (error) {
       console.error("Error navigating:", error);
       alert("حدث خطأ أثناء تحميل الصفحة، حاول مرة أخرى.");
