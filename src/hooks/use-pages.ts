@@ -11,7 +11,7 @@ export function usePages() {
     getDb().then((db) => {
       if (destroyed) return;
       sub = db.pages
-        .find()
+        .find({ selector: { _deleted: { $ne: true } } })
         .sort({ updated_at: "desc" })
         .$.subscribe((docs: any[]) => {
           setPages(docs.map((d: any) => d.toJSON()));

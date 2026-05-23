@@ -60,11 +60,14 @@ export function Home() {
       }
 
       // Fall back to local RxDB check (consistent sort with app-sidebar)
-      const localPages = [...(await db.pages.find().exec())].sort((a, b) => {
-        if (a.isPinned && !b.isPinned) return -1;
-        if (!a.isPinned && b.isPinned) return 1;
-        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-      });
+      const allPages = await db.pages.find().exec();
+      const localPages = allPages
+        .filter((p) => !p._deleted)
+        .sort((a, b) => {
+          if (a.isPinned && !b.isPinned) return -1;
+          if (!a.isPinned && b.isPinned) return 1;
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        });
       if (localPages.length > 0) {
         navigate(`/pages/${localPages[0].id}`);
         return;
