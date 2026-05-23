@@ -209,7 +209,7 @@ export function SlashInputElement(
   const localResults = useFuzzySearchList({
     list: groups,
     queryText: value,
-    getText: (item: Group) => [item.textNoTashkeel],
+    getText: (item: Group) => [item.textTashkeel],
     mapResultItem: ({ item, matches: [highlightRanges] }) => ({
       item,
       highlightRanges,
@@ -318,8 +318,8 @@ export function SlashInputElement(
                       <span className="text-sm text-muted-foreground block mb-0.5" dir="ltr">
                         {item.surah} — {item.aya}
                       </span>
-                      <span className="text-lg font-medium leading-relaxed font-['Amiri']" dir="rtl">
-                        <Highlight text={item.textTashkeel} ranges={highlightRanges} />
+                      <span className="text-lg font-medium leading-relaxed font-['Amiri'] [&_mark]:bg-amber-200/60 [&_mark]:text-amber-900 [&_mark]:rounded-sm [&_mark]:px-0.5" dir="rtl">
+                        <Highlight text={highlightRanges?.length ? item.textTashkeel : item.textNoTashkeel} ranges={highlightRanges ?? []} />
                       </span>
                     </InlineComboboxItem>
                   ))

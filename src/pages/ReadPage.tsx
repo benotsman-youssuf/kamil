@@ -155,13 +155,13 @@ export function ReadPage() {
       const nodes = typeof content === "string" ? JSON.parse(content) : content;
       if (!Array.isArray(nodes)) return null;
 
-      return nodes.map((node: any, i: number) => renderNode(node, i));
+      return nodes.map((node: any, i: number) => renderNode(node, `c${i}`));
     } catch {
       return <p className="text-muted-foreground">خطأ في عرض المحتوى</p>;
     }
   };
 
-  const renderNode = (node: any, key: number) => {
+  const renderNode = (node: any, key: string) => {
     if (!node) return null;
 
     const children = node.children?.map((child: any, i: number) => renderInline(child, `${key}-${i}`));
@@ -183,7 +183,7 @@ export function ReadPage() {
         );
       case "verse":
         return (
-          <span key={key} className="inline-block bg-primary/5 border border-primary/20 rounded-lg px-3 py-1.5 mx-1 my-1 text-lg font-medium text-primary font-amiri">
+          <span key={key} className="inline-block bg-primary/5 border border-primary/20 rounded-lg px-3 py-2 mx-1 my-1.5 text-lg font-medium text-primary font-amiri leading-relaxed">
             ﴿{node.verseText || node.children?.[0]?.text || ""}﴾
             <span className="text-xs text-muted-foreground mr-1">({node.surahName}: {node.ayaNumber})</span>
           </span>
@@ -199,11 +199,13 @@ export function ReadPage() {
           </div>
         );
       case "ul":
-        return <ul key={key} className="list-disc list-inside space-y-1 my-2">{children}</ul>;
+        return <ul key={key} className="list-disc list-outside space-y-1 my-2 [&_ul]:pr-5">{children}</ul>;
       case "ol":
-        return <ol key={key} className="list-decimal list-inside space-y-1 my-2">{children}</ol>;
+        return <ol key={key} className="list-decimal list-outside space-y-1 my-2 [&_ol]:pr-5">{children}</ol>;
       case "li":
         return <li key={key} className="text-base leading-loose">{children}</li>;
+      case "lic":
+        return <span key={key} className="text-base leading-loose">{children}</span>;
       case "code_block":
         return (
           <pre key={key} className="bg-muted rounded-lg p-4 my-3 overflow-x-auto text-sm">
@@ -224,7 +226,7 @@ export function ReadPage() {
       if (node.code) text = <code key={key} className="bg-muted px-1 py-0.5 rounded text-sm">{node.text}</code>;
       return text;
     }
-    return renderNode(node, parseInt(key));
+    return renderNode(node, key);
   };
 
   return (
