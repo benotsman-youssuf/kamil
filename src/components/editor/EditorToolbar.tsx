@@ -1,5 +1,8 @@
 import { MarkToolbarButton } from "@/components/ui/mark-toolbar-button";
 import { AlignToolbarButton } from "@/components/ui/align-toolbar-button";
+import { HeadingToolbarButton } from "@/components/ui/heading-toolbar-button";
+import { ListToolbarButton } from "@/components/ui/list-toolbar-button";
+import { KEYS } from "platejs";
 import { Bold, Italic, Underline, Bot } from "lucide-react";
 import { FontSizeToolbarButton } from "@/components/ui/font-size-toolbar-button";
 import { ExportDropdown } from "./ExportDropdown";
@@ -28,6 +31,7 @@ export function EditorToolbar({ className = "", editor, pageId }: EditorToolbarP
     <div className={`flex items-center ${className}`}>
       {/* Formatting */}
       <div className="flex items-center gap-0.5 border-r border-primary-foreground/10 pr-2 mr-2">
+        <HeadingToolbarButton />
         <MarkToolbarButton nodeType="bold" tooltip="Bold (⌘+B)" className={btnCls}>
           <Bold className={iconCls} />
         </MarkToolbarButton>
@@ -37,6 +41,12 @@ export function EditorToolbar({ className = "", editor, pageId }: EditorToolbarP
         <MarkToolbarButton nodeType="underline" tooltip="Underline (⌘+U)" className={btnCls}>
           <Underline className={iconCls} />
         </MarkToolbarButton>
+      </div>
+
+      {/* Lists */}
+      <div className="flex items-center gap-0.5 border-r border-primary-foreground/10 pr-2 mr-2">
+        <ListToolbarButton nodeType={KEYS.ulClassic} />
+        <ListToolbarButton nodeType={KEYS.olClassic} />
       </div>
 
       <AlignToolbarButton />

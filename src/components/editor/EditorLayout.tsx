@@ -9,6 +9,7 @@ import {
   Underline,
   Code,
   Strikethrough,
+  Highlighter,
 } from "lucide-react";
 import { MarkToolbarButton } from "@/components/ui/mark-toolbar-button";
 import { ToolbarSeparator } from "@/components/ui/toolbar";
@@ -64,6 +65,9 @@ export function EditorLayout({
           </MarkToolbarButton>
           <MarkToolbarButton nodeType="strikethrough" tooltip="Strikethrough">
             <Strikethrough className="size-4" />
+          </MarkToolbarButton>
+          <MarkToolbarButton nodeType="highlight" tooltip="Highlight">
+            <Highlighter className="size-4" />
           </MarkToolbarButton>
         </FloatingToolbar>
 
