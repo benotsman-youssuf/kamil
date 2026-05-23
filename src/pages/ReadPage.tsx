@@ -4,6 +4,7 @@ import { ArrowLeft, GitFork, Heart, Clock, User, Sun, Moon, Loader2 } from "luci
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/use-theme";
+import { SharedRightPanel } from "@/components/SharedRightPanel";
 
 interface Article {
   id: string;
@@ -123,29 +124,39 @@ export function ReadPage() {
 
   if (loading) {
     return (
-      <div className="max-w-3xl mx-auto space-y-6" dir="rtl">
-        <Skeleton className="h-10 w-48" />
-        <Skeleton className="h-8 w-3/4" />
-        <Skeleton className="h-4 w-32" />
-        <div className="space-y-3">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <Skeleton key={i} className="h-4 w-full" />
-          ))}
+      <div className="flex h-screen overflow-hidden">
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="max-w-3xl mx-auto space-y-6" dir="rtl">
+            <Skeleton className="h-10 w-48" />
+            <Skeleton className="h-8 w-3/4" />
+            <Skeleton className="h-4 w-32" />
+            <div className="space-y-3">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <Skeleton key={i} className="h-4 w-full" />
+              ))}
+            </div>
+          </div>
         </div>
+        <SharedRightPanel />
       </div>
     );
   }
 
   if (error || !article) {
     return (
-      <div className="max-w-3xl mx-auto text-center py-16" dir="rtl">
-        <p className="text-lg text-muted-foreground">{error || "المقالة غير موجودة"}</p>
-        <button
-          onClick={() => navigate("/discover")}
-          className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg"
-        >
-          العودة للاكتشاف
-        </button>
+      <div className="flex h-screen overflow-hidden">
+        <div className="flex-1 overflow-y-auto p-6">
+          <div className="max-w-3xl mx-auto text-center py-16" dir="rtl">
+            <p className="text-lg text-muted-foreground">{error || "المقالة غير موجودة"}</p>
+            <button
+              onClick={() => navigate("/discover")}
+              className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-lg"
+            >
+              العودة للاكتشاف
+            </button>
+          </div>
+        </div>
+        <SharedRightPanel />
       </div>
     );
   }
@@ -183,14 +194,40 @@ export function ReadPage() {
         );
       case "verse":
         return (
-          <span key={key} className="inline-block bg-primary/5 border border-primary/20 rounded-lg px-3 py-2 mx-1 my-1.5 text-lg font-medium text-primary font-amiri leading-relaxed">
+          <span
+            key={key}
+            className="inline-block bg-primary/5 border border-primary/20 rounded-lg px-3 py-2 mx-1 my-1.5 text-lg font-medium text-primary font-amiri leading-relaxed cursor-pointer transition-colors hover:bg-primary/10"
+            onMouseDown={(e) => {
+              e.stopPropagation();
+              window.dispatchEvent(new CustomEvent("open-verse-panel", {
+                detail: {
+                  verseKey: node.verseKey,
+                  surahName: node.surahName,
+                  ayaNumber: node.ayaNumber,
+                  verseText: node.verseText,
+                },
+              }));
+            }}
+          >
             ﴿{node.verseText || node.children?.[0]?.text || ""}﴾
             <span className="text-xs text-muted-foreground mr-1">({node.surahName}: {node.ayaNumber})</span>
           </span>
         );
       case "hadith":
         return (
-          <div key={key} className="bg-muted/50 border rounded-lg p-3 my-2">
+          <div key={key} className="bg-muted/50 border rounded-lg p-3 my-2 cursor-pointer transition-colors hover:bg-muted/70" onMouseDown={(e) => {
+            e.stopPropagation();
+            window.dispatchEvent(new CustomEvent("open-hadith-panel", {
+              detail: {
+                collection: node.collection,
+                bookNumber: node.bookNumber,
+                hadithNumber: node.hadithNumber,
+                hadithText: node.hadithText,
+                hadithTextEn: node.hadithTextEn,
+                grades: node.grades,
+              },
+            }));
+          }}>
             <p className="text-base leading-loose mb-1 font-amiri">{node.hadithText || node.children?.[0]?.text || ""}</p>
             <p className="text-xs text-muted-foreground">
               [{node.collection} {node.hadithNumber}]
@@ -230,83 +267,88 @@ export function ReadPage() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto" dir="rtl">
-      {/* Header */}
-      <div className="flex items-center gap-2 mb-6">
-        <button
-          onClick={() => navigate("/discover")}
-          className="p-2 hover:bg-accent rounded-lg transition-colors"
-          title="العودة للاكتشاف"
-        >
-          <ArrowLeft className="h-5 w-5" />
-        </button>
-        <button
-          onClick={toggleTheme}
-          className="p-2 hover:bg-accent rounded-lg transition-colors"
-          title={theme === "dark" ? "الوضع الفاتح" : "الوضع الداكن"}
-        >
-          {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
-        </button>
-      </div>
+    <div className="flex h-screen overflow-hidden">
+      <div className="flex-1 overflow-y-auto p-6">
+        <div className="max-w-3xl mx-auto" dir="rtl">
+          {/* Header */}
+          <div className="flex items-center gap-2 mb-6">
+            <button
+              onClick={() => navigate("/discover")}
+              className="p-2 hover:bg-accent rounded-lg transition-colors"
+              title="العودة للاكتشاف"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+            <button
+              onClick={toggleTheme}
+              className="p-2 hover:bg-accent rounded-lg transition-colors"
+              title={theme === "dark" ? "الوضع الفاتح" : "الوضع الداكن"}
+            >
+              {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </button>
+          </div>
 
-      {/* Article header */}
-      <div className="mb-8 pb-6 border-b">
-        <h1 className="text-3xl font-bold mb-4 leading-tight">{article.title}</h1>
-        <div className="flex items-center gap-4 text-sm text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-              {article.author.avatar_url ? (
-                <img src={article.author.avatar_url} alt="" className="h-8 w-8 rounded-full" />
-              ) : (
-                <User className="h-4 w-4 text-primary" />
+          {/* Article header */}
+          <div className="mb-8 pb-6 border-b">
+            <h1 className="text-3xl font-bold mb-4 leading-tight">{article.title}</h1>
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                  {article.author.avatar_url ? (
+                    <img src={article.author.avatar_url} alt="" className="h-8 w-8 rounded-full" />
+                  ) : (
+                    <User className="h-4 w-4 text-primary" />
+                  )}
+                </div>
+                <span className="font-amiri">{article.author.display_name}</span>
+              </div>
+              <span className="flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5" />
+                {formatDate(article.created_at)}
+              </span>
+              {article.fork_count > 0 && (
+                <span className="flex items-center gap-1">
+                  <GitFork className="h-3.5 w-3.5" />
+                  {article.fork_count}
+                </span>
               )}
             </div>
-            <span className="font-amiri">{article.author.display_name}</span>
           </div>
-          <span className="flex items-center gap-1">
-            <Clock className="h-3.5 w-3.5" />
-            {formatDate(article.created_at)}
-          </span>
-          {article.fork_count > 0 && (
-            <span className="flex items-center gap-1">
-              <GitFork className="h-3.5 w-3.5" />
-              {article.fork_count}
-            </span>
-          )}
+
+          {/* Article content */}
+          <div className="prose prose-lg max-w-none mb-10">
+            {renderContent(article.content)}
+          </div>
+
+          {/* Actions */}
+          <div className="flex items-center gap-3 pt-6 border-t">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleLike}
+              className={`gap-2 hover:bg-red-50 hover:text-red-500 transition-colors ${liked ? "text-red-500" : ""}`}
+            >
+              <Heart className={`h-4 w-4 ${liked ? "fill-current" : ""}`} />
+              {likeCount > 0 && <span className="text-xs">{likeCount}</span>}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleFork}
+              disabled={forking}
+              className="gap-2 hover:bg-accent transition-colors"
+            >
+              {forking ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <GitFork className="h-4 w-4" />
+              )}
+              <span>نسخ</span>
+            </Button>
+          </div>
         </div>
       </div>
-
-      {/* Article content */}
-      <div className="prose prose-lg max-w-none mb-10">
-        {renderContent(article.content)}
-      </div>
-
-      {/* Actions */}
-      <div className="flex items-center gap-3 pt-6 border-t">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleLike}
-          className={`gap-2 hover:bg-red-50 hover:text-red-500 transition-colors ${liked ? "text-red-500" : ""}`}
-        >
-          <Heart className={`h-4 w-4 ${liked ? "fill-current" : ""}`} />
-          {likeCount > 0 && <span className="text-xs">{likeCount}</span>}
-        </Button>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleFork}
-          disabled={forking}
-          className="gap-2 hover:bg-accent transition-colors"
-        >
-          {forking ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <GitFork className="h-4 w-4" />
-          )}
-          <span>نسخ</span>
-        </Button>
-      </div>
+      <SharedRightPanel />
     </div>
   );
 }
