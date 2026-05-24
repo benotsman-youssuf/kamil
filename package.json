@@ -12,6 +12,7 @@
     "start": "serve -s dist"
   },
   "dependencies": {
+    "@ahmedhamdan/dubai-font": "^1.0.0",
     "@ai-sdk/google": "^3.0.75",
     "@ai-sdk/mcp": "^1.0.42",
     "@ai-sdk/react": "^3.0.186",

@@ -27,7 +27,7 @@ export function HadithElement(props: PlateElementProps<HadithElementNode>) {
       {...props}
       as="span"
       className={cn(
-        "hadith-node cursor-pointer rounded-sm bg-secondary/30 px-1 py-0.5 font-medium text-foreground transition-all hover:bg-secondary/60 border-b border-border inline decoration-muted-foreground/30",
+        "hadith-node cursor-pointer rounded-sm bg-secondary/30 px-1 py-0.5 font-medium text-foreground transition-all hover:bg-secondary/60 border-b border-border inline font-amiri decoration-muted-foreground/30",
         className
       )}
     >

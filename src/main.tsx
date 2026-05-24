@@ -1,5 +1,6 @@
 import { createRoot } from "react-dom/client";
 import "./index.css";
+import "@ahmedhamdan/dubai-font/css/index.css";
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import SideBar from "./layout/Sidebar.tsx";

@@ -17,7 +17,7 @@ export function EditorContent({
         <Editor
           placeholder={placeholder}
           dir="rtl"
-          className="min-h-full pb-[40vh] focus:outline-none text-foreground"
+          className="min-h-full pb-[40vh] focus:outline-none text-foreground font-dubai"
           style={{
             lineHeight: "1.9",
             fontSize: "1.25rem",

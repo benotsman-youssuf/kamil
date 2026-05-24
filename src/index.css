@@ -136,6 +136,7 @@
   --color-sidebar-ring:               var(--sidebar-ring);
 
   --font-amiri: "Amiri", serif;
+  --font-dubai: "Dubai", sans-serif;
 
   --animate-shimmer-slide: shimmer-slide var(--speed) ease-in-out infinite alternate;
   --animate-spin-around: spin-around calc(var(--speed) * 2) infinite linear;
@@ -161,7 +162,7 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: "Alexandria", sans-serif;
+    font-family: "Dubai", sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
