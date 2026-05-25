@@ -75,86 +75,48 @@ export function SlashInputElement(
   const [isSearching, setIsSearching] = React.useState(false);
   const debouncedValue = useDebounce(value, 400);
   const [searchMode, setSearchMode] = React.useState<SearchMode | null>(null);
-  const [surahNav, setSurahNav] = React.useState<any[]>([]);
 
   React.useEffect(() => {
     if (searchMode === null) {
       setHadithResults([]);
       setApiResults([]);
-      setSurahNav([]);
     }
   }, [searchMode]);
 
   React.useEffect(() => {
     if (searchMode === "verse") {
       if (debouncedValue.length > 0) {
-        // Match surah names locally for navigation
-        const q = debouncedValue.trim();
-        const matched = Object.entries(SURAH_NAMES)
-          .filter(([, name]) => name.includes(q))
-          .map(([id, name]) => {
-            const surahId = Number(id);
+        setIsSearching(true);
+        searchQuran(debouncedValue).then(response => {
+          const verses = response?.result?.verses || [];
+          setApiResults(verses.map((r: SearchVerseResult) => {
+            const [sId, aNum] = r.key.split(':').map(Number);
+            const surahName = SURAH_NAMES[sId] ? "سورة " + SURAH_NAMES[sId] : "سورة " + sId;
+
             return {
-              id: `surah-${id}`,
-              surah: "سورة " + name,
-              surah_id: surahId,
-              aya: null,
-              textTashkeel: "سورة " + name,
-              textNoTashkeel: name,
-              isNavigation: true,
-              onSelect: (editor: PlateEditor) => {
+              id: r.key,
+              surah: surahName,
+              surah_id: sId,
+              aya: aNum,
+              textTashkeel: r.name,
+              textNoTashkeel: r.isArabic ? r.name.replace(/<[^>]*>?/gm, '') : r.name,
+              highlighted: r.highlighted,
+              onSelect: (editor: PlateEditor, val: string) => {
                 editor.tf.insertNodes({
                   type: "verse",
-                  verseKey: `${surahId}:1`,
-                  surahName: "سورة " + name,
-                  ayaNumber: 1,
-                  verseText: "",
-                  children: [{ text: `[سورة ${name}]` }],
+                  verseKey: r.key,
+                  surahName: surahName,
+                  ayaNumber: aNum,
+                  verseText: val,
+                  children: [{ text: `﴿${val}﴾ [${surahName} ${aNum}]` }],
                 });
                 editor.tf.insertText(" ");
                 editor.tf.move({ distance: 1, unit: 'character' });
-              },
+              }
             };
-          });
-        setSurahNav(matched);
-
-        if (debouncedValue.length > 2) {
-          setIsSearching(true);
-          searchQuran(debouncedValue).then(response => {
-            const verses = response?.result?.verses || [];
-            setApiResults(verses.map((r: SearchVerseResult) => {
-              const [sId, aNum] = r.key.split(':').map(Number);
-              const surahName = SURAH_NAMES[sId] ? "سورة " + SURAH_NAMES[sId] : "سورة " + sId;
-
-              return {
-                id: r.key,
-                surah: surahName,
-                surah_id: sId,
-                aya: aNum,
-                textTashkeel: r.name,
-                textNoTashkeel: r.isArabic ? r.name.replace(/<[^>]*>?/gm, '') : r.name,
-                highlighted: r.highlighted,
-                isNavigation: false,
-                onSelect: (editor: PlateEditor, val: string) => {
-                  editor.tf.insertNodes({
-                    type: "verse",
-                    verseKey: r.key,
-                    surahName: surahName,
-                    ayaNumber: aNum,
-                    verseText: val,
-                    children: [{ text: `﴿${val}﴾ [${surahName} ${aNum}]` }],
-                  });
-                  editor.tf.insertText(" ");
-                  editor.tf.move({ distance: 1, unit: 'character' });
-                }
-              };
-            }));
-          }).catch(console.error).finally(() => setIsSearching(false));
-        } else {
-          setApiResults([]);
-        }
+          }));
+        }).catch(console.error).finally(() => setIsSearching(false));
       } else {
-        setSurahNav([]);
         setApiResults([]);
       }
     }
@@ -261,62 +223,33 @@ export function SlashInputElement(
                   {searchMode === "verse" ? "اكتب للبحث عن آية" : "اكتب للبحث عن حديث"}
                 </div>
               ) : searchMode === "verse" ? (
-                surahNav.length === 0 && apiResults.length === 0 && debouncedValue.length > 2 && !isSearching ? (
+                apiResults.length === 0 && !isSearching ? (
                   <div className="py-6 text-center text-muted-foreground text-sm w-full">
                     لا يوجد نتائج
                   </div>
-                ) : debouncedValue.length <= 2 && surahNav.length === 0 ? (
-                  <div className="py-6 text-center text-sm text-muted-foreground">
-                    اكتب 3 أحرف على الأقل للبحث
+                ) : isSearching && apiResults.length === 0 ? (
+                  <div className="py-6 text-center text-sm text-muted-foreground animate-pulse w-full">
+                    جاري البحث في القرآن...
                   </div>
                 ) : (
-                  <>
-                    {surahNav.length > 0 && (
-                      <>
-                        <div className="px-2 py-1 text-xs font-medium text-muted-foreground/60 border-b mx-2">
-                          السور
-                        </div>
-                        {surahNav.map((item) => (
-                          <InlineComboboxItem
-                            key={item.id}
-                            value={item.textNoTashkeel}
-                            focusEditor={false}
-                            onClick={() => item.onSelect(editor)}
-                            className="relative flex cursor-pointer select-none items-center rounded-sm px-3 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground data-[active-item=true]:bg-accent data-[active-item=true]:text-accent-foreground"
-                          >
-                            <span className="text-base font-medium">{item.textTashkeel}</span>
-                          </InlineComboboxItem>
-                        ))}
-                      </>
-                    )}
-                    {apiResults.length > 0 && (
-                      <>
-                        {surahNav.length > 0 && (
-                          <div className="px-2 py-1 text-xs font-medium text-muted-foreground/60 border-b mx-2 mt-1">
-                            الآيات
-                          </div>
-                        )}
-                        {apiResults.map((item) => (
-                          <InlineComboboxItem
-                            key={item.id}
-                            value={item.textNoTashkeel}
-                            focusEditor={false}
-                            onClick={() => item.onSelect(editor, item.textTashkeel)}
-                            className="relative flex cursor-pointer select-none flex-col items-start gap-1 rounded-sm px-3 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground data-[active-item=true]:bg-accent data-[active-item=true]:text-accent-foreground"
-                          >
-                            <span className="text-sm text-muted-foreground block mb-0.5" dir="ltr">
-                              {item.surah} — {item.aya}
-                            </span>
-                            <span
-                              className="text-lg font-medium leading-relaxed font-['Amiri'] [&_em]:bg-amber-200/60 [&_em]:text-amber-900 [&_em]:not-italic [&_em]:rounded-sm [&_em]:px-0.5"
-                              dir="rtl"
-                              dangerouslySetInnerHTML={{ __html: item.highlighted || item.textTashkeel }}
-                            />
-                          </InlineComboboxItem>
-                        ))}
-                      </>
-                    )}
-                  </>
+                  apiResults.map((item) => (
+                    <InlineComboboxItem
+                      key={item.id}
+                      value={item.textNoTashkeel}
+                      focusEditor={false}
+                      onClick={() => item.onSelect(editor, item.textTashkeel)}
+                      className="relative flex cursor-pointer select-none flex-col items-start gap-1 rounded-sm px-3 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground data-[active-item=true]:bg-accent data-[active-item=true]:text-accent-foreground"
+                    >
+                      <span className="text-sm text-muted-foreground block mb-0.5" dir="ltr">
+                        {item.surah} — {item.aya}
+                      </span>
+                      <span
+                        className="text-lg font-medium leading-relaxed font-['Amiri'] [&_em]:bg-amber-200/60 [&_em]:text-amber-900 [&_em]:not-italic [&_em]:rounded-sm [&_em]:px-0.5"
+                        dir="rtl"
+                        dangerouslySetInnerHTML={{ __html: item.highlighted || item.textTashkeel }}
+                      />
+                    </InlineComboboxItem>
+                  ))
                 )
               ) : (
                 /* Hadith search results */
