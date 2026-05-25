@@ -5,7 +5,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { fetchHadith } from "@/lib/hadith/api";
+import { fetchHadith, COLLECTION_NAMES } from "@/lib/hadith/api";
 import type { Hadith } from "@/lib/hadith/types";
 import { X, BookOpen, Info } from "lucide-react";
 
@@ -13,7 +13,7 @@ export function HadithPanelContent({
   hadithData, 
   close 
 }: { 
-  hadithData: { collection: string; bookNumber: string; hadithNumber: string; hadithText: string; hadithTextEn?: string; grades?: any[]; };
+  hadithData: { collection: string; hadithNumber: string; hadithText: string; hadithTextEn?: string; grades?: any[]; };
   close: () => void;
 }) {
   const [details, setDetails] = useState<Hadith | null>(null);
@@ -26,13 +26,14 @@ export function HadithPanelContent({
     setDetails(null);
     setError(null);
     
-    if (hadithData.collection && hadithData.bookNumber && hadithData.hadithNumber) {
+    if (hadithData.collection && hadithData.hadithNumber) {
       setLoading(true);
-      fetchHadith(hadithData.collection, hadithData.bookNumber, hadithData.hadithNumber)
+      fetchHadith(hadithData.collection, hadithData.hadithNumber)
         .then((data) => {
           setDetails(data);
           setLoading(false);
         })
+
         .catch((err) => {
           console.error(err);
           setError("فشل تحميل البيانات. يرجى التحقق من الاتصال بالإنترنت.");
@@ -41,25 +42,7 @@ export function HadithPanelContent({
     }
   }, [hadithData]);
 
-  const collectionNames: Record<string, string> = {
-    bukhari: "صحيح البخاري",
-    muslim: "صحيح مسلم",
-    nasai: "سنن النسائي",
-    abudawud: "سنن أبي داود",
-    tirmidhi: "جامع الترمذي",
-    ibnmajah: "سنن ابن ماجه",
-    malik: "موطأ مالك",
-    ahmad: "مسند أحمد",
-    darimi: "سنن الدارمي",
-    riyadussalihin: "رياض الصالحين",
-    adab: "الأدب المفرد",
-    shamail: "الشمائل المحمدية",
-    mishkat: "مشكاة المصابيح",
-    bulugh: "بلوغ المرام",
-    forty: "الأربعون النووية",
-    hisn: "حصن المسلم",
-    virtues: "فضائل القرآن",
-  };
+
 
   return (
     <>
@@ -75,7 +58,7 @@ export function HadithPanelContent({
         </Button>
         <h2 className="text-sm font-semibold truncate" dir="rtl">
           {hadithData
-            ? `${collectionNames[hadithData.collection] || hadithData.collection} - حديث ${hadithData.hadithNumber}`
+            ? `${COLLECTION_NAMES[hadithData.collection] || hadithData.collection} - حديث ${hadithData.hadithNumber}`
             : ""}
         </h2>
       </div>
@@ -115,8 +98,8 @@ export function HadithPanelContent({
                 <div className="h-full overflow-y-auto px-4 py-3 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-transparent [&::-webkit-scrollbar-track]:bg-transparent">
                   <HadithTab
                     hadithText={hadithData.hadithText}
-                    hadithTextEn={hadithData.hadithTextEn || details?.en?.body || ""}
-                    grades={details?.ar?.grades || hadithData.grades || []}
+                    hadithTextEn={hadithData.hadithTextEn || details?.hadithTextEn || ""}
+                    grades={details?.grades || hadithData.grades || []}
                     loading={loading}
                     error={error}
                   />
@@ -127,7 +110,7 @@ export function HadithPanelContent({
                 <div className="h-full overflow-y-auto px-4 py-3 [&::-webkit-scrollbar]:w-1 [&::-webkit-scrollbar-thumb]:bg-transparent [&::-webkit-scrollbar-track]:bg-transparent">
                   <InfoTab 
                     details={details} 
-                    collectionName={collectionNames[hadithData.collection] || hadithData.collection} 
+                    collectionName={COLLECTION_NAMES[hadithData.collection] || hadithData.collection} 
                     loading={loading}
                   />
                 </div>
@@ -165,7 +148,7 @@ function HadithTab({
           <div className="mb-3 flex flex-wrap gap-2">
             {grades.map((g, i) => (
               <Badge key={i} variant="outline" className="bg-background text-xs">
-                {g.grade} {g.graded_by ? `(حكم ${g.graded_by})` : ""}
+                {g.grade} {g.name ? `(حكم ${g.name})` : ""}
               </Badge>
             ))}
           </div>
@@ -233,13 +216,8 @@ function InfoTab({ details, collectionName, loading }: { details: Hadith | null,
         <div className="bg-muted/30 p-3 rounded border">
           <div className="text-[10px] text-muted-foreground mb-1">الكتاب / الباب</div>
           <div className="text-sm font-medium leading-relaxed">
-            {details.chapterTitle.ar}
+            {details.chapterTitle}
           </div>
-          {details.chapterTitle.en && (
-            <div className="text-xs text-muted-foreground mt-1" dir="ltr">
-              {details.chapterTitle.en}
-            </div>
-          )}
         </div>
       )}
     </div>

@@ -220,7 +220,6 @@ export function ReadPage() {
             window.dispatchEvent(new CustomEvent("open-hadith-panel", {
               detail: {
                 collection: node.collection,
-                bookNumber: node.bookNumber,
                 hadithNumber: node.hadithNumber,
                 hadithText: node.hadithText,
                 hadithTextEn: node.hadithTextEn,

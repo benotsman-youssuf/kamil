@@ -1,95 +1,72 @@
-export interface ApiResponse<T> {
-  code: number;
-  status: string;
-  data: T;
-}
-
-export interface CollectionName {
-  en: string;
-  ar: string;
-}
-
-export interface HadithCollection {
-  slug: string;
-  type: "hadith" | "dua" | "virtues";
-  name: CollectionName;
-  intro: { en: string | null; ar: string | null };
-  hasBooks: boolean;
-  hasChapters: boolean;
-  totalHadith: number;
-  totalAvailable: number;
-}
-
-export interface HadithBook {
-  collection: string;
-  bookNumber: string;
-  name: CollectionName;
-  intro: { en: string | null; ar: string | null };
-  hadithStartNumber: number;
-  hadithEndNumber: number;
-  hadithCount: number;
-}
-
-export interface HadithChapter {
-  collection: string;
-  bookNumber: string;
-  chapterId: string;
-  chapterNumber: string;
-  title: CollectionName;
-  intro: { en: string | null; ar: string | null };
-  ending: { en: string | null; ar: string | null };
-}
-
 export interface HadithGrade {
-  graded_by: string;
+  name: string;
   grade: string;
-}
-
-export interface HadithLanguage {
-  urn: number;
-  body: string;
-  text: string;
-  grades: HadithGrade[];
-}
-
-export interface HadithSnippet {
-  en: string;
-  ar: string;
 }
 
 export interface Hadith {
   collection: string;
-  bookNumber: string;
   hadithNumber: string;
-  chapterId: string;
-  chapterNumber: string | null;
-  chapterTitle: CollectionName | null;
-  en: HadithLanguage;
-  ar: HadithLanguage;
-  snippet?: HadithSnippet;
-}
-
-export interface HadithListResponse {
-  total: number;
-  limit: number;
-  offset: number;
-  hadiths: Hadith[];
+  hadithText: string;
+  hadithTextEn?: string;
+  grades: HadithGrade[];
+  chapterTitle?: string;
 }
 
 export interface HadithSearchResponse {
-  query: string;
-  lang: string;
-  count: number;
-  limit: number;
-  offset: number;
   results: Hadith[];
+  count: number;
 }
 
 export interface SearchFilters {
   q: string;
-  lang?: "en" | "ar" | "both";
-  collection?: string;
-  book?: string;
   limit?: number;
-  offset?: number;
+}
+
+// Internal: API response shapes from fawazahmed0/hadith-api
+export interface HadithApiGrade {
+  name: string;
+  grade: string;
+}
+
+export interface HadithApiRecord {
+  hadithnumber: number;
+  arabicnumber: number;
+  text: string;
+  grades: HadithApiGrade[];
+  reference: {
+    book: number;
+    hadith: number;
+  };
+}
+
+export interface HadithApiFile {
+  metadata: {
+    name: string;
+    sections: Record<string, string>;
+    section_detail?: Record<string, {
+      hadithnumber_first: number;
+      hadithnumber_last: number;
+    }>;
+  };
+  hadiths: HadithApiRecord[];
+}
+
+export interface HadithApiEditionMeta {
+  name: string;
+  book: string;
+  author: string;
+  language: string;
+  has_sections: boolean;
+  direction: string;
+  source: string;
+  comments: string;
+  link: string;
+  linkmin: string;
+}
+
+export interface HadithApiEditions {
+  [collection: string]: {
+    name: string;
+    collection: HadithApiEditionMeta[];
+  };
 }

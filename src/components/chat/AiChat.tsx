@@ -77,9 +77,8 @@ interface EvidenceCard {
   number?: number;
   text?: string;
   loading?: boolean;
-  bookNumber?: string;
   hadithTextEn?: string;
-  grades?: { grade: string; graded_by: string }[];
+  grades?: { grade: string; name: string }[];
   chapterTitle?: string;
 }
 
@@ -305,13 +304,11 @@ export function AiChat({ close }: { close: () => void }) {
           fetchHadithByNumber(card.collection, String(card.number))
             .then((data) =>
               patch(card.id, {
-                text: data.ar.text || data.en.text || "",
+                text: data.hadithText,
                 loading: false,
-                bookNumber: data.bookNumber,
-                hadithTextEn: data.en.text,
-                grades: data.ar.grades,
-                chapterTitle:
-                  data.chapterTitle?.ar || data.chapterTitle?.en || "",
+                hadithTextEn: data.hadithTextEn || "",
+                grades: data.grades,
+                chapterTitle: data.chapterTitle || "",
               })
             )
             .catch(() =>
@@ -354,7 +351,6 @@ export function AiChat({ close }: { close: () => void }) {
             collection: card.collection,
             hadithNumber: String(card.number),
             hadithText: card.text,
-            bookNumber: card.bookNumber,
             hadithTextEn: card.hadithTextEn,
             grades: card.grades,
             chapterTitle: card.chapterTitle,

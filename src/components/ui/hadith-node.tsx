@@ -9,7 +9,6 @@ export interface HadithElementNode {
   type: "hadith";
   children: [{ text: string }];
   collection: string;
-  bookNumber: string;
   hadithNumber: string;
   hadithText: string;
   hadithTextEn?: string;
@@ -20,7 +19,7 @@ export interface HadithElementNode {
 
 export function HadithElement(props: PlateElementProps<HadithElementNode>) {
   const { element, children, className } = props;
-  const { collection, bookNumber, hadithNumber, grades, hadithText, hadithTextEn } = element;
+  const { collection, hadithNumber, grades, hadithText, hadithTextEn } = element;
 
   return (
     <PlateElement
@@ -38,7 +37,6 @@ export function HadithElement(props: PlateElementProps<HadithElementNode>) {
           const event = new CustomEvent("open-hadith-panel", {
             detail: {
               collection,
-              bookNumber,
               hadithNumber,
               hadithText,
               hadithTextEn,

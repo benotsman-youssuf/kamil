@@ -166,7 +166,6 @@ export default function SideBar() {
       editor.tf.insertNodes({
         type: "hadith",
         collection: detail.collection || "",
-        bookNumber: detail.bookNumber || "",
         hadithNumber: detail.hadithNumber || "",
         hadithText: detail.hadithText || "",
         hadithTextEn: detail.hadithTextEn || "",

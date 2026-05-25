@@ -9,7 +9,7 @@ import { searchQuran } from "@/lib/qf/api";
 import type { SearchVerseResult } from "@/lib/qf/api";
 import { useDebounce } from "@/hooks/use-debounce";
 import { SURAH_NAMES } from "@/constants/surahs";
-import { searchHadiths } from "@/lib/hadith/api";
+import { searchHadiths, COLLECTION_NAMES } from "@/lib/hadith/api";
 import type { Hadith, HadithGrade } from "@/lib/hadith/types";
 
 import {
@@ -20,25 +20,7 @@ import {
 } from "./inline-combobox";
 import { KEYS } from "platejs";
 
-const COLLECTION_NAMES: Record<string, string> = {
-  bukhari: "صحيح البخاري",
-  muslim: "صحيح مسلم",
-  nasai: "سنن النسائي",
-  abudawud: "سنن أبي داود",
-  tirmidhi: "جامع الترمذي",
-  ibnmajah: "سنن ابن ماجه",
-  malik: "موطأ مالك",
-  ahmad: "مسند أحمد",
-  darimi: "سنن الدارمي",
-  riyadussalihin: "رياض الصالحين",
-  adab: "الأدب المفرد",
-  shamail: "الشمائل المحمدية",
-  mishkat: "مشكاة المصابيح",
-  bulugh: "بلوغ المرام",
-  forty: "الأربعون النووية",
-  hisn: "حصن المسلم",
-  virtues: "فضائل القرآن",
-};
+
 
 function GradeBadge({ grades }: { grades?: HadithGrade[] }) {
   if (!grades || grades.length === 0) return null;
@@ -126,7 +108,7 @@ export function SlashInputElement(
     if (searchMode === "hadith") {
       if (debouncedValue.length > 1) {
         setIsSearching(true);
-        searchHadiths({ q: debouncedValue, lang: "both", limit: 30 })
+        searchHadiths({ q: debouncedValue, limit: 30 })
           .then(response => {
             setHadithResults(response.results || []);
           })
@@ -140,22 +122,16 @@ export function SlashInputElement(
 
   const fontSize = editor.api.marks()?.[KEYS.fontSize];
   const insertHadith = (hadith: Hadith) => {
-    const rawAr = hadith.ar?.body || hadith.ar?.text || "";
-    const rawEn = hadith.en?.body || hadith.en?.text || "";
-    
-    // Strip HTML tags (like <p>) that the API returns in the body field
-    const hadithText = rawAr.replace(/<[^>]*>?/gm, '');
-    const hadithTextEn = rawEn.replace(/<[^>]*>?/gm, '');
+    const hadithText = hadith.hadithText;
 
     editor.tf.insertNodes({
       type: "hadith",
       collection: hadith.collection,
-      bookNumber: hadith.bookNumber,
       hadithNumber: hadith.hadithNumber,
       hadithText,
-      hadithTextEn,
-      grades: hadith.ar?.grades || hadith.en?.grades || [],
-      chapterTitle: hadith.chapterTitle?.ar || "",
+      hadithTextEn: hadith.hadithTextEn || "",
+      grades: hadith.grades || [],
+      chapterTitle: hadith.chapterTitle || "",
       children: [{ text: `﴿${hadithText}﴾ [${COLLECTION_NAMES[hadith.collection] || hadith.collection} ${hadith.hadithNumber}]` }],
     });
     editor.tf.insertText(" ");
@@ -268,8 +244,8 @@ export function SlashInputElement(
                 ) : (
                   hadithResults.map((hadith, i) => (
                     <InlineComboboxItem
-                      key={`${hadith.collection}-${hadith.bookNumber}-${hadith.hadithNumber}-${i}`}
-                      value={hadith.ar?.text || hadith.ar?.body || hadith.en?.text || `hadith-${i}`}
+                      key={`${hadith.collection}-${hadith.hadithNumber}-${i}`}
+                      value={hadith.hadithText}
                       focusEditor={false}
                       onClick={() => insertHadith(hadith)}
                       className="relative flex cursor-pointer select-none flex-col items-start gap-1 rounded-sm px-3 py-2 text-sm outline-none hover:bg-accent hover:text-accent-foreground data-[active-item=true]:bg-accent data-[active-item=true]:text-accent-foreground"
@@ -279,15 +255,14 @@ export function SlashInputElement(
                           {COLLECTION_NAMES[hadith.collection] || hadith.collection}
                           {hadith.hadithNumber ? ` — ${hadith.hadithNumber}` : ""}
                         </span>
-                        <GradeBadge grades={hadith.ar?.grades || hadith.en?.grades || []} />
+                        <GradeBadge grades={hadith.grades} />
                       </div>
                       <span 
-                        className="text-lg leading-relaxed block text-foreground font-['Amiri'] [&_mark]:bg-amber-200/60 [&_mark]:text-amber-900 [&_mark]:rounded-sm [&_mark]:px-0.5" 
+                        className="text-lg leading-relaxed block text-foreground font-['Amiri']" 
                         dir="auto"
-                        dangerouslySetInnerHTML={{ 
-                          __html: hadith.snippet?.ar || hadith.snippet?.en || (hadith.ar?.text || "").slice(0, 200) + ((hadith.ar?.text || "").length > 200 ? "…" : "")
-                        }}
-                      />
+                      >
+                        {hadith.hadithText.slice(0, 200)}{hadith.hadithText.length > 200 ? "…" : ""}
+                      </span>
                     </InlineComboboxItem>
                   ))
                 )
