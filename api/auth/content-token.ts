@@ -22,7 +22,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       },
       body: new URLSearchParams({
         grant_type: "client_credentials",
-        scope: "content search",
+        scope: "content",
       }),
     });
 

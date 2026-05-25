@@ -75,7 +75,7 @@ const server = createServer(async (req, res) => {
         },
         body: new URLSearchParams({
           grant_type: "client_credentials",
-          scope: "content search",
+          scope: "content",
         }),
       });
 
