@@ -126,14 +126,62 @@ export function SlashInputElement(
     if (searchMode === "hadith") {
       if (debouncedValue.length > 1) {
         setIsSearching(true);
-        const CANONICAL_SIX = new Set(["bukhari", "muslim", "nasai", "abudawud", "tirmidhi", "ibnmajah"]);
-        searchHadiths({ q: debouncedValue, lang: "both", limit: 20 })
-          .then(response => {
-            const all = response.results || [];
-            setHadithResults(all.filter(h => CANONICAL_SIX.has(h.collection)).slice(0, 10));
-          })
-          .catch(console.error)
-          .finally(() => setIsSearching(false));
+
+        const normalizeArabic = (text: string) =>
+          text.normalize('NFD').replace(/[\u064B-\u065F\u0670\u06D6-\u06ED\u0610-\u061A]/g, '')
+            .replace(/[أإآ]/g, 'ا').replace(/ى/g, 'ي').replace(/ة/g, 'ه');
+
+        const hasArabic = /[\u0600-\u06FF]/.test(debouncedValue);
+
+        const qVariants = [debouncedValue];
+        if (hasArabic) {
+          const norm = normalizeArabic(debouncedValue);
+          if (norm !== debouncedValue) qVariants.push(norm);
+          qVariants.push('ال' + norm);
+          const stripped = norm.replace(/^ال/, '');
+          if (stripped !== norm) qVariants.push(stripped);
+        }
+        const unique = [...new Set(qVariants)].slice(0, 4);
+
+        Promise.all(
+          unique.map(q =>
+            searchHadiths({ q, lang: hasArabic ? "both" : "en", limit: 30 })
+              .then(r => r.results || [])
+              .catch(() => [] as Hadith[])
+          )
+        ).then(batches => {
+          const seen = new Set<string>();
+          const all: Hadith[] = [];
+          for (const batch of batches)
+            for (const h of batch) {
+              const key = `${h.collection}-${h.bookNumber}-${h.hadithNumber}`;
+              if (!seen.has(key)) { seen.add(key); all.push(h); }
+            }
+
+          const CANONICAL_SIX = new Set(["bukhari", "muslim", "nasai", "abudawud", "tirmidhi", "ibnmajah"]);
+
+          const nq = normalizeArabic(debouncedValue);
+          const scored = all.map(h => {
+            const text = h.ar?.text || h.en?.text || '';
+            const nt = normalizeArabic(text);
+            let score = 0;
+            if (nt.includes(nq)) score = 1;
+            else {
+              const qWords = nq.split(/\s+/).filter(Boolean);
+              const tWords = nt.split(/\s+/).filter(Boolean);
+              let matches = 0;
+              for (const qw of qWords)
+                if (tWords.some(tw => tw.includes(qw))) matches++;
+              score = matches / Math.max(qWords.length, 1);
+            }
+            if (CANONICAL_SIX.has(h.collection)) score += 0.1;
+            return { h, score };
+          });
+
+          scored.sort((a, b) => b.score - a.score);
+          setHadithResults(scored.filter(s => s.score > 0).slice(0, 10).map(s => s.h));
+          setIsSearching(false);
+        }).catch(() => setIsSearching(false));
       } else if (debouncedValue.length === 0) {
         setHadithResults([]);
       }
