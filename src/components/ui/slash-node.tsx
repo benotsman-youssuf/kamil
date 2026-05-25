@@ -141,7 +141,7 @@ export function SlashInputElement(
           const stripped = norm.replace(/^ال/, '');
           if (stripped !== norm) qVariants.push(stripped);
         }
-        const unique = [...new Set(qVariants)].slice(0, 4);
+        const unique = [...new Set(qVariants)].filter(q => q.length >= 2).slice(0, 4);
 
         Promise.all(
           unique.map(q =>
