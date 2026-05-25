@@ -164,23 +164,12 @@ export function SlashInputElement(
     if (searchMode === "hadith") {
       if (debouncedValue.length > 1) {
         setIsSearching(true);
-        const collections = ["bukhari", "muslim", "nasai", "abudawud", "tirmidhi", "ibnmajah"];
-        Promise.all(
-          collections.map(col =>
-            searchHadiths({ q: debouncedValue, lang: "both", limit: 3, collection: col })
-              .then(r => r.results || [])
-              .catch(() => [] as Hadith[])
-          )
-        ).then(resultsArrays => {
-          const seen = new Set<number>();
-          const deduped = resultsArrays.flat().filter(h => {
-            const urn = h.en?.urn || h.ar?.urn;
-            if (!urn || seen.has(urn)) return false;
-            seen.add(urn);
-            return true;
-          });
-          setHadithResults(deduped.slice(0, 10));
-        }).catch(console.error).finally(() => setIsSearching(false));
+        searchHadiths({ q: debouncedValue, lang: "both", limit: 10 })
+          .then(response => {
+            setHadithResults(response.results || []);
+          })
+          .catch(console.error)
+          .finally(() => setIsSearching(false));
       } else if (debouncedValue.length === 0) {
         setHadithResults([]);
       }
