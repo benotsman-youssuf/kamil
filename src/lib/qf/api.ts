@@ -1,5 +1,6 @@
 import { getValidAccessToken, fetchContentToken, refreshTokens } from "./auth";
 import { QF_CONFIG } from "./config";
+import { SURAH_NAMES } from "@/constants/surahs";
 
 const API_BASE_URL = QF_CONFIG.apiBaseUrl;
 const CLIENT_ID = QF_CONFIG.clientId;
@@ -285,6 +286,38 @@ export interface NoteListResponse {
 
 // ─── Content APIs ─────────────────────────────────────────────────
 
+// ─── Local fallback (for extension) ──────────────────────
+
+let localQuranCache: Map<number, Map<number, { textTashkeel: string; textNoTashkeel: string }>> | null = null;
+
+async function loadLocalQuran(): Promise<Map<number, Map<number, { textTashkeel: string; textNoTashkeel: string }>> | null> {
+  if (localQuranCache) return localQuranCache;
+  try {
+    const res = await fetch('/quran.json');
+    if (!res.ok) return null;
+    const data: any[] = await res.json();
+    const cache = new Map<number, Map<number, { textTashkeel: string; textNoTashkeel: string }>>();
+    const nameToNumber = Object.fromEntries(
+      Object.entries(SURAH_NAMES).map(([k, v]) => [v, Number(k)])
+    );
+    for (const entry of data) {
+      const surahNum = nameToNumber[entry.surah];
+      if (!surahNum) continue;
+      if (!cache.has(surahNum)) cache.set(surahNum, new Map());
+      cache.get(surahNum)!.set(entry.aya, {
+        textTashkeel: entry.textTashkeel,
+        textNoTashkeel: entry.textNoTashkeel,
+      });
+    }
+    localQuranCache = cache;
+    return cache;
+  } catch {
+    return null;
+  }
+}
+
+// ─── Verse Details API ───────────────────────────────────
+
 export async function fetchVerseDetails(verseKey: string): Promise<VerseDetails> {
   const headers = await getAuthHeaders();
   const params = new URLSearchParams({
@@ -299,27 +332,47 @@ export async function fetchVerseDetails(verseKey: string): Promise<VerseDetails>
   const url = `${CONTENT_API}/verses/by_key/${verseKey}?${params}`;
   const response = await fetch(url, { headers });
 
-  if (!response.ok) {
+  if (response.ok) {
+    const data = await response.json();
+    const verse: VerseDetails = data.verse;
+
+    if (data.verse?.audio) {
+      verse.audio_url = data.verse.audio.url;
+    }
+
+    // Fetch hadith references separately
+    try {
+      const hadiths = await fetchHadithsByAyah(verseKey);
+      verse.hadiths = hadiths;
+    } catch {
+      // hadiths may not be available in prelive
+    }
+
+    return verse;
+  }
+
+  // Fallback to local quran.json (extension context)
+  const local = await loadLocalQuran();
+  if (!local) {
     const err: ApiErrorResponse = await response.json().catch(() => ({}));
     throw new Error(err.message || err.error?.message || `Failed to fetch verse: ${response.status}`);
   }
 
-  const data = await response.json();
-  const verse: VerseDetails = data.verse;
+  const [surahNum, ayaNum] = verseKey.split(':').map(Number);
+  const surahVerses = local.get(surahNum);
+  const entry = surahVerses?.get(ayaNum);
 
-  if (data.verse?.audio) {
-    verse.audio_url = data.verse.audio.url;
-  }
-
-  // Fetch hadith references separately
-  try {
-    const hadiths = await fetchHadithsByAyah(verseKey);
-    verse.hadiths = hadiths;
-  } catch {
-    // hadiths may not be available in prelive
-  }
-
-  return verse;
+  return {
+    id: 0,
+    verse_number: ayaNum,
+    verse_key: verseKey,
+    chapter_id: surahNum,
+    text_imlaei: entry?.textTashkeel || "",
+    text_uthmani: entry?.textTashkeel || "",
+    words: [],
+    translations: [],
+    tafsirs: [],
+  };
 }
 
 export async function fetchHadithsByAyah(ayahKey: string): Promise<Hadith[]> {
