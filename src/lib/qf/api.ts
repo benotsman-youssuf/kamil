@@ -6,7 +6,6 @@ const CLIENT_ID = QF_CONFIG.clientId;
 
 // API base paths per spec
 const CONTENT_API = `${API_BASE_URL}/content/api/v4`;
-const SEARCH_API = `${API_BASE_URL}/search/api/v1`;
 const USER_API = `${API_BASE_URL}/auth/v1`;
 
 let contentToken: string | null = null;
@@ -130,6 +129,7 @@ export interface SearchVerseResult {
   key: string;
   name: string;
   isArabic: boolean;
+  highlighted?: string | null;
 }
 
 export interface SearchResponse {
@@ -500,38 +500,9 @@ export async function getRecitations(): Promise<any[]> {
 // ─── Search API ───────────────────────────────────────────────────
 
 export async function searchQuran(query: string, options?: {
-  mode?: "quick" | "advanced";
   size?: number;
-  page?: number;
-  navigationalResultsNumber?: number;
-  versesResultsNumber?: number;
-  translationIds?: number[];
 }): Promise<SearchResponse> {
-  const headers = await getAuthHeaders();
-  const mode = options?.mode || "advanced";
-
-  const params = new URLSearchParams({ mode, query });
-  if (options?.navigationalResultsNumber) params.set("navigationalResultsNumber", String(options.navigationalResultsNumber));
-  if (options?.versesResultsNumber) params.set("versesResultsNumber", String(options.versesResultsNumber));
-  if (options?.size) params.set("size", String(options.size));
-  if (options?.page) params.set("page", String(options.page));
-  if (options?.translationIds?.length) {
-    params.set("translation_ids", options.translationIds.join(","));
-  }
-
-  const url = `${SEARCH_API}/search?${params.toString()}`;
-
-  try {
-    const response = await fetch(url, { headers });
-    if (!response.ok) {
-      console.warn("Search API error:", response.status, "- falling back to legacy search");
-      return legacySearch(query, options?.size || 20);
-    }
-    return await response.json();
-  } catch (error) {
-    console.error("Search error, falling back to legacy search:", error);
-    return legacySearch(query, options?.size || 20);
-  }
+  return legacySearch(query, options?.size || 20);
 }
 
 async function legacySearch(query: string, size: number): Promise<SearchResponse> {
@@ -555,6 +526,7 @@ async function legacySearch(query: string, size: number): Promise<SearchResponse
           result_type: "ayah",
           key: r.verse_key,
           name: r.text || "",
+          highlighted: r.highlighted || null,
           isArabic: true,
         })),
       },
