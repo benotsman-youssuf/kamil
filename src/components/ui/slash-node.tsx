@@ -126,23 +126,14 @@ export function SlashInputElement(
     if (searchMode === "hadith") {
       if (debouncedValue.length > 1) {
         setIsSearching(true);
-        const CANONICAL_SIX = ["bukhari", "muslim", "nasai", "abudawud", "tirmidhi", "ibnmajah"];
-        Promise.all(
-          CANONICAL_SIX.map(col =>
-            searchHadiths({ q: debouncedValue, lang: "both", limit: 3, collection: col })
-              .then(r => r.results || [])
-              .catch(() => [] as Hadith[])
-          )
-        ).then(resultsArrays => {
-          const seen = new Set<number>();
-          const deduped = resultsArrays.flat().filter(h => {
-            const urn = h.en?.urn || h.ar?.urn;
-            if (!urn || seen.has(urn)) return false;
-            seen.add(urn);
-            return true;
-          });
-          setHadithResults(deduped.slice(0, 10));
-        }).catch(console.error).finally(() => setIsSearching(false));
+        const CANONICAL_SIX = new Set(["bukhari", "muslim", "nasai", "abudawud", "tirmidhi", "ibnmajah"]);
+        searchHadiths({ q: debouncedValue, lang: "both", limit: 20 })
+          .then(response => {
+            const all = response.results || [];
+            setHadithResults(all.filter(h => CANONICAL_SIX.has(h.collection)).slice(0, 10));
+          })
+          .catch(console.error)
+          .finally(() => setIsSearching(false));
       } else if (debouncedValue.length === 0) {
         setHadithResults([]);
       }
