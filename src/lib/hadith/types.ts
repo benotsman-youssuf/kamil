@@ -7,6 +7,7 @@ export interface Hadith {
   collection: string;
   hadithNumber: string;
   hadithText: string;
+  highlighted?: string;
   hadithTextEn?: string;
   grades: HadithGrade[];
   chapterTitle?: string;

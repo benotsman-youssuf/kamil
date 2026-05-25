@@ -258,11 +258,10 @@ export function SlashInputElement(
                         <GradeBadge grades={hadith.grades} />
                       </div>
                       <span 
-                        className="text-lg leading-relaxed block text-foreground font-['Amiri']" 
+                        className="text-lg leading-relaxed block text-foreground font-['Amiri'] [&_em]:bg-amber-200/60 [&_em]:text-amber-900 [&_em]:not-italic [&_em]:rounded-sm [&_em]:px-0.5" 
                         dir="auto"
-                      >
-                        {hadith.hadithText.slice(0, 200)}{hadith.hadithText.length > 200 ? "…" : ""}
-                      </span>
+                        dangerouslySetInnerHTML={{ __html: (hadith.highlighted || hadith.hadithText).slice(0, 200) + ((hadith.highlighted || hadith.hadithText).length > 200 ? "…" : "") }}
+                      />
                     </InlineComboboxItem>
                   ))
                 )

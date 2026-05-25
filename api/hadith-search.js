@@ -34,6 +34,18 @@ function normalize(text) {
     .replace(TEH_MARBUTA_RE, 'ه');
 }
 
+function highlightText(text, queryNorm) {
+  const tashkeelClass = '[\u064B-\u065F\u0670\u08D4-\u08E1\u06D6-\u06ED\u0610-\u061A\u0640]*';
+  const chars = [...queryNorm].map(c => {
+    if (c === 'ا') return '[اأإآٱ]';
+    if (c === 'ه') return '[هة]';
+    return c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  });
+  const pattern = chars.join(tashkeelClass);
+  const regex = new RegExp(`(${pattern})`, 'gi');
+  return text.replace(regex, '<em>$1</em>');
+}
+
 async function getEdition(edition) {
   const cached = cache.get(edition);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
@@ -69,6 +81,7 @@ export default async function handler(req, res) {
             collection,
             hadithNumber: String(h.hadithnumber),
             hadithText: h.text,
+            highlighted: highlightText(h.text, query),
             grades: (h.grades || []).map((g) => ({
               name: g.name || '',
               grade: g.grade || '',
