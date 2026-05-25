@@ -23,6 +23,17 @@ const EDITIONS = Object.values(COLLECTION_TO_EDITION);
 const cache = new Map();
 const CACHE_TTL = 10 * 60 * 1000;
 
+const TASHKEEL_RE = /[\u064B-\u065F\u0670\u08D4-\u08E1\u06D6-\u06ED\u0610-\u061A\u0640]/g;
+const ALEF_RE = /[أإآٱ]/g;
+const TEH_MARBUTA_RE = /[ة]/g;
+
+function normalize(text) {
+  return text
+    .replace(TASHKEEL_RE, '')
+    .replace(ALEF_RE, 'ا')
+    .replace(TEH_MARBUTA_RE, 'ه');
+}
+
 async function getEdition(edition) {
   const cached = cache.get(edition);
   if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
@@ -42,7 +53,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const query = q.toLowerCase();
+    const query = normalize(q.toLowerCase());
     const maxResults = Math.min(parseInt(limit, 10) || 30, 50);
 
     const allResults = [];
@@ -53,7 +64,7 @@ export default async function handler(req, res) {
       const hadiths = file.hadiths || [];
 
       for (const h of hadiths) {
-        if (h.text && h.text.toLowerCase().includes(query)) {
+        if (h.text && normalize(h.text.toLowerCase()).includes(query)) {
           allResults.push({
             collection,
             hadithNumber: String(h.hadithnumber),
