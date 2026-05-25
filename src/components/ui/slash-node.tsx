@@ -4,7 +4,7 @@ import * as React from "react";
 import type { PlateEditor, PlateElementProps } from "platejs/react";
 import { type TComboboxInputElement } from "platejs";
 import { PlateElement } from "platejs/react";
-import { useFuzzySearchList, Highlight } from '@nozbe/microfuzz/react'
+
 import { searchQuran } from "@/lib/qf/api";
 import type { SearchVerseResult } from "@/lib/qf/api";
 import { useDebounce } from "@/hooks/use-debounce";
@@ -19,69 +19,6 @@ import {
   InlineComboboxItem,
 } from "./inline-combobox";
 import { KEYS } from "platejs";
-
-type Group = {
-  id: number;
-  surah: string;
-  aya: number;
-  textNoTashkeel: string;
-  textMinTashkeel: string;
-  textTashkeel: string;
-  onSelect: (editor: PlateEditor, value: string, color?: string) => void;
-};
-
-let quranCache: Aya[] | null = null;
-
-const loadQuran = async (): Promise<Aya[]> => {
-  if (quranCache) return quranCache;
-  try {
-    const response = await fetch(import.meta.env.VITE_DATA_URL);
-    if (!response.ok) {
-      console.error("Failed to load quran data");
-      return [];
-    }
-    quranCache = await response.json();
-    return quranCache || [];
-  } catch (error) {
-    console.error("Failed to load quran data", error);
-    return [];
-  }
-};
-
-const SURAH_NAME_TO_ID: Record<string, number> = {};
-for (const [id, name] of Object.entries(SURAH_NAMES)) {
-  SURAH_NAME_TO_ID[name] = Number(id);
-}
-
-interface Aya {
-  id: number;
-  surah: string;
-  surah_id: number;
-  aya: number;
-  textNoTashkeel: string;
-  textMinTashkeel: string;
-  textTashkeel: string;
-}
-
-const buildGroups = (quran: Aya[]): Group[] => {
-  return quran.map((item: Aya) => ({
-    ...item,
-    onSelect: (editor: PlateEditor, value: string) => {
-      const surahId = SURAH_NAME_TO_ID[item.surah] || (item as any).surah_number || (item as any).chapter_id;
-
-      editor.tf.insertNodes({
-        type: "verse",
-        verseKey: `${surahId}:${item.aya}`,
-        surahName: item.surah,
-        ayaNumber: item.aya,
-        verseText: value,
-        children: [{ text: `﴿${value}﴾ [${item.surah} ${item.aya}]` }],
-      });
-      editor.tf.insertText(" ");
-      editor.tf.move({ distance: 1, unit: 'character' });
-    },
-  }));
-};
 
 const COLLECTION_NAMES: Record<string, string> = {
   bukhari: "صحيح البخاري",
@@ -138,11 +75,6 @@ export function SlashInputElement(
   const [isSearching, setIsSearching] = React.useState(false);
   const debouncedValue = useDebounce(value, 400);
   const [searchMode, setSearchMode] = React.useState<SearchMode | null>(null);
-  const [groups, setGroups] = React.useState<Group[]>([]);
-
-  React.useEffect(() => {
-    loadQuran().then((data) => setGroups(buildGroups(data)));
-  }, []);
 
   React.useEffect(() => {
     if (searchMode === null) {
@@ -193,7 +125,7 @@ export function SlashInputElement(
     if (searchMode === "hadith") {
       if (debouncedValue.length > 1) {
         setIsSearching(true);
-        searchHadiths({ q: debouncedValue, lang: "both", limit: 10 })
+        searchHadiths({ q: debouncedValue, lang: "both", limit: 10, collection: "bukhari,muslim,nasai,abudawud,tirmidhi,ibnmajah" })
           .then(response => {
             setHadithResults(response.results || []);
           })
@@ -206,18 +138,6 @@ export function SlashInputElement(
   }, [debouncedValue, searchMode]);
 
   const fontSize = editor.api.marks()?.[KEYS.fontSize];
-  const localResults = useFuzzySearchList({
-    list: groups,
-    queryText: value,
-    getText: (item: Group) => [item.textTashkeel],
-    mapResultItem: ({ item, matches: [highlightRanges] }) => ({
-      item,
-      highlightRanges,
-    }),
-  });
-
-  const filteredResults = [...localResults, ...apiResults.map(item => ({ item, highlightRanges: [] }))].slice(0, 10);
-
   const insertHadith = (hadith: Hadith) => {
     const rawAr = hadith.ar?.body || hadith.ar?.text || "";
     const rawEn = hadith.en?.body || hadith.en?.text || "";
@@ -302,12 +222,12 @@ export function SlashInputElement(
                   {searchMode === "verse" ? "اكتب للبحث عن آية" : "اكتب للبحث عن حديث"}
                 </div>
               ) : searchMode === "verse" ? (
-                filteredResults.length === 0 && !isSearching ? (
+                apiResults.length === 0 && !isSearching ? (
                   <div className="py-6 text-center text-muted-foreground text-sm w-full">
                     لا يوجد نتائج
                   </div>
                 ) : (
-                  filteredResults.map(({ item, highlightRanges }) => (
+                  apiResults.map((item) => (
                     <InlineComboboxItem
                       key={item.id}
                       value={item.textNoTashkeel}
@@ -318,8 +238,8 @@ export function SlashInputElement(
                       <span className="text-sm text-muted-foreground block mb-0.5" dir="ltr">
                         {item.surah} — {item.aya}
                       </span>
-                      <span className="text-lg font-medium leading-relaxed font-['Amiri'] [&_mark]:bg-amber-200/60 [&_mark]:text-amber-900 [&_mark]:rounded-sm [&_mark]:px-0.5" dir="rtl">
-                        <Highlight text={highlightRanges?.length ? item.textTashkeel : item.textNoTashkeel} ranges={highlightRanges ?? []} />
+                      <span className="text-lg font-medium leading-relaxed font-['Amiri']" dir="rtl">
+                        {item.textTashkeel}
                       </span>
                     </InlineComboboxItem>
                   ))
