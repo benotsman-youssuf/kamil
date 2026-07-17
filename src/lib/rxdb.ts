@@ -159,6 +159,9 @@ export async function startSync() {
           if (userId && doc.qf_user_id !== userId) {
             return null;
           }
+          if (doc.content && typeof doc.content !== "string") {
+            doc.content = JSON.stringify(doc.content);
+          }
           return doc;
         },
         queryBuilder: ({ query }) => {
@@ -172,6 +175,9 @@ export async function startSync() {
         batchSize: 50,
         modifier: (doc: any) => {
           if (doc.forked_from === "") doc.forked_from = null;
+          if (doc.content && typeof doc.content !== "string") {
+            doc.content = JSON.stringify(doc.content);
+          }
           return doc;
         },
       },
