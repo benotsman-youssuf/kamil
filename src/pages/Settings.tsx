@@ -77,6 +77,7 @@ export function Settings() {
             const now = new Date().toISOString();
             const doc = {
               id: page.id?.toString() || crypto.randomUUID(),
+              qf_user_id: page.qf_user_id || "",
               name: page.name || page.title || "Untitled",
               title: page.title || page.name || "Untitled",
               content: typeof page.content === "string" ? page.content : JSON.stringify(page.content || []),
@@ -88,6 +89,8 @@ export function Settings() {
               created_at: page.createdAt || page.created_at || now,
               updated_at: page.updatedAt || page.updated_at || now,
               isPinned: page.isPinned ?? false,
+              _deleted: page._deleted ?? false,
+              like_count: page.like_count ?? 0,
             };
             const existing = await db.pages.findOne(doc.id).exec();
             if (existing) {

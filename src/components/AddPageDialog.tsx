@@ -13,9 +13,9 @@ import {
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { getDb } from "@/lib/rxdb";
+import { getValidAccessToken } from "@/lib/qf/auth";
 import { Plus } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-
 
 import { useState } from "react";
 
@@ -30,11 +30,17 @@ export function AddPageDialog({ compact = false }: { compact?: boolean }) {
 
     try {
       if (typeof name === "string") {
+        const token = await getValidAccessToken();
+        let userId = "";
+        if (token) {
+          try { userId = JSON.parse(atob(token.split(".")[1])).sub || ""; } catch { userId = ""; }
+        }
         const db = await getDb();
         const id = crypto.randomUUID();
         const now = new Date().toISOString();
         await db.pages.insert({
           id,
+          qf_user_id: userId,
           name,
           title: name,
           description: "",
@@ -45,6 +51,9 @@ export function AddPageDialog({ compact = false }: { compact?: boolean }) {
           is_fork: false,
           fork_count: 0,
           forked_from: "",
+          isPinned: false,
+          _deleted: false,
+          like_count: 0,
         });
         toast.success("تمت إضافة الصفحة بنجاح", { duration: 1000 });
         setOpen(false);
@@ -76,7 +85,6 @@ export function AddPageDialog({ compact = false }: { compact?: boolean }) {
         )}
       </DialogTrigger>
 
-      {/* Add dir="rtl" here for RTL direction */}
       <DialogContent className="sm:max-w-[425px]" dir="rtl">
         <form onSubmit={addPage}>
           <DialogHeader className="flex flex-col items-center">

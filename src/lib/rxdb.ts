@@ -1,7 +1,8 @@
 import { createRxDatabase, addRxPlugin, type RxDatabase, type RxCollection } from "rxdb/plugins/core";
 import { getRxStorageDexie } from "rxdb/plugins/storage-dexie";
 import { RxDBQueryBuilderPlugin } from "rxdb/plugins/query-builder";
-import { replicateRxCollection } from "rxdb/plugins/replication";
+import { replicateSupabase, RxSupabaseReplicationState } from "rxdb/plugins/replication-supabase";
+import { createClient } from "@supabase/supabase-js";
 import { getValidAccessToken } from "@/lib/qf/auth";
 import { QF_CONFIG } from "@/lib/qf/config";
 
@@ -9,6 +10,7 @@ addRxPlugin(RxDBQueryBuilderPlugin);
 
 export type PageDocType = {
   id: string;
+  qf_user_id: string;
   name: string;
   title: string;
   content: string;
@@ -21,6 +23,7 @@ export type PageDocType = {
   updated_at: string;
   isPinned?: boolean;
   _deleted?: boolean;
+  like_count?: number;
 };
 
 export type PageCollection = RxCollection<PageDocType>;
@@ -35,6 +38,7 @@ export const PAGE_SCHEMA = {
   type: "object",
   properties: {
     id: { type: "string", maxLength: 100 },
+    qf_user_id: { type: "string" },
     name: { type: "string" },
     title: { type: "string" },
     content: { type: "string" },
@@ -47,13 +51,19 @@ export const PAGE_SCHEMA = {
     updated_at: { type: "string" },
     isPinned: { type: "boolean" },
     _deleted: { type: "boolean" },
+    like_count: { type: "number" },
   },
-  required: ["id", "title", "content", "created_at", "updated_at"],
+  required: ["id", "qf_user_id", "title", "content", "created_at", "updated_at"],
 };
 
 let dbInstance: KamilDatabase | null = null;
 let initPromise: Promise<KamilDatabase> | null = null;
-let replicationInstance: any = null;
+let replicationInstance: RxSupabaseReplicationState<PageDocType> | null = null;
+
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://zcedrrgiprkguvdxblvx.supabase.co";
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpjZWRycmdpcHJrZ3V2ZHhibHZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMzEzNTYsImV4cCI6MjA5NDcwNzM1Nn0.VwlnmuNO1QKQsoaK5xgZ8K71TG3dcstx3vSPbA5iY7M";
+
+const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 export async function getDb(): Promise<KamilDatabase> {
   if (dbInstance) return dbInstance;
@@ -65,15 +75,6 @@ export async function getDb(): Promise<KamilDatabase> {
     await db.addCollections({
       pages: {
         schema: PAGE_SCHEMA,
-        conflictHandler: {
-          isEqual(a: any, b: any) {
-            return a.updated_at === b.updated_at;
-          },
-          resolve(i: any) {
-            // server-wins: keep the server version
-            return i.realMasterState;
-          },
-        },
       },
     });
     dbInstance = db;
@@ -82,8 +83,13 @@ export async function getDb(): Promise<KamilDatabase> {
   return initPromise;
 }
 
-async function getAuthToken(): Promise<string | null> {
-  return getValidAccessToken();
+function getUserIdFromToken(token: string): string | null {
+  try {
+    const payload = token.split(".")[1];
+    return JSON.parse(atob(payload)).sub;
+  } catch {
+    return null;
+  }
 }
 
 export async function syncFetch(path: string, options?: { method?: string; body?: any }) {
@@ -126,104 +132,45 @@ export async function syncFetch(path: string, options?: { method?: string; body?
 }
 
 export async function startSync() {
-  const db = await getDb();
-  const token = await getAuthToken();
-  if (!token) return;
-
   if (replicationInstance) {
-    await replicationInstance.cancel();
-    replicationInstance = null;
+    return replicationInstance;
   }
 
-  const rep = replicateRxCollection({
-    replicationIdentifier: "kamil-sync",
+  const db = await getDb();
+  const token = await getValidAccessToken();
+  if (!token) return;
+
+  const userId = getUserIdFromToken(token);
+
+  const rep = replicateSupabase({
+    tableName: "pages",
+    client: supabaseClient,
     collection: db.pages,
+    replicationIdentifier: "kamil-supabase-sync",
+    live: true,
     pull: {
-      handler: async (checkpoint: string | undefined, batchSize: number) => {
-        const token = await getAuthToken();
-        if (!token) return { documents: [], checkpoint };
-
-        const since = typeof checkpoint === "string" ? checkpoint : "";
-        const data: any = await syncFetch(
-          `/sync?since=${encodeURIComponent(since)}&limit=${batchSize}`
-        ).catch(() => ({ pages: [] }));
-        const pages = (data.pages || []).map((p: any) => ({
-          id: p.id,
-          name: p.name || p.title,
-          title: p.title || p.name,
-          content:
-            typeof p.content === "string"
-              ? p.content
-              : JSON.stringify(p.content),
-          description: p.description || "",
-          is_public: p.is_public ?? false,
-          is_fork: p.is_fork ?? false,
-          fork_count: p.fork_count ?? 0,
-          forked_from: p.forked_from || "",
-          created_at: p.created_at,
-          updated_at: p.updated_at,
-          isPinned: p.isPinned ?? false,
-          _deleted: p._deleted ?? false,
-        }));
-
-        const lastDoc = pages[pages.length - 1];
-        return {
-          documents: pages,
-          checkpoint: lastDoc?.updated_at || checkpoint,
-        };
-      },
       batchSize: 50,
+      modifier: (doc: any) => {
+        if (userId && doc.qf_user_id !== userId) {
+          return null;
+        }
+        return doc;
+      },
+      queryBuilder: ({ query }) => {
+        if (userId) {
+          return query.eq("qf_user_id", userId);
+        }
+        return query;
+      },
     },
     push: {
-      handler: async (rows) => {
-        const token = await getAuthToken();
-        if (!token) return [];
-
-        // Deduplicate: keep the row with the latest updated_at per id
-        const uniqueMap = new Map<string, any>();
-        for (const row of rows) {
-          const existing = uniqueMap.get(row.newDocumentState.id);
-          if (!existing || row.newDocumentState.updated_at > existing.newDocumentState.updated_at) {
-            uniqueMap.set(row.newDocumentState.id, row);
-          }
-        }
-        const dedupedRows = [...uniqueMap.values()];
-
-        const pages = dedupedRows.map((row: any) => ({
-          id: row.newDocumentState.id,
-          name: row.newDocumentState.name || row.newDocumentState.title,
-          title: row.newDocumentState.title || row.newDocumentState.name,
-          content: row.newDocumentState.content,
-          description: row.newDocumentState.description || "",
-          is_public: row.newDocumentState.is_public ?? false,
-          is_fork: row.newDocumentState.is_fork ?? false,
-          fork_count: row.newDocumentState.fork_count ?? 0,
-          forked_from: row.newDocumentState.forked_from || "",
-          created_at: row.newDocumentState.created_at,
-          updated_at: row.newDocumentState.updated_at,
-          isPinned: row.newDocumentState.isPinned ?? false,
-          _deleted: (row.newDocumentState as any)._deleted ?? false,
-        }));
-
-        const result = await syncFetch("/sync", {
-          method: "POST",
-          body: { pages },
-        }).catch(() => null);
-
-        // Return full conflict documents to RxDB for client-side resolution
-        if (result && Array.isArray(result.conflicts)) {
-          return result.conflicts;
-        }
-        return [];
-      },
       batchSize: 50,
     },
-    live: true,
-    retryTime: 5000,
-    autoStart: true,
+    modifiedField: "_modified",
+    deletedField: "_deleted",
   });
 
-  (rep as any).error$.subscribe((err: any) => console.error("[rxdb-sync]", err));
+  rep.error$.subscribe((err: any) => console.error("[rxdb-supabase-sync]", err));
   replicationInstance = rep;
   return rep;
 }
@@ -244,7 +191,7 @@ export async function destroyDb() {
 }
 
 export async function startSyncIfAuthenticated() {
-  const token = await getAuthToken();
+  const token = await getValidAccessToken();
   if (token) {
     return startSync().catch((err) => console.error("[rxdb] sync start failed", err));
   }
@@ -294,8 +241,55 @@ export async function apiRequest<T = any>(
 
 export async function pushPageToServer(pages: any[]) {
   try {
-    return await syncFetch("/sync", { method: "POST", body: { pages } });
+    return await apiRequest("/sync", { method: "POST", body: { pages } });
   } catch {
     return null;
   }
+}
+
+export function getReplicationInstance() {
+  return replicationInstance;
+}
+
+const WELCOME_CONTENT = [
+  {
+    type: "h1",
+    children: [{ text: "مرحباً بك في كمّل" }],
+  },
+  {
+    type: "p",
+    children: [{ text: "أهلاً بك في مساحتك الخاصة! يمكنك البدء بكتابة أفكارك وملاحظاتك هنا." }],
+  },
+  {
+    type: "p",
+    children: [{ text: "استخدم اختصارات لوحة المفاتيح، أو القائمة العائمة لإضافة الآيات والأحاديث بكل سهولة." }],
+  }
+];
+
+export async function createPage(name: string): Promise<string> {
+  const db = await getDb();
+  const id = crypto.randomUUID();
+  const now = new Date().toISOString();
+  const token = await getValidAccessToken();
+  const userId = token ? getUserIdFromToken(token) : "";
+
+  await db.pages.insert({
+    id,
+    qf_user_id: userId || "",
+    name,
+    title: name,
+    content: JSON.stringify(WELCOME_CONTENT),
+    description: "",
+    created_at: now,
+    updated_at: now,
+    is_public: false,
+    is_fork: false,
+    fork_count: 0,
+    forked_from: "",
+    isPinned: false,
+    _deleted: false,
+    like_count: 0,
+  });
+
+  return id;
 }

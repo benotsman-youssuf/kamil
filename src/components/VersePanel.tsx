@@ -13,6 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { fetchVerseDetails, getResourcesTafsirs, getResourcesTranslations, fetchTafsirsBulk, fetchNotesByVerse, addNote, updateNote, deleteNote } from "@/lib/qf/api";
+import { getValidAccessToken } from "@/lib/qf/auth";
 import type { VerseDetails, Hadith, Word, Tafsir } from "@/lib/qf/api";
 import {
   Play,
@@ -99,8 +100,14 @@ export function VersePanelContent({
       const db = await getDb();
       const id = crypto.randomUUID();
       const now = new Date().toISOString();
+      const token = await getValidAccessToken();
+      let userId = "";
+      if (token) {
+        try { userId = JSON.parse(atob(token.split(".")[1])).sub || ""; } catch { userId = ""; }
+      }
       await db.pages.insert({
         id,
+        qf_user_id: userId,
         name: `تأملات الآية ${verseData.verseKey}`,
         title: `تأملات الآية ${verseData.verseKey}`,
         description: `سورة ${verseData.surahName}، آية ${verseData.ayaNumber}`,
@@ -111,6 +118,9 @@ export function VersePanelContent({
         is_fork: false,
         fork_count: 0,
         forked_from: "",
+        isPinned: false,
+        _deleted: false,
+        like_count: 0,
       });
 
       navigate(`/pages/${id}`);

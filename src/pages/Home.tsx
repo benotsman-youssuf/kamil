@@ -10,8 +10,6 @@ import { Badge } from "@/components/ui/badge";
 import { Highlighter } from "@/components/magicui/highlighter";
 import { ShimmerButton } from "@/components/magicui/shimmer-button";
 import { AnimatedGridPattern } from "@/components/magicui/animated-grid-pattern";
-
-import { getDb } from "@/lib/rxdb";
 import { getValidAccessToken } from "@/lib/qf/auth";
 import { cn } from "@/lib/utils";
 
@@ -28,74 +26,13 @@ export function Home() {
 
   const handleStart = async () => {
     setLoading(true);
-    try {
-      const db = await getDb();
-      const token = await getValidAccessToken();
-
-      // If authenticated, check server first to avoid sync-timing race
-      if (token) {
-        try {
-          const res = await fetch("/api/pages", {
-            headers: {
-              "x-auth-token": token,
-              Authorization: `Bearer ${token}`,
-            },
-          });
-          if (res.ok) {
-            const { pages } = await res.json();
-            if (pages?.length > 0) {
-              // Sort consistently with app-sidebar: pinned first, then by created_at desc
-              const sorted = (pages as any[]).sort((a, b) => {
-                if (a.isPinned && !b.isPinned) return -1;
-                if (!a.isPinned && b.isPinned) return 1;
-                return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-              });
-              navigate(`/pages/${sorted[0].id}`);
-              return;
-            }
-          }
-        } catch {
-          // server check failed — fall through to local check
-        }
-      }
-
-      // Fall back to local RxDB check (consistent sort with app-sidebar)
-      const allPages = await db.pages.find().exec();
-      const localPages = allPages
-        .filter((p) => !p._deleted)
-        .sort((a, b) => {
-          if (a.isPinned && !b.isPinned) return -1;
-          if (!a.isPinned && b.isPinned) return 1;
-          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
-        });
-      if (localPages.length > 0) {
-        navigate(`/pages/${localPages[0].id}`);
-        return;
-      }
-
-      // No pages anywhere — create "صفحتي الأولى"
-      const id = crypto.randomUUID();
-      const now = new Date().toISOString();
-      await db.pages.insert({
-        id,
-        name: "صفحتي الأولى",
-        title: "صفحتي الأولى",
-        content: JSON.stringify([]),
-        description: "",
-        created_at: now,
-        updated_at: now,
-        is_public: false,
-        is_fork: false,
-        fork_count: 0,
-        forked_from: "",
-      });
-      navigate(`/pages/${id}`);
-    } catch (error) {
-      console.error("Error navigating:", error);
-      alert("حدث خطأ أثناء تحميل الصفحة، حاول مرة أخرى.");
-    } finally {
-      setLoading(false);
+    const token = await getValidAccessToken();
+    if (token) {
+      navigate("/welcome", { replace: true });
+    } else {
+      navigate("/welcome", { replace: true });
     }
+    setLoading(false);
   };
 
   return (
@@ -104,7 +41,6 @@ export function Home() {
       dir="rtl"
       style={{ fontFamily: "Alexandria" }}
     >
-      {/* Background Pattern */}
       <AnimatedGridPattern
         numSquares={80}
         maxOpacity={0.3}
@@ -117,7 +53,6 @@ export function Home() {
         )}
       />
 
-      {/* Header */}
       <header className="w-full flex flex-col items-center py-7 gap-3">
         <div className="flex items-center gap-4">
           <img
@@ -135,7 +70,6 @@ export function Home() {
         </div>
       </header>
 
-      {/* Hero Section */}
       <main className="flex-1 flex flex-col items-center justify-center px-6 sm:px-12 py-20 sm:py-32">
         <div className="max-w-4xl mx-auto text-center">
           <motion.div
@@ -164,7 +98,6 @@ export function Home() {
             </Badge>
           </motion.div>
 
-          {/* Main Heading */}
           <motion.h1
             className="text-4xl sm:text-5xl md:text-6xl font-light leading-tight mb-8 text-gray-900"
             initial={{ opacity: 0, y: 20 }}
@@ -180,7 +113,6 @@ export function Home() {
             </span>
           </motion.h1>
 
-          {/* Highlighted Title */}
           <div>
             {showHighlight ? (
               <Highlighter action="highlight" color="#87CEFA">
@@ -208,7 +140,6 @@ export function Home() {
             )}
           </div>
 
-          {/* Subtitle */}
           <motion.p
             className="text-lg sm:text-xl text-gray-600 max-w-2xl mx-auto leading-relaxed mb-12 mt-2"
             initial={{ opacity: 0, y: 20 }}
@@ -218,7 +149,6 @@ export function Home() {
             لا تتكبد عناء التنقل بين التطبيقات لنقل آية
           </motion.p>
 
-          {/* Buttons */}
           <motion.div
             className="flex flex-col sm:flex-row gap-3 justify-center items-center mb-12"
             initial={{ opacity: 0, y: 20 }}
@@ -243,7 +173,6 @@ export function Home() {
             </Button>
           </motion.div>
 
-          {/* GitHub Link */}
           <motion.a
             href="https://github.com/benotsman-youssuf/kamil"
             target="_blank"
@@ -259,7 +188,6 @@ export function Home() {
             ساهم في المشروع
           </motion.a>
 
-          {/* Screenshot */}
           <motion.div
             className="max-w-5xl mx-auto"
             initial={{ opacity: 0, y: 40 }}
@@ -280,7 +208,6 @@ export function Home() {
         </div>
       </main>
 
-      {/* Footer */}
       <footer className="border-t border-gray-100 py-8 px-6 sm:px-12">
         <div className="max-w-6xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4 text-sm text-gray-500">
           <div className="flex items-center">
