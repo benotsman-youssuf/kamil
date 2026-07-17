@@ -59,6 +59,7 @@ export const PAGE_SCHEMA = {
 let dbInstance: KamilDatabase | null = null;
 let initPromise: Promise<KamilDatabase> | null = null;
 let replicationInstance: RxSupabaseReplicationState<PageDocType> | null = null;
+let syncPromise: Promise<RxSupabaseReplicationState<PageDocType> | void> | null = null;
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL || "https://zcedrrgiprkguvdxblvx.supabase.co";
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY || "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpjZWRycmdpcHJrZ3V2ZHhibHZ4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMzEzNTYsImV4cCI6MjA5NDcwNzM1Nn0.VwlnmuNO1QKQsoaK5xgZ8K71TG3dcstx3vSPbA5iY7M";
@@ -135,44 +136,52 @@ export async function startSync() {
   if (replicationInstance) {
     return replicationInstance;
   }
+  if (syncPromise) {
+    return syncPromise;
+  }
 
-  const db = await getDb();
-  const token = await getValidAccessToken();
-  if (!token) return;
+  syncPromise = (async () => {
+    const db = await getDb();
+    const token = await getValidAccessToken();
+    if (!token) return;
 
-  const userId = getUserIdFromToken(token);
+    const userId = getUserIdFromToken(token);
 
-  const rep = replicateSupabase({
-    tableName: "pages",
-    client: supabaseClient,
-    collection: db.pages,
-    replicationIdentifier: "kamil-supabase-sync",
-    live: true,
-    pull: {
-      batchSize: 50,
-      modifier: (doc: any) => {
-        if (userId && doc.qf_user_id !== userId) {
-          return null;
-        }
-        return doc;
+    const rep = replicateSupabase({
+      tableName: "pages",
+      client: supabaseClient,
+      collection: db.pages,
+      replicationIdentifier: "kamil-supabase-sync",
+      live: true,
+      pull: {
+        batchSize: 50,
+        modifier: (doc: any) => {
+          if (userId && doc.qf_user_id !== userId) {
+            return null;
+          }
+          return doc;
+        },
+        queryBuilder: ({ query }) => {
+          if (userId) {
+            return query.eq("qf_user_id", userId);
+          }
+          return query;
+        },
       },
-      queryBuilder: ({ query }) => {
-        if (userId) {
-          return query.eq("qf_user_id", userId);
-        }
-        return query;
+      push: {
+        batchSize: 50,
       },
-    },
-    push: {
-      batchSize: 50,
-    },
-    modifiedField: "_modified",
-    deletedField: "_deleted",
-  });
+      modifiedField: "_modified",
+      deletedField: "_deleted",
+    });
 
-  rep.error$.subscribe((err: any) => console.error("[rxdb-supabase-sync]", err));
-  replicationInstance = rep;
-  return rep;
+    rep.error$.subscribe((err: any) => console.error("[rxdb-supabase-sync]", err));
+    replicationInstance = rep;
+    return rep;
+  })();
+
+  syncPromise.finally(() => { syncPromise = null; });
+  return syncPromise;
 }
 
 export async function stopSync() {

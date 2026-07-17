@@ -34,32 +34,14 @@ export function ShareDialog({ pageId }: ShareDialogProps) {
     setLoading(true);
     setError(null);
     try {
-      const db = await getDb();
-      const page = await db.pages.findOne(pageId).exec();
-      if (!page) throw new Error("Page not found");
-
-      const pageData = page.toJSON();
-      await syncFetch("/sync", {
-        method: "POST",
-        body: {
-          pages: [{
-            id: pageData.id,
-            name: pageData.name || pageData.title,
-            title: pageData.title || pageData.name,
-            content: pageData.content,
-            description: pageData.description || "",
-            is_public: true,
-            is_fork: pageData.is_fork ?? false,
-            fork_count: pageData.fork_count ?? 0,
-            forked_from: pageData.forked_from || "",
-            created_at: pageData.created_at,
-            updated_at: new Date().toISOString(),
-            isPinned: pageData.isPinned ?? false,
-          }],
-        },
+      await syncFetch(`/pages?id=${pageId}`, {
+        method: "PATCH",
+        body: { is_public: true },
       });
 
-      await page.patch({ is_public: true });
+      const db = await getDb();
+      const page = await db.pages.findOne(pageId).exec();
+      if (page) await page.patch({ is_public: true });
       setIsPublic(true);
       toast.success("تم نشر المقالة");
     } catch (e: any) {
