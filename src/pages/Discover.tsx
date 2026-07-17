@@ -52,12 +52,13 @@ export function Discover() {
       const res = await fetch(`/api/discover?${params}`);
       const data: DiscoverResponse = await res.json();
 
+      const pages = data?.pages || [];
       if (append) {
-        setArticles((prev) => [...prev, ...data.pages]);
+        setArticles((prev) => [...prev, ...pages]);
       } else {
-        setArticles(data.pages);
+        setArticles(pages);
       }
-      setHasMore(data.has_more);
+      setHasMore(data?.has_more ?? false);
       setPage(p);
     } catch {
       // silent

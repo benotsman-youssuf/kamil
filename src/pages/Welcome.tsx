@@ -1,29 +1,23 @@
 "use client";
 
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { Plus, BookOpen, Sparkles, ArrowRight, Loader2, Type, PenTool } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getTokens } from "@/lib/qf/auth";
-import { usePages } from "@/hooks/use-pages";
 import { createPage } from "@/lib/rxdb";
 
 export function Welcome() {
   const navigate = useNavigate();
-  const pages = usePages();
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
 
   const token = getTokens()?.access_token;
 
-  useEffect(() => {
-    if (pages.length > 0) {
-      navigate(`/pages/${pages[0].id}`, { replace: true });
-    }
-  }, [pages, navigate]);
+  // No auto-redirect — always show the welcome page so users can create a new page.
 
   const handleCreatePage = async (e: FormEvent) => {
     e.preventDefault();
