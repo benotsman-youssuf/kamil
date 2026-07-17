@@ -24,7 +24,7 @@ export function AuthCallback() {
       handleCallback(code, state)
         .then(async () => {
           await syncFetch("/user/profile").catch(() => {});
-          navigate("/", { replace: true });
+          navigate("/welcome", { replace: true });
         })
         .catch((err) => {
           setError(err.message || "فشل تسجيل الدخول");

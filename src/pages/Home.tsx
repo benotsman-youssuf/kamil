@@ -1,28 +1,22 @@
 "use client";
 
-import { useState, useRef, useEffect, type FormEvent } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Compass, Plus, ArrowRight, Loader2, BookOpen, Type, PenTool, Sparkles } from "lucide-react";
+import { Compass } from "lucide-react";
 import chrome from "@/assets/chrome-logo.svg";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Highlighter } from "@/components/magicui/highlighter";
 import { ShimmerButton } from "@/components/magicui/shimmer-button";
 import { AnimatedGridPattern } from "@/components/magicui/animated-grid-pattern";
-import { getValidAccessToken } from "@/lib/qf/auth";
-import { createPage } from "@/lib/rxdb";
+import { login } from "@/lib/qf/auth";
 import { cn } from "@/lib/utils";
 
 export function Home() {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
   const [showHighlight, setShowHighlight] = useState(false);
-  const [showWelcome, setShowWelcome] = useState(false);
-  const [welcomeName, setWelcomeName] = useState("");
-  const [welcomeLoading, setWelcomeLoading] = useState(false);
-  const [welcomeError, setWelcomeError] = useState<string | null>(null);
   const headingRef = useRef<HTMLHeadingElement | null>(null);
 
   useEffect(() => {
@@ -31,46 +25,7 @@ export function Home() {
   }, []);
 
   const handleStart = async () => {
-    setLoading(true);
-    const token = await getValidAccessToken();
-    if (token) {
-      setShowWelcome(true);
-    } else {
-      const loginModule = await import("@/lib/qf/auth");
-      loginModule.login();
-    }
-    setLoading(false);
-  };
-
-  const handleCreatePage = async (e: FormEvent) => {
-    e.preventDefault();
-    setWelcomeError(null);
-    if (!welcomeName.trim()) {
-      setWelcomeError("يرجى إدخال اسم للصفحة");
-      return;
-    }
-    setWelcomeLoading(true);
-    try {
-      const id = await createPage(welcomeName.trim());
-      navigate(`/pages/${id}`, { replace: true });
-    } catch (err) {
-      setWelcomeError("فشل إنشاء الصفحة، حاول مرة أخرى");
-    } finally {
-      setWelcomeLoading(false);
-    }
-  };
-
-  const handleTemplateSelect = async (templateName: string) => {
-    setWelcomeName(templateName);
-    setWelcomeLoading(true);
-    try {
-      const id = await createPage(templateName);
-      navigate(`/pages/${id}`, { replace: true });
-    } catch (err) {
-      setWelcomeError("فشل إنشاء الصفحة، حاول مرة أخرى");
-    } finally {
-      setWelcomeLoading(false);
-    }
+    navigate("/welcome");
   };
 
   return (
@@ -109,7 +64,6 @@ export function Home() {
       </header>
 
       <main className="flex-1 flex flex-col items-center justify-center px-6 sm:px-12 py-20 sm:py-32">
-        {!showWelcome ? (
         <div className="max-w-4xl mx-auto text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -245,85 +199,6 @@ export function Home() {
             </div>
           </motion.div>
         </div>
-      ) : (
-        <div className="max-w-2xl mx-auto w-full">
-          <div className="text-center mb-10">
-            <img src="/logo.png" alt="كمل" className="h-14 w-14 mx-auto rounded-xl shadow-md bg-white mb-4" />
-            <h1 className="text-4xl font-extrabold text-gray-900 font-['Alexandria'] mb-2">مرحباً بك في كمّل</h1>
-            <p className="text-gray-600 text-lg">مساحتك الخاصة لكتابة الأفكار والملاحظات مع الآيات والأحاديث</p>
-          </div>
-
-          <div className="bg-white/80 backdrop-blur-sm border border-gray-200 shadow-sm rounded-lg">
-            <div className="text-center pb-4 pt-6 px-6">
-              <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 text-primary mb-4">
-                <PenTool className="h-8 w-8" />
-              </div>
-              <h2 className="text-2xl font-bold">أنشئ صفحتك الأولى</h2>
-              <p className="text-gray-600 mt-1">ابدأ بكتابة ملاحظاتك، آياتك، وأحاديثك المفضلة</p>
-            </div>
-
-            <div className="px-6 pb-6 space-y-6">
-              <form onSubmit={handleCreatePage} className="space-y-4">
-                <div className="space-y-2">
-                  <label htmlFor="pageName" className="text-right font-medium text-sm">اسم الصفحة</label>
-                  <Input
-                    id="pageName"
-                    value={welcomeName}
-                    onChange={(e) => setWelcomeName(e.target.value)}
-                    placeholder="مثال: تدبر آيات، ملاحظات القرآن، خواطر..."
-                    className="text-right"
-                    disabled={welcomeLoading}
-                    autoFocus
-                  />
-                  {welcomeError && <p className="text-sm text-red-500 text-right">{welcomeError}</p>}
-                </div>
-
-                <Button type="submit" disabled={welcomeLoading || !welcomeName.trim()} className="w-full gap-2 py-3 text-lg">
-                  {welcomeLoading ? (
-                    <><Loader2 className="h-5 w-5 animate-spin" /> جاري إنشاء الصفحة...</>
-                  ) : (
-                    <><Plus className="h-5 w-5" /> إنشاء والبدء بالكتابة <ArrowRight className="h-5 w-5" /></>
-                  )}
-                </Button>
-              </form>
-
-              <div className="border-t border-gray-200 pt-6">
-                <p className="text-sm text-gray-500 text-center mb-4">أو اختر من القوالب الجاهزة</p>
-                <div className="grid grid-cols-2 gap-3">
-                  <Button variant="outline" className="h-24 flex flex-col gap-2 p-4 hover:bg-primary/5 hover:border-primary/50 transition-all" onClick={() => handleTemplateSelect("تدبر آيات")} disabled={welcomeLoading}>
-                    <BookOpen className="h-6 w-6 mx-auto text-primary" />
-                    <span className="font-medium">تدبر آيات</span>
-                    <span className="text-xs text-gray-500">صفحة للآيات المفضلة</span>
-                  </Button>
-                  <Button variant="outline" className="h-24 flex flex-col gap-2 p-4 hover:bg-primary/5 hover:border-primary/50 transition-all" onClick={() => handleTemplateSelect("خواطر وأفكار")} disabled={welcomeLoading}>
-                    <Type className="h-6 w-6 mx-auto text-primary" />
-                    <span className="font-medium">خواطر وأفكار</span>
-                    <span className="text-xs text-gray-500">صفحة للكتابة الحرة</span>
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.3 }} className="mt-8 grid grid-cols-3 gap-4 text-center">
-            <div className="p-4 rounded-xl bg-white/50 border border-gray-100">
-              <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-600 flex items-center justify-center mx-auto mb-2"><Sparkles className="h-5 w-5" /></div>
-              <p className="text-sm font-medium text-gray-900">إضافة آيات</p>
-              <p className="text-xs text-gray-500">اختصار: /آية</p>
-            </div>
-            <div className="p-4 rounded-xl bg-white/50 border border-gray-100">
-              <div className="w-10 h-10 rounded-xl bg-green-100 text-green-600 flex items-center justify-center mx-auto mb-2"><BookOpen className="h-5 w-5" /></div>
-              <p className="text-sm font-medium text-gray-900">أحاديث</p>
-              <p className="text-xs text-gray-500">اختصار: /حديث</p>
-            </div>
-            <div className="p-4 rounded-xl bg-white/50 border border-gray-100">
-              <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-600 flex items-center justify-center mx-auto mb-2"><Type className="h-5 w-5" /></div>
-              <p className="text-sm font-medium text-gray-900">تنسيق غني</p>
-              <p className="text-xs text-gray-500">Markdown مدعوم</p>
-            </div>
-          </motion.div>
-        </div>
-      )}
       </main>
 
       <footer className="border-t border-gray-100 py-8 px-6 sm:px-12">

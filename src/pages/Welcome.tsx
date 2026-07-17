@@ -6,7 +6,7 @@ import { motion } from "framer-motion";
 import { Plus, BookOpen, Sparkles, ArrowRight, Loader2, Type, PenTool } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { getTokens } from "@/lib/qf/auth";
+import { getTokens, login } from "@/lib/qf/auth";
 import { createPage } from "@/lib/rxdb";
 
 export function Welcome() {
@@ -69,10 +69,10 @@ export function Welcome() {
           <Button 
             size="lg" 
             className="w-full gap-2" 
-            onClick={() => window.location.href = "/"}
+            onClick={() => login()}
           >
             <ArrowRight className="h-4 w-4" />
-            العودة للصفحة الرئيسية
+            تسجيل الدخول بحساب Quran.com
           </Button>
         </motion.div>
       </div>
