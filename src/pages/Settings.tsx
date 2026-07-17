@@ -85,7 +85,7 @@ export function Settings() {
               is_public: page.is_public ?? false,
               is_fork: page.is_fork ?? false,
               fork_count: page.fork_count ?? 0,
-              forked_from: page.forked_from || "",
+              forked_from: page.forked_from || null,
               created_at: page.createdAt || page.created_at || now,
               updated_at: page.updatedAt || page.updated_at || now,
               isPinned: page.isPinned ?? false,

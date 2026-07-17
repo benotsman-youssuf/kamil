@@ -18,7 +18,7 @@ export type PageDocType = {
   is_public: boolean;
   is_fork: boolean;
   fork_count: number;
-  forked_from: string;
+  forked_from: string | null;
   created_at: string;
   updated_at: string;
   isPinned?: boolean;
@@ -46,7 +46,7 @@ export const PAGE_SCHEMA = {
     is_public: { type: "boolean" },
     is_fork: { type: "boolean" },
     fork_count: { type: "number" },
-    forked_from: { type: "string" },
+    forked_from: { type: ["string", "null"] },
     created_at: { type: "string" },
     updated_at: { type: "string" },
     isPinned: { type: "boolean" },
@@ -170,6 +170,10 @@ export async function startSync() {
       },
       push: {
         batchSize: 50,
+        modifier: (doc: any) => {
+          if (doc.forked_from === "") doc.forked_from = null;
+          return doc;
+        },
       },
       modifiedField: "_modified",
       deletedField: "_deleted",
@@ -294,7 +298,7 @@ export async function createPage(name: string): Promise<string> {
     is_public: false,
     is_fork: false,
     fork_count: 0,
-    forked_from: "",
+    forked_from: null,
     isPinned: false,
     _deleted: false,
     like_count: 0,

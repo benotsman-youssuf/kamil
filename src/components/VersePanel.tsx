@@ -117,7 +117,7 @@ export function VersePanelContent({
         is_public: false,
         is_fork: false,
         fork_count: 0,
-        forked_from: "",
+        forked_from: null,
         isPinned: false,
         _deleted: false,
         like_count: 0,
