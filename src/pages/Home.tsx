@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Highlighter } from "@/components/magicui/highlighter";
 import { ShimmerButton } from "@/components/magicui/shimmer-button";
 import { AnimatedGridPattern } from "@/components/magicui/animated-grid-pattern";
-import { getValidAccessToken, getTokens } from "@/lib/qf/auth";
+import { getValidAccessToken } from "@/lib/qf/auth";
 import { createPage } from "@/lib/rxdb";
 import { cn } from "@/lib/utils";
 
