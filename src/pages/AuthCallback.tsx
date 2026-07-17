@@ -24,7 +24,7 @@ export function AuthCallback() {
       handleCallback(code, state)
         .then(async () => {
           await syncFetch("/user/profile").catch(() => {});
-          navigate("/welcome", { replace: true });
+          navigate("/", { replace: true });
         })
         .catch((err) => {
           setError(err.message || "فشل تسجيل الدخول");
@@ -40,7 +40,7 @@ export function AuthCallback() {
         <AlertCircle className="h-12 w-12 text-red-500" />
         <p className="text-xl font-bold text-red-600 font-amiri">فشل تسجيل الدخول</p>
         <p className="text-muted-foreground">{error}</p>
-        <Button variant="outline" onClick={() => navigate("/welcome")}>
+        <Button variant="outline" onClick={() => navigate("/")}>
           العودة للصفحة الرئيسية
         </Button>
       </div>
