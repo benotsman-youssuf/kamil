@@ -5,7 +5,6 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import SideBar from "./layout/Sidebar.tsx";
 import { Home } from "./pages/Home";
-import { Welcome } from "./pages/Welcome";
 import { AuthCallback } from "./pages/AuthCallback";
 import { UserLayout } from "./layout/UserLayout";
 import { Collections } from "./pages/Collections";
@@ -31,7 +30,7 @@ function LogoutPage() {
 
 const router = createBrowserRouter([
   { path: "/", element: <Home /> },
-  { path: "/welcome", element: <Welcome /> },
+  { path: "/welcome", element: <SideBar /> },
   { path: "/pages/:id", element: <SideBar /> },
   { path: "/callback", element: <AuthCallback /> },
   { path: "/logout", element: <LogoutPage /> },

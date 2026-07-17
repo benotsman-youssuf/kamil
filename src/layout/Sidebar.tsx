@@ -14,6 +14,10 @@ import { debounce } from "@/lib/utils/debounce";
 import { SharedRightPanel } from "@/components/SharedRightPanel";
 import { fetchVerseDetails } from "@/lib/qf/api";
 import { useSidebarState } from "@/hooks/use-sidebar-state";
+import { getTokens, login } from "@/lib/qf/auth";
+import { createPage } from "@/lib/rxdb";
+import { Button } from "@/components/ui/button";
+import { Plus, LogIn, Loader2 } from "lucide-react";
 export default function SideBar() {
   const [pageContent, setPageContent] = useState<string>();
   const [_saveState, setSaveState] = useState<SaveState>("idle");
@@ -21,6 +25,7 @@ export default function SideBar() {
   const [pageNotFound, setPageNotFound] = useState(false);
   const { id } = useParams();
   const navigate = useNavigate();
+  const [welcomeLoading, setWelcomeLoading] = useState(false);
 
   const {
     sidebarOpen,
@@ -180,6 +185,18 @@ export default function SideBar() {
     return () => window.removeEventListener("insert-hadith", handler);
   }, [editor]);
 
+  const handleWelcomeCreate = async () => {
+    setWelcomeLoading(true);
+    try {
+      const pageId = await createPage("صفحتي");
+      navigate(`/pages/${pageId}`, { replace: true });
+    } catch {
+      toast.error("فشل إنشاء الصفحة");
+    } finally {
+      setWelcomeLoading(false);
+    }
+  };
+
   return (
     <div className="editor-container flex h-screen w-full overflow-hidden bg-background relative">
       {/* ── Invisible hover trigger strip (desktop, unpinned) ─────────────── */}
@@ -237,7 +254,22 @@ export default function SideBar() {
           "transition-[margin] duration-[280ms] ease-[cubic-bezier(0.4,0,0.2,1)]",
         )}
       >
-        {pageNotFound ? (
+        {!id ? (
+          <div className="flex-1 flex flex-col items-center justify-center p-6" dir="rtl">
+            <img src="/logo.png" alt="كمل" className="h-16 w-16 rounded-xl shadow-md bg-white mb-6" />
+            {getTokens()?.access_token ? (
+              <Button onClick={handleWelcomeCreate} disabled={welcomeLoading} size="lg" className="gap-2 text-lg px-8 py-6">
+                {welcomeLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Plus className="h-5 w-5" />}
+                إضافة صفحة
+              </Button>
+            ) : (
+              <Button onClick={() => login()} size="lg" className="gap-2 text-lg px-8 py-6">
+                <LogIn className="h-5 w-5" />
+                تسجيل الدخول
+              </Button>
+            )}
+          </div>
+        ) : pageNotFound ? (
           <div className="flex-1 flex flex-col items-center justify-center p-6" dir="rtl">
             <div className="text-center max-w-sm">
               <div className="text-6xl mb-4 text-muted-foreground/30">٤٠٤</div>
