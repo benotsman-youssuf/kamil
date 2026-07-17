@@ -10,12 +10,10 @@ import { Badge } from "@/components/ui/badge";
 import { Highlighter } from "@/components/magicui/highlighter";
 import { ShimmerButton } from "@/components/magicui/shimmer-button";
 import { AnimatedGridPattern } from "@/components/magicui/animated-grid-pattern";
-import { login } from "@/lib/qf/auth";
 import { cn } from "@/lib/utils";
 
 export function Home() {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
   const [showHighlight, setShowHighlight] = useState(false);
   const headingRef = useRef<HTMLHeadingElement | null>(null);
 
@@ -150,10 +148,9 @@ export function Home() {
           >
             <ShimmerButton
               onClick={handleStart}
-              disabled={loading}
               className="hover:scale-105 active:scale-95 transition-transform duration-200 shadow-lg"
             >
-              {loading ? "يتم التحميل..." : "ابدأ الكتابة"}
+              ابدأ الكتابة
             </ShimmerButton>
             <Button
               variant="outline"
